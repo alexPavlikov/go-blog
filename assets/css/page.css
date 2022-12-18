@@ -1,0 +1,26 @@
+main {
+    display: flex;
+    flex-direction: column;
+}
+
+section {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 150px;
+    margin: 20px 0 20px 150px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid #777;
+}
+
+section img {
+    width: 150px;
+    height: 150px;
+    border-radius: 45%;
+}
+
+section div {
+    margin: auto 20px;
+    font-size: 28px;
+    font-weight: 700;
+}

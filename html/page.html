@@ -1,0 +1,85 @@
+{{ define "page" }}
+
+{{ template "header" }}
+<link rel="stylesheet" href="/assets/css/page.css">
+<header>
+    <div class="brand">
+        <div class="logos">
+            <img src="/data/image/brand.png" alt="">
+            <span>GOLANG</span>
+        </div>
+        <div class="find"><input type="text" placeholder="Найти"></div>
+    </div>
+    <div class="account">
+        <div class="avatar"><img src="/data/image/blog/ava.jpg" alt=""></div>
+        <i class="fa-solid fa-chevron-down" onclick="Check()"></i>
+    </div>
+    </header>
+
+<body>
+    <aside class="right">
+        <a href="/page#"><i class="fa-regular fa-circle-user"></i><span> Моя страница</span></a>
+        <a href="/"><i class="fa-regular fa-newspaper"></i><span> Новости</span></a>
+        <a href="#"><i class="fa-regular fa-comment"></i><span> Сообщения</span></a>
+        <a href="#"><i class="fa-solid fa-user-group"></i><span> Друзья</span></a>
+        <a href="#"><i class="fa-solid fa-users"></i><span> Сообщества</span></a>
+        <a href="#">Далее</a>
+        <a href="#">Далее</a>
+        <a href="#">Далее</a>
+        <a href="#">Далее</a>
+    </aside>
+    <main>
+        <section>
+            <img src="/data/image/blog/ava.jpg" alt="">
+            <div class="name">Бред Пит</div>
+        </section>
+        <div class="news">
+            <div class="post">
+                <div class="communities">
+                    <div class="avatar"><img src="/data/image/blog/ava.jpg" alt=""></div>
+                    <div class="name">
+                        <div>Название группы</div>
+                        <label>19:30</label>
+                    </div>
+                </div>
+                <div class="title">Lorem ipsum dolor, sit amet consectetur adipisicing elit. Ipsum possimus, eos iure autem voluptates fuga doloremque nobis deleniti dignissimos quo maxime iusto ullam deserunt aspernatur ab. Tenetur molestias eaque repellendus.</div>
+                <div class="image"><img src="/data/image/blog/test.jpeg" alt=""></div>
+                <div class="statistics">
+                    <div>
+                        <span><i class="fa-regular fa-heart"></i></span>
+                        <span><i class="fa-regular fa-message"></i></span>
+                        <span><i class="fa-regular fa-paper-plane"></i></span>
+                    </div>
+                    
+                    <i class="fa-solid fa-eye">3123</i>
+                </div>
+                <div class="comments">
+                    <form action="" method="post">
+                        <input type="text" placeholder="Оставьте комментарий">
+                        <button type="submit"><i class="fa-solid fa-reply"></i></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </main>
+    <aside id="left" class="left">
+        <div class="setacc">
+            <div class="avatar"><img src="/data/image/blog/ava.jpg" alt=""></div>
+            <div class="info">
+                <div class="name">Александр Павликов</div>
+                <div class="login">+38071451979</div>
+            </div>
+        </div>
+        <div class="settings">
+            <a href="#"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+            <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
+            <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
+            <a id="exit" href="#"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
+        </div>
+    </aside>
+</body>
+
+{{ template "footer" }}
+
+{{ end }}
