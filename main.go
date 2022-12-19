@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/cookiejar"
+	"os"
 	"text/template"
 
 	"github.com/alexPavlikov/go-blog/database"
@@ -14,7 +15,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var posts map[string]*models.Posts
 var client http.Client
 
 func init() {
@@ -30,20 +30,27 @@ func main() {
 	}
 	defer db.Close()
 
-	//posts = make(map[string]*models.Post, 0)
+	//defer r.Body.Close()
+	handleRequest()
+	http.ListenAndServe(":"+models.Cfg.ServerPort, nil)
+}
+
+func handleRequest() {
+	// обработчики статических данных(папок)
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
 	http.Handle("/data/", http.StripPrefix("/data/", http.FileServer(http.Dir("./data/"))))
+
+	//обработчики всех ссылок веб-сайта
 	http.HandleFunc("/", logFormHandler)
 	http.HandleFunc("/auth", authHandler)
 	http.HandleFunc("/registration", regHandler)
 	http.HandleFunc("/blog", blogHandler)
 	http.HandleFunc("/page", pageHandler)
-	//defer r.Body.Close()
-	//handleRequest()
-	http.ListenAndServe(":"+models.Cfg.ServerPort, nil)
+	http.HandleFunc("/setting", settingHandler)
+	http.HandleFunc("/setting/refresh", refreshSettingHandler)
 }
 
-func logFormHandler(w http.ResponseWriter, r *http.Request) { //реализовать проверку данных в бд и занос новых пользователей
+func logFormHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles("html/login.html")
 	if err != nil {
 		http.NotFound(w, r)
@@ -68,11 +75,19 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 			http.SetCookie(w, cookie)
 		}
 		//if true функция выдачи action для формы в слючие совпадения пароля и логина
+		user, err := database.SelectUserByLogPass(logs, pass)
+		if err != nil {
+			http.NotFound(w, r)
+			http.Redirect(w, r, "/", http.StatusBadRequest)
+		}
+
+		recordingSessions(fmt.Sprintf("Пользователь, %s (логин - %s, пароль - %s) зашел в аккаунт.\n", user.Name, user.Login, user.Password))
 		http.Redirect(w, r, "/blog", http.StatusOK)
 	}
 }
 
 func regHandler(w http.ResponseWriter, r *http.Request) {
+	var user models.Users
 	r.ParseForm()
 	if r.Method == "POST" { // регистрация пользователя
 		logs := r.FormValue("email1")
@@ -82,7 +97,64 @@ func regHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("This is reg", logs, pass, txt)
 		}
 		//if true функция выдачи action для формы в слючие совпадения пароля и логина
+		user.Login = logs
+		user.Password = pass
+		user.Name = txt
+		fmt.Println(user)
+		_, err := database.InsertUser(user)
+		if err != nil {
+			fmt.Println("Error = regHandler() InsertUser()")
+			log.Fatal(err)
+			http.Redirect(w, r, "/", http.StatusBadRequest)
+		}
 		http.Redirect(w, r, "/blog", http.StatusOK)
+	}
+}
+
+func settingHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/setting.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+	title := map[string]string{"Title": models.Cfg.SettingTitle}
+	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "setting", nil)
+}
+
+func refreshSettingHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	if r.Method == "GET" {
+		login := r.FormValue("login")
+		newPass := r.FormValue("newPass")
+		oldPass := r.FormValue("oldPass")
+		newName := r.FormValue("newName")
+		date := r.FormValue("newHB")
+		fmt.Println(login, newPass, oldPass, newName, date)
+		if oldPass != "" {
+			_, err := database.SelectUsersByColumn("Password", oldPass)
+			if err == nil {
+				if newPass != "" {
+					_, err = database.UpdateUserByColumn("Password", newPass, login, oldPass)
+					if err != nil {
+						fmt.Println(err.Error())
+					}
+				} else if newName != "" {
+					_, err = database.UpdateUserByColumn("Name", newName, login, oldPass)
+					if err != nil {
+						fmt.Println(err.Error())
+					}
+				} else if date != "" {
+					_, err = database.UpdateUserByColumn("Birthdate", date, login, oldPass)
+					// сделать проверку чтобы нельзя вписать дату больше сегодняшней
+					if err != nil {
+						fmt.Println(err.Error())
+					}
+				}
+			} else {
+				http.NotFound(w, r)
+			}
+		}
+		http.Redirect(w, r, "/page", http.StatusOK)
 	}
 }
 
@@ -101,65 +173,22 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.NotFound(w, r)
 	}
+
+	var postId string
+	if r.Method == "POST" {
+		r.ParseForm()
+		postId = r.FormValue("post_id")
+		fmt.Println(postId)
+	}
+	//id, _ := strconv.Atoi(postId)
+	//fmt.Println(id) // Сделать добавления поста на страницу пользователя
+
 	title := map[string]string{"Title": "моя страница"}
 	tmpl.ExecuteTemplate(w, "header", title) //сделать запрос на выборку имени пользователя и вставить в title
 	tmpl.ExecuteTemplate(w, "page", nil)
 }
 
-func handleRequest() {
-	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
-
-	http.HandleFunc("/", indexHandler)
-	http.HandleFunc("/write", writeHandler)
-	http.HandleFunc("/edit", editHandler)
-	http.HandleFunc("/SavePost", savePostHandler)
-}
-
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("templates/index.html", "templates/header.html", "templates/footer.html")
-	if err != nil {
-		http.NotFound(w, r)
-	}
-	data := database.SelectPosts()
-	tmpl.ExecuteTemplate(w, "index", data)
-}
-
-func writeHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("templates/write.html", "templates/header.html", "templates/footer.html")
-	if err != nil {
-		http.NotFound(w, r)
-	}
-
-	tmpl.ExecuteTemplate(w, "write", nil)
-}
-
-func editHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("templates/write.html", "templates/header.html", "templates/footer.html")
-	if err != nil {
-		http.NotFound(w, r)
-	}
-
-	id := r.FormValue("id")
-	post, found := posts[id]
-	if !found {
-		http.NotFound(w, r)
-	}
-
-	tmpl.ExecuteTemplate(w, "write", post)
-}
-
-func savePostHandler(w http.ResponseWriter, r *http.Request) {
-	// r.ParseForm()
-	// id := GenerateId()
-	// title := r.FormValue("title")
-	// content := r.FormValue("content")
-	// post := models.NewPost(id, title, content)
-	// posts[post.Id] = post
-
-	http.Redirect(w, r, "/", http.StatusFound)
-}
-
-func Cookies() {
+func Cookies() { // доделать/сделать
 	fmt.Println(client)
 	jar, err := cookiejar.New(nil)
 	if err != nil {
@@ -169,4 +198,16 @@ func Cookies() {
 		Jar: jar,
 	}
 	fmt.Println(client)
+}
+
+func recordingSessions(session string) {
+	fmt.Println(session)
+	file, err := os.Open("/data/files/list of visits.txt")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer file.Close()
+	data := []byte(session)
+	file.Write(data)
 }

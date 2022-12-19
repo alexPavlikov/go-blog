@@ -8,11 +8,13 @@ type Posts struct { // structure of the Posts table
 	View        uint
 	Date        string
 	Communities string
+	Photo       string
 }
 
 type Communities struct { // structure of the Communities table
 	Name   string
 	Author string
+	Photo  string
 }
 
 type Comments struct { // structure of the Comments table
@@ -30,6 +32,8 @@ type Users struct { // structure of the Users table
 	Access      string
 	Communities string
 	Friends     string
+	Photo       string
+	Birthdate   string
 }
 
 type Friends struct { // structure of the Friends table

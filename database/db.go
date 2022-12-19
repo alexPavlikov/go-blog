@@ -34,18 +34,18 @@ func SelectPosts() []models.Posts {
 		fmt.Println("Error - selectPosts()", err.Error())
 	}
 
-	employee := models.Posts{}
-	employees := []models.Posts{}
+	post := models.Posts{}
+	posts := []models.Posts{}
 
 	for rows.Next() {
 
-		err = rows.Scan(&employee.Id, &employee.Title, &employee.Content, &employee.Like, &employee.View, &employee.Date, &employee.Communities)
+		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo)
 		if err != nil {
 			fmt.Println("Error - selectPosts() / rows.Next()", err.Error())
 		}
-		employees = append(employees, employee)
+		posts = append(posts, post)
 	}
-	return employees
+	return posts
 }
 
 /*
@@ -59,7 +59,7 @@ func SelectPostById(id string) models.Posts {
 		fmt.Println("Error - SelectPostById()", err.Error())
 	}
 	for rows.Next() {
-		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities)
+		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo)
 		if err != nil {
 			fmt.Println("Error - SelectPostById() / rows.Next()", err.Error())
 		}
@@ -79,7 +79,7 @@ func SelectPostByCommunities(communities string) []models.Posts {
 		fmt.Println("Error - SelectPostByCommunities()", err.Error())
 	}
 	for rows.Next() {
-		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities)
+		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo)
 		if err != nil {
 			fmt.Println("Error - SelectPostByCommunities() / rows.Next()", err.Error())
 		}
@@ -122,7 +122,7 @@ func DeletePostByCommunities(communities string) error {
 Функция добавления поста в таблицу Posts
 */
 func InsertPost(post models.Posts) (models.Posts, error) {
-	query := `INSERT INTO "Posts"("Title", "Content", "Like", "View", "Date", "Communities") VALUES ($1, $2, $3, $4, $5, $6)`
+	query := `INSERT INTO "Posts"("Title", "Content", "Like", "View", "Date", "Communities") VALUES ($1, $2, $3, $4, $5, $6, $7)`
 	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
 	stmt, err := DB.PrepareContext(ctx, query)
@@ -131,7 +131,7 @@ func InsertPost(post models.Posts) (models.Posts, error) {
 		return post, err
 	}
 	defer stmt.Close()
-	res, err := stmt.ExecContext(ctx, post.Title, post.Content, post.Like, post.View, post.Date, post.Communities)
+	res, err := stmt.ExecContext(ctx, post.Title, post.Content, post.Like, post.View, post.Date, post.Communities, post.Photo)
 	if err != nil {
 		log.Printf("Error %s when inserting row into Posts table", err)
 		return post, err
@@ -149,7 +149,7 @@ func InsertPost(post models.Posts) (models.Posts, error) {
 Функция обновления поста в таблице Posts по определенному Id
 */
 func UpdatePostById(id string, post models.Posts) error {
-	query := fmt.Sprintf(`UPDATE "Posts" SET "Title" = %s, "Content" = %s, "Like" = '%d', "View" = '%d', "Date" = %s, "Communities" = %s WHERE "Id" =  %s`, post.Title, post.Content, post.Like, post.View, post.Date, post.Communities, post.Id)
+	query := fmt.Sprintf(`UPDATE "Posts" SET "Title" = %s, "Content" = %s, "Like" = '%d', "View" = '%d', "Date" = %s, "Communities" = %s, "Photo" = %s WHERE "Id" =  %s`, post.Title, post.Content, post.Like, post.View, post.Date, post.Communities, post.Photo, post.Id)
 	_, err := DB.Query(query)
 	if err != nil {
 		fmt.Println(err)
@@ -187,6 +187,20 @@ func UpdateViewInPost(id string) error {
 	return nil
 }
 
+/*
+Функция обновления фотографии поста в таблице Posts по определенному Id
+*/
+func UpdatePhotoInPost(id string, photo string) error {
+	query := fmt.Sprintf(`UPDATE "Posts" SET "Photo" = %s WHERE "Id" = %s`, photo, id)
+	_, err := DB.Query(query)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println(query)
+	return nil
+}
+
 // --------------------Query from Users table--------------------
 
 /*
@@ -200,9 +214,9 @@ func SelectUsers() []models.Users {
 	var user models.Users
 	var users []models.Users
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Communities, &user.Friends)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Communities, &user.Friends, &user.Photo, &user.Birthdate)
 		if err != nil {
-			fmt.Println("Error - SelectIser() rows.Next()", err.Error())
+			fmt.Println("Error - SelectUser() rows.Next()", err.Error())
 		}
 		users = append(users, user)
 	}
@@ -220,7 +234,7 @@ func SelectUserByLogPass(log string, pass string) (user models.Users, err error)
 		return user, err
 	}
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Communities, &user.Friends)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Communities, &user.Friends, &user.Photo, &user.Birthdate)
 		if err != nil {
 			fmt.Println("Error - SelectUsetByLogPass() rows.Next()")
 			return user, err
@@ -233,21 +247,24 @@ func SelectUserByLogPass(log string, pass string) (user models.Users, err error)
 Функция-конструктор, вводится два значения column и value и подставляются в запрос,
 что позволяет не писать повторяющие запросы SELECT
 */
-func SelectUsersByColumn(column string, value string) []models.Users {
+func SelectUsersByColumn(column string, value string) ([]models.Users, error) {
+	var user models.Users
+	var users []models.Users
 	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "Users" WHERE "%s" = %s`, column, value))
 	if err != nil {
 		fmt.Println("Error - SelectUsersByColumn()", err)
+		return users, err
 	}
-	var user models.Users
-	var users []models.Users
+
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Communities, &user.Friends)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Communities, &user.Friends, &user.Photo, &user.Birthdate)
 		if err != nil {
 			fmt.Println("Error - SelectUsersByColumn() rows.Next()", err.Error())
+			return users, err
 		}
 		users = append(users, user)
 	}
-	return users
+	return users, nil
 }
 
 /*
@@ -269,7 +286,7 @@ func DeleteUserByLogin(login string) error {
 Функция добавления пользователя в таблицу Users по введенным значениям
 */
 func InsertUser(user models.Users) (models.Users, error) {
-	query := `INSERT INTO "Users"("Login", "Password", "Name", "Access", "Communities", "Friends") VALUES ($1, $2, $3, $4, $5, $6)`
+	query := `INSERT INTO "Users"("Login", "Password", "Name", "Access", "Communities", "Friends", "Photo", "Birthdate") VALUES ($1, $2, $3, $4, $5, $6, $7, &8)`
 	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
 	stmt, err := DB.PrepareContext(ctx, query)
@@ -278,7 +295,7 @@ func InsertUser(user models.Users) (models.Users, error) {
 		return user, err
 	}
 	defer stmt.Close()
-	res, err := stmt.ExecContext(ctx, user.Login, user.Password, user.Name, user.Access, user.Communities, user.Friends)
+	res, err := stmt.ExecContext(ctx, user.Login, user.Password, user.Name, user.Access, user.Communities, user.Friends, user.Photo, user.Birthdate)
 	if err != nil {
 		log.Printf("Error %s when inserting row into User table", err)
 		return user, err
@@ -296,7 +313,7 @@ func InsertUser(user models.Users) (models.Users, error) {
 Функция обновления пользователя из таблицы Users по введенным Login и Password
 */
 func UpdateUserByLogPass(login string, password string, user models.Users) error {
-	query := fmt.Sprintf(`UPDATE "Users" SET "Login" = %s, "Password" = %s, "Name" = %s, "Access" = %s, "Communities" = %s, "Friends" = %s WHERE "Login" = %s AND "Password" =  %s`, user.Login, user.Password, user.Name, user.Access, user.Communities, user.Friends, login, password)
+	query := fmt.Sprintf(`UPDATE "Users" SET "Login" = %s, "Password" = %s, "Name" = %s, "Access" = %s, "Communities" = %s, "Friends" = %s "Photo" = %s "Birthdate" = %s WHERE "Login" = %s AND "Password" =  %s`, user.Login, user.Password, user.Name, user.Access, user.Communities, user.Friends, user.Photo, user.Birthdate, login, password)
 	_, err := DB.Query(query)
 	if err != nil {
 		fmt.Println(err)
@@ -305,6 +322,19 @@ func UpdateUserByLogPass(login string, password string, user models.Users) error
 	fmt.Println(query)
 	return nil
 }
+
+func UpdateUserByColumn(column string, value string, login string, pass string) (user models.Users, err error) {
+	query := fmt.Sprintf(`UPDATE "Users" SET %s = %s WHERE "Login" = %s AND "Password" =  %s`, column, value, login, pass)
+	_, err = DB.Query(query)
+	if err != nil {
+		fmt.Println(err)
+		return user, err
+	}
+	fmt.Println(query)
+	return user, err
+}
+
+//Добавить еще обновление фото, имени, доступа
 
 // --------------------Query from Communities table--------------------
 
@@ -319,7 +349,7 @@ func SelectCommunities() []models.Communities {
 		fmt.Println("Error - SelectCommunities()", err.Error())
 	}
 	for rows.Next() {
-		err = rows.Scan(&communities.Name, &communities.Author)
+		err = rows.Scan(&communities.Name, &communities.Author, &communities.Photo)
 		if err != nil {
 			fmt.Println("Error - SelectCommunities() rows.Next()", err.Error())
 		}
@@ -340,7 +370,7 @@ func SelectCommunitiesByColumn(column string, value string) []models.Communities
 		fmt.Println("Error - SelectCommunitiesByColumn()", err.Error())
 	}
 	for rows.Next() {
-		err = rows.Scan(&communities.Name, &communities.Author)
+		err = rows.Scan(&communities.Name, &communities.Author, &communities.Photo)
 		if err != nil {
 			fmt.Println("Error - SelectCommunitiesByColumn() rows.Next()", err.Error())
 		}
@@ -377,7 +407,7 @@ func InsertCommunities(com models.Communities) (models.Communities, error) {
 		return com, err
 	}
 	defer stmt.Close()
-	res, err := stmt.ExecContext(ctx, com.Name, com.Author)
+	res, err := stmt.ExecContext(ctx, com.Name, com.Author, com.Photo)
 	if err != nil {
 		log.Printf("Error %s when inserting row into Communities table", err)
 		return com, err

@@ -1,0 +1,43 @@
+{{ define "setting" }}
+
+{{ template "header" }}
+
+<link rel="stylesheet" href="/assets/css/setting.css">
+<link rel="stylesheet" href="/assets/css/style.css">
+
+<h1 class="title">Настройка страницы</h1>
+<menu style="margin-top: 20vh;">
+    <div class="avatar">
+        <div class="img"><img src="/data/image/blog/ava.jpg" alt=""></div>
+        <div class="name">Бред Пит <br><span id="login">gg@gmail.com</span></div>
+    </div>
+    <div class="data">
+        <form method="get" action="setting/refresh">
+            <div>
+                    <input name="oldPass"  type="password" placeholder="Введите старый пароль">
+                    <input name="newName" type="text" placeholder="Введите новое имя">           
+            </div>
+            <div>
+                    <input name="newPass" type="password" placeholder="Введите новый пароль">
+                    <input name="newHB" type="date" placeholder="Выберите новую дату рождения">
+            </div>
+            
+            <button type="submit" class="custom-btn btn-3"><span>Сохранить изменения</span></button>
+        </form>
+    </div>
+    <a class="back" href="/page"><i class="fa-solid fa-delete-left"></i></a>
+</menu>
+
+<div class="goffer">
+    <img src="/data/image/another/goffer1.png" alt="">
+</div>
+
+<div id="g2">
+    <img src="/data/image/another/goffer2.png" alt="">
+</div>
+
+<script src="/assets/js/style.js"></script>
+
+{{ template "footer" }}
+
+{{ end }}
