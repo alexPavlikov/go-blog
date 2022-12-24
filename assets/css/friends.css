@@ -1,3 +1,96 @@
 .hidden {
     visibility:visible;
 }
+
+.friends {
+    margin: 20px 10%;
+    background-color: rgba(119, 119, 119, 0.450);
+    
+    position: relative;
+    border-radius: 20px;
+    padding: 20px 0;
+}
+
+.friends .friend {
+    margin: 20px 20%;
+    padding: 10px;
+    display: flex;
+    flex-direction: row;
+    width: 60%;
+    background-color: rgb(220, 220, 220);
+    border-radius: 15px;
+}
+
+.friends .friend .info {
+    height: 150px;
+    width: 70%;
+    display: flex;
+    flex-direction: row;
+}
+
+.friends .friend .info .img img {
+    width: 144px;
+    height: 144px;
+    border-radius: 45%;
+}
+
+.friends .friend .info .name {
+    font-size: 20px;
+    font-weight: 700;
+    margin: auto 20px;
+}
+
+.friends .friend .info .name span {
+    font-weight: 100;
+    font-size: 15px;
+}
+
+.friends .friend .menu {
+    width: 30%;
+    height: 100%;
+    height: 150px;
+}
+
+.friends .friend .com div {
+    margin: 33% 0 0 0;
+}
+
+.friends .friend .menu form {
+    width: 100%;
+    height: 50%;
+    text-align: center;
+    margin-top: 4%;
+}
+
+.friends .friend .menu form input {
+    margin: auto 0;
+    padding: 10px;
+    background-color: transparent;
+    border: none;
+    font-size: 20px;
+    color: rgb(60, 161, 255);
+    transition: all .5s linear;
+}
+
+.friends .friend .menu form input:hover {
+    cursor: pointer;
+    color: rgb(255, 255, 255);
+    background-color: rgba(0, 0, 0, 0.459);
+}
+
+.friends .friend .menu form input:active {
+    color: rgba(60, 161, 255, 0.550);
+    opacity: .7;
+}
+
+#communities {
+    color: red;
+    font-size: 16px;
+    text-align: center;
+    width: 100%;
+}
+
+#communities:hover {
+    background-color: rgba(255, 0, 0, 0.250);
+    cursor: pointer;
+}

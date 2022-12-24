@@ -9,6 +9,7 @@ type Posts struct { // structure of the Posts table
 	Date        string
 	Communities string
 	Photo       string
+	Category    string
 }
 
 type Communities struct { // structure of the Communities table
@@ -31,7 +32,6 @@ type Users struct { // structure of the Users table
 	Name        string
 	Access      string
 	Communities string
-	Friends     string
 	Photo       string
 	Birthdate   string
 }

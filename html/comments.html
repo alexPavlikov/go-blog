@@ -1,0 +1,83 @@
+{{ define "comments" }}
+
+{{ template "header" }}
+<link rel="stylesheet" href="/assets/css/comments.css">
+<link rel="stylesheet" href="/assets/css/style.css">
+<link rel="stylesheet" href="/assets/css/blog.css">
+<link rel="stylesheet" href="/assets/css/comments.css">
+
+<header>
+    <div class="brand">
+        <div class="logos">
+            <img src="/data/image/brand.png" alt="">
+            <span>GOLANG</span>
+        </div>
+        <div class="find"><input type="text" placeholder="Найти"></div>
+    </div>
+    <div class="account">
+        <div class="avatar"><img src="/data/image/blog/ava.jpg" alt=""></div>
+        <i class="fa-solid fa-chevron-down" onclick="Check()"></i>
+    </div>
+</header>
+
+<body>
+    <aside class="right">
+        <a href="/page#"><i class="fa-regular fa-circle-user"></i><span> Моя страница</span></a>
+        <a href="/blog"><i class="fa-regular fa-newspaper"></i><span> Новости</span></a>
+        <a href="#"><i class="fa-regular fa-comment"></i><span> Сообщения</span></a>
+        <a href="/friends"><i class="fa-solid fa-user-group"></i><span> Друзья</span></a>
+        <a href="/communities"><i class="fa-solid fa-users"></i><span> Сообщества</span></a>
+        <a href="#">Далее</a>
+        <a href="#">Далее</a>
+        <a href="#">Далее</a>
+        <a href="#">Далее</a>
+    </aside>
+
+    <main>   
+        <div class="commentss">
+            <h1 style="text-align: center; color: aliceblue;">Комментарии к посту "Тема"</h1>
+            <div class="comment">
+                <div class="info">
+                    <div class="img"><img src="/data/image/blog/ava.jpg" alt=""></div>
+                    <div class="name">Джон Стоун</div>
+                    <form  action="" method="post"><button class="form display" type="submit">Удалить</button></form>
+                </div>
+                <div class="content">
+                    <div class="speech">Lorem ipsum dolor sit amet consectetur adipisicing elit. Quidem deleniti magni voluptates, soluta fugit dolore illum eligendi. Officiis alias libero repellat impedit, eaque itaque non temporibus laudantium autem mollitia ipsum?</div>                                 
+                </div>
+            </div>
+            <div class="comment">
+                <div class="info">
+                    <div class="img"><img src="/data/image/blog/ava.jpg" alt=""></div>
+                    <div class="name">Джон Стоун</div>
+                    <form action="" method="post"><button class="form display" type="submit">Удалить</button></form>
+                </div>
+                <div class="content">
+                    <div class="speech">Lorem ipsum dolor sit amet consectetur adipisicing elit. Quidem deleniti magni voluptates, soluta fugit dolore illum eligendi. Officiis alias libero repellat impedit, eaque itaque non temporibus laudantium autem mollitia ipsum?</div>                                 
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <aside id="left" class="left">
+        <div class="setacc">
+            <div class="avatar"><img src="/data/image/blog/ava.jpg" alt=""></div>
+            <div class="info">
+                <div class="name">Александр Павликов</div>
+                <div class="login">+38071451979</div>
+            </div>
+        </div>
+        <div class="settings">
+            <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+            <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
+            <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
+            <a id="exit" href="#"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
+        </div>
+    </aside>
+</body>
+
+<script src="/assets/js/style.js"></script>
+
+{{ template "footer" }}
+
+{{ end }}

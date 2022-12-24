@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"os"
+	"strconv"
 	"text/template"
+	"time"
 
 	"github.com/alexPavlikov/go-blog/database"
 	"github.com/alexPavlikov/go-blog/models"
@@ -16,6 +18,8 @@ import (
 )
 
 var client http.Client
+var postId string
+var id string
 
 func init() {
 	setting.Config()
@@ -48,6 +52,9 @@ func handleRequest() {
 	http.HandleFunc("/page", pageHandler)
 	http.HandleFunc("/setting", settingHandler)
 	http.HandleFunc("/setting/refresh", refreshSettingHandler)
+	http.HandleFunc("/friends", friendsHandler)
+	http.HandleFunc("/communities", communitiesHandler)
+	http.HandleFunc("/blog/comments", commentsHandler)
 }
 
 func logFormHandler(w http.ResponseWriter, r *http.Request) {
@@ -59,13 +66,17 @@ func logFormHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "login", nil)
 }
 
+var userAuth models.Users
+
 func authHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
+	var authLog string
+	var authPass string
+	authLog = r.FormValue("email2")
+	authPass = r.FormValue("pswd2")
 	if r.Method == "GET" { //авторизация пользователя
-		logs := r.FormValue("email2")
-		pass := r.FormValue("pswd2")
-		if logs != "" || pass != "" {
-			fmt.Println("This is auth", logs, pass)
+		if authLog != "" || authPass != "" {
+			fmt.Println("This is auth", authLog, authPass)
 			cookie := &http.Cookie{
 				Name:   "id",
 				Value:  "abcd",
@@ -75,39 +86,40 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 			http.SetCookie(w, cookie)
 		}
 		//if true функция выдачи action для формы в слючие совпадения пароля и логина
-		user, err := database.SelectUserByLogPass(logs, pass)
+		var err error
+		userAuth, err = database.SelectUserByLogPass(authLog, authPass)
 		if err != nil {
 			http.NotFound(w, r)
 			http.Redirect(w, r, "/", http.StatusBadRequest)
 		}
 
-		recordingSessions(fmt.Sprintf("Пользователь, %s (логин - %s, пароль - %s) зашел в аккаунт.\n", user.Name, user.Login, user.Password))
-		http.Redirect(w, r, "/blog", http.StatusOK)
+		recordingSessions(fmt.Sprintf("Пользователь, %s (логин - %s, пароль - %s) зашел в аккаунт в %s.\n", userAuth.Name, userAuth.Login, userAuth.Password, time.Now().Format("2006-01-02 15:04")))
+		http.Redirect(w, r, "/blog", http.StatusSeeOther)
 	}
 }
 
 func regHandler(w http.ResponseWriter, r *http.Request) {
-	var user models.Users
 	r.ParseForm()
+	logs := r.FormValue("email1")
+	pass := r.FormValue("pswd1")
+	txt := r.FormValue("txt")
 	if r.Method == "POST" { // регистрация пользователя
-		logs := r.FormValue("email1")
-		pass := r.FormValue("pswd1")
-		txt := r.FormValue("txt")
 		if logs != "" || pass != "" || txt != "" {
 			fmt.Println("This is reg", logs, pass, txt)
 		}
 		//if true функция выдачи action для формы в слючие совпадения пароля и логина
-		user.Login = logs
-		user.Password = pass
-		user.Name = txt
-		fmt.Println(user)
-		_, err := database.InsertUser(user)
+		userAuth.Login = logs
+		userAuth.Password = pass
+		userAuth.Name = txt
+		userAuth.Access = "User"
+		fmt.Println(userAuth)
+		_, err := database.InsertUser(userAuth)
 		if err != nil {
 			fmt.Println("Error = regHandler() InsertUser()")
 			log.Fatal(err)
 			http.Redirect(w, r, "/", http.StatusBadRequest)
 		}
-		http.Redirect(w, r, "/blog", http.StatusOK)
+		http.Redirect(w, r, "/blog", http.StatusSeeOther)
 	}
 }
 
@@ -154,7 +166,7 @@ func refreshSettingHandler(w http.ResponseWriter, r *http.Request) {
 				http.NotFound(w, r)
 			}
 		}
-		http.Redirect(w, r, "/page", http.StatusOK)
+		http.Redirect(w, r, "/page", http.StatusSeeOther)
 	}
 }
 
@@ -163,9 +175,32 @@ func blogHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.NotFound(w, r)
 	}
+
+	posts := database.SelectPosts()
+
+	if r.Method == "POST" {
+		r.ParseForm()
+		postId = r.FormValue("post_id")
+		fmt.Println("blog", postId)
+		err = database.UpdateViewInPost()
+		if err != nil {
+			fmt.Println("Error - blogHandler() UpdateViewInPost()")
+		}
+	}
+
+	if r.Method == "GET" {
+		val, _ := strconv.Atoi(postId)
+		err := database.UpdateLikeInPost(val)
+		if err != nil {
+			fmt.Println("Error - blogHandler() UpdateLikeInPost()")
+		}
+		postId = ""
+	}
+
 	title := map[string]string{"Title": models.Cfg.BlogTitle}
+	blog := map[string]interface{}{"Post": posts}
 	tmpl.ExecuteTemplate(w, "header", title)
-	tmpl.ExecuteTemplate(w, "blog", nil)
+	tmpl.ExecuteTemplate(w, "blog", blog)
 }
 
 func pageHandler(w http.ResponseWriter, r *http.Request) {
@@ -173,19 +208,76 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.NotFound(w, r)
 	}
-
-	var postId string
-	if r.Method == "POST" {
-		r.ParseForm()
-		postId = r.FormValue("post_id")
-		fmt.Println(postId)
-	}
+	fmt.Println("page", postId)
 	//id, _ := strconv.Atoi(postId)
 	//fmt.Println(id) // Сделать добавления поста на страницу пользователя
 
-	title := map[string]string{"Title": "моя страница"}
+	title := map[string]string{"Title": userAuth.Name}
 	tmpl.ExecuteTemplate(w, "header", title) //сделать запрос на выборку имени пользователя и вставить в title
-	tmpl.ExecuteTemplate(w, "page", nil)
+
+	fmt.Println(userAuth)
+	sendUser := map[string]interface{}{"User": userAuth}
+	tmpl.ExecuteTemplate(w, "page", sendUser)
+}
+
+func commentsHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/comments.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+	fmt.Println("comments", postId)
+	txt := "Комментарии к " + postId
+	title := map[string]string{"Title": txt}
+	// data := database.SelectCommentsByColumn("Posts", postId)
+	// comment := map[string]interface{}{"Comments": data}
+	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "comments", nil)
+}
+
+func friendsHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/friends.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+
+	r.ParseForm()
+	if r.Method == "POST" {
+		id = r.FormValue("friend_id")
+		fmt.Println(id)
+		// err := database.DeleteFriendsById(id)
+		// if err != nil {
+		// 	fmt.Println("Error - friendsDelHandler() DeleteFriendsById()")
+		// }
+	}
+
+	title := map[string]string{"Title": models.Cfg.FriendsTitile}
+	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "friends", nil)
+}
+
+func communitiesHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/communities.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+
+	if r.Method == "GET" {
+		r.ParseForm()
+		data := r.FormValue("name_com")
+		fmt.Println("GET", data)
+		//if data != "" {
+		// err := database.DeleteCommunitiesByName()
+		// if err != nil {
+		// 	fmt.Println("Error - communitiesHandler() DeleteCommunitiesByName()")
+		// } else {
+		//	http.Redirect(w, r, "/page", http.StatusSeeOther)
+		//}
+		//}
+	}
+
+	title := map[string]string{"Title": models.Cfg.CommunitiesTitile}
+	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "communities", nil)
 }
 
 func Cookies() { // доделать/сделать
@@ -202,12 +294,15 @@ func Cookies() { // доделать/сделать
 
 func recordingSessions(session string) {
 	fmt.Println(session)
-	file, err := os.Open("/data/files/list of visits.txt")
+	file, err := os.OpenFile("C:/Users/admin/go/src/go-blog/data/files/listOfVisits.txt", os.O_WRONLY|os.O_APPEND, 0755)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 	defer file.Close()
 	data := []byte(session)
-	file.Write(data)
+	_, err = file.Write(data)
+	if err != nil {
+		fmt.Println(err)
+	}
 }

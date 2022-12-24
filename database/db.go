@@ -29,7 +29,7 @@ func Connect() (*sql.DB, error) {
 */
 func SelectPosts() []models.Posts {
 
-	rows, err := DB.Query(`SELECT * FROM "Posts"`)
+	rows, err := DB.Query(`SELECT * FROM "Posts" ORDER BY "View" DESC`)
 	if err != nil {
 		fmt.Println("Error - selectPosts()", err.Error())
 	}
@@ -39,7 +39,7 @@ func SelectPosts() []models.Posts {
 
 	for rows.Next() {
 
-		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo)
+		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo, &post.Category)
 		if err != nil {
 			fmt.Println("Error - selectPosts() / rows.Next()", err.Error())
 		}
@@ -162,8 +162,8 @@ func UpdatePostById(id string, post models.Posts) error {
 /*
 Функция обновления лайков поста в таблице Posts по определенному Id
 */
-func UpdateLikeInPost(id string) error {
-	query := fmt.Sprintf(`UPDATE "Posts" SET "Like" = "Like" + 1 WHERE "Id" = %s`, id)
+func UpdateLikeInPost(id int) error {
+	query := fmt.Sprintf(`UPDATE "Posts" SET "Like" = "Like" + 1 WHERE "Id" = '%d'`, id)
 	_, err := DB.Query(query)
 	if err != nil {
 		fmt.Println(err)
@@ -174,10 +174,10 @@ func UpdateLikeInPost(id string) error {
 }
 
 /*
-Функция обновления просмотров поста в таблице Posts по определенному Id
+Функция обновления просмотров поста в таблице Posts
 */
-func UpdateViewInPost(id string) error {
-	query := fmt.Sprintf(`UPDATE "Posts" SET "View" = "View" + 1 WHERE "Id" = %s`, id)
+func UpdateViewInPost() error {
+	query := `UPDATE "Posts" SET "View" = "View" + 1`
 	_, err := DB.Query(query)
 	if err != nil {
 		fmt.Println(err)
@@ -214,7 +214,7 @@ func SelectUsers() []models.Users {
 	var user models.Users
 	var users []models.Users
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Communities, &user.Friends, &user.Photo, &user.Birthdate)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Communities, &user.Photo, &user.Birthdate)
 		if err != nil {
 			fmt.Println("Error - SelectUser() rows.Next()", err.Error())
 		}
@@ -227,17 +227,17 @@ func SelectUsers() []models.Users {
 Функция выборки пользователя из таблицы Users по определенному Login и Password
 */
 func SelectUserByLogPass(log string, pass string) (user models.Users, err error) {
-	query := fmt.Sprintf(`SELECT * FORM "Users" WHERE "Login" = %s AND "Password" = %s`, log, pass)
+	query := fmt.Sprintf(`SELECT * FROM "Users" WHERE "Login" = '%s' AND "Password" = '%s'`, log, pass)
+	fmt.Println(query)
 	rows, err := DB.Query(query)
 	if err != nil {
-		fmt.Println("Error - SelectUsetByLogPass()")
+		fmt.Println("Error - SelectUserByLogPass()", err)
 		return user, err
 	}
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Communities, &user.Friends, &user.Photo, &user.Birthdate)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Communities, &user.Photo, &user.Birthdate)
 		if err != nil {
-			fmt.Println("Error - SelectUsetByLogPass() rows.Next()")
-			return user, err
+			fmt.Println("Error - SelectUserByLogPass() rows.Next()", err)
 		}
 	}
 	return user, nil
@@ -257,7 +257,7 @@ func SelectUsersByColumn(column string, value string) ([]models.Users, error) {
 	}
 
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Communities, &user.Friends, &user.Photo, &user.Birthdate)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Communities, &user.Photo, &user.Birthdate)
 		if err != nil {
 			fmt.Println("Error - SelectUsersByColumn() rows.Next()", err.Error())
 			return users, err
@@ -271,7 +271,7 @@ func SelectUsersByColumn(column string, value string) ([]models.Users, error) {
 Функция удаления пользователя из таблицы Users по определенному Login
 */
 func DeleteUserByLogin(login string) error {
-	res, err := DB.Exec(`DELETE FORM "Users" WHERE "Login" = ($1)`, login)
+	res, err := DB.Exec(`DELETE FROM "Users" WHERE "Login" = ($1)`, login)
 	if err == nil {
 		count, err := res.RowsAffected()
 		if err == nil {
@@ -286,7 +286,7 @@ func DeleteUserByLogin(login string) error {
 Функция добавления пользователя в таблицу Users по введенным значениям
 */
 func InsertUser(user models.Users) (models.Users, error) {
-	query := `INSERT INTO "Users"("Login", "Password", "Name", "Access", "Communities", "Friends", "Photo", "Birthdate") VALUES ($1, $2, $3, $4, $5, $6, $7, &8)`
+	query := `INSERT INTO "Users"("Login", "Password", "Name", "Access") VALUES ($1, $2, $3, $4)`
 	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
 	stmt, err := DB.PrepareContext(ctx, query)
@@ -295,7 +295,7 @@ func InsertUser(user models.Users) (models.Users, error) {
 		return user, err
 	}
 	defer stmt.Close()
-	res, err := stmt.ExecContext(ctx, user.Login, user.Password, user.Name, user.Access, user.Communities, user.Friends, user.Photo, user.Birthdate)
+	res, err := stmt.ExecContext(ctx, user.Login, user.Password, user.Name, user.Access)
 	if err != nil {
 		log.Printf("Error %s when inserting row into User table", err)
 		return user, err
@@ -305,7 +305,7 @@ func InsertUser(user models.Users) (models.Users, error) {
 		log.Printf("Error %s when finding rows affected", err)
 		return user, err
 	}
-	log.Printf("%d post created ", rows)
+	log.Printf("%d user created ", rows)
 	return user, nil
 }
 
@@ -313,7 +313,7 @@ func InsertUser(user models.Users) (models.Users, error) {
 Функция обновления пользователя из таблицы Users по введенным Login и Password
 */
 func UpdateUserByLogPass(login string, password string, user models.Users) error {
-	query := fmt.Sprintf(`UPDATE "Users" SET "Login" = %s, "Password" = %s, "Name" = %s, "Access" = %s, "Communities" = %s, "Friends" = %s "Photo" = %s "Birthdate" = %s WHERE "Login" = %s AND "Password" =  %s`, user.Login, user.Password, user.Name, user.Access, user.Communities, user.Friends, user.Photo, user.Birthdate, login, password)
+	query := fmt.Sprintf(`UPDATE "Users" SET "Login" = %s, "Password" = %s, "Name" = %s, "Access" = %s, "Communities" = %s, "Photo" = %s "Birthdate" = %s WHERE "Login" = %s AND "Password" =  %s`, user.Login, user.Password, user.Name, user.Access, user.Communities, user.Photo, user.Birthdate, login, password)
 	_, err := DB.Query(query)
 	if err != nil {
 		fmt.Println(err)
@@ -323,6 +323,10 @@ func UpdateUserByLogPass(login string, password string, user models.Users) error
 	return nil
 }
 
+/*
+Функция-конструктор, вводится два значения column и value и подставляются в запрос,
+что позволяет не писать повторяющие запросы SELECT
+*/
 func UpdateUserByColumn(column string, value string, login string, pass string) (user models.Users, err error) {
 	query := fmt.Sprintf(`UPDATE "Users" SET %s = %s WHERE "Login" = %s AND "Password" =  %s`, column, value, login, pass)
 	_, err = DB.Query(query)
@@ -344,7 +348,7 @@ func UpdateUserByColumn(column string, value string, login string, pass string) 
 func SelectCommunities() []models.Communities {
 	var communities models.Communities
 	var communitiesArr []models.Communities
-	rows, err := DB.Query(`SELECT * FORM "Communities"`)
+	rows, err := DB.Query(`SELECT * FROM "Communities"`)
 	if err != nil {
 		fmt.Println("Error - SelectCommunities()", err.Error())
 	}
@@ -365,7 +369,7 @@ func SelectCommunities() []models.Communities {
 func SelectCommunitiesByColumn(column string, value string) []models.Communities {
 	var communities models.Communities
 	var communitiesArr []models.Communities
-	rows, err := DB.Query(fmt.Sprintf(`SELECT * FORM "Communities" WHERE "%s" = %s`, column, value))
+	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "Communities" WHERE "%s" = %s`, column, value))
 	if err != nil {
 		fmt.Println("Error - SelectCommunitiesByColumn()", err.Error())
 	}
@@ -383,7 +387,7 @@ func SelectCommunitiesByColumn(column string, value string) []models.Communities
 Функция удаления сообщества из таблицы Communities по введенному имени
 */
 func DeleteCommunitiesByName(name string) error {
-	res, err := DB.Exec(`DELETE FORM "Communities" WHERE "Name" = ($1)`, name)
+	res, err := DB.Exec(`DELETE FROM "Communities" WHERE "Name" = ($1)`, name)
 	if err == nil {
 		count, err := res.RowsAffected()
 		if err == nil {
@@ -447,7 +451,7 @@ func SelectAccess() []models.Access {
 Функция удаления доступа из таблицы Access
 */
 func DeleteAccess(name string) error {
-	res, err := DB.Exec(`DELETE FORM "Access" WHERE "Name" = ($1)`, name)
+	res, err := DB.Exec(`DELETE FROM "Access" WHERE "Name" = ($1)`, name)
 	if err == nil {
 		count, err := res.RowsAffected()
 		if err == nil {
@@ -507,7 +511,7 @@ func InsertAccess(access models.Access) (models.Access, error) {
 func SelectComments() []models.Comments {
 	var comment models.Comments
 	var comments []models.Comments
-	rows, err := DB.Query(`SELECT * FORM "Comments"`)
+	rows, err := DB.Query(`SELECT * FROM "Comments"`)
 	if err != nil {
 		fmt.Println("Error - SelectComments()")
 	}
@@ -528,7 +532,7 @@ func SelectComments() []models.Comments {
 func SelectCommentsByColumn(column string, value string) []models.Comments {
 	var comment models.Comments
 	var comments []models.Comments
-	rows, err := DB.Query(fmt.Sprintf(`SELECT * FORM "Comments" WHERE "%s" = %s`, column, value))
+	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "Comments" WHERE "%s" = %s`, column, value))
 	if err != nil {
 		fmt.Println("Error - SelectCommentsByColumn()")
 	}
@@ -546,7 +550,7 @@ func SelectCommentsByColumn(column string, value string) []models.Comments {
 Функция удаления комментария из таблицы Comments по введенному Id
 */
 func DeleteCommentsById(id uint) error {
-	res, err := DB.Exec(`DELETE FORM "Comments" WHERE "Id" = ($1)`, id)
+	res, err := DB.Exec(`DELETE FROM "Comments" WHERE "Id" = ($1)`, id)
 	if err == nil {
 		count, err := res.RowsAffected()
 		if err == nil {
@@ -695,7 +699,7 @@ func SelectStatus() []models.Status {
 Функция удаления статуса из таблицы Status
 */
 func DeleteStatus(name string) error {
-	res, err := DB.Exec(`DELETE FORM "Status" WHERE "Name" = ($1)`, name)
+	res, err := DB.Exec(`DELETE FROM "Status" WHERE "Name" = ($1)`, name)
 	if err == nil {
 		count, err := res.RowsAffected()
 		if err == nil {

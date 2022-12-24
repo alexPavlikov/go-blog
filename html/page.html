@@ -23,8 +23,8 @@
         <a href="/page#"><i class="fa-regular fa-circle-user"></i><span> Моя страница</span></a>
         <a href="/blog"><i class="fa-regular fa-newspaper"></i><span> Новости</span></a>
         <a href="#"><i class="fa-regular fa-comment"></i><span> Сообщения</span></a>
-        <a href="#"><i class="fa-solid fa-user-group"></i><span> Друзья</span></a>
-        <a href="#"><i class="fa-solid fa-users"></i><span> Сообщества</span></a>
+        <a href="/friends"><i class="fa-solid fa-user-group"></i><span> Друзья</span></a>
+        <a href="/communities"><i class="fa-solid fa-users"></i><span> Сообщества</span></a>
         <a href="#">Далее</a>
         <a href="#">Далее</a>
         <a href="#">Далее</a>
@@ -32,15 +32,15 @@
     </aside>
     <main>
         <section>
-            <img src="/data/image/blog/ava.jpg" alt="">
-            <div class="name">Бред Пит</div>
+            <img src="/data/image/blog/standart_avatar.png" alt="">
+            <div class="name">{{ .User.Name }}</div>
         </section>
         <div class="news">
-            <div class="post">
+            <div class="post" id="123">
                 <div class="communities">
                     <div class="avatar"><img src="/data/image/blog/ava.jpg" alt=""></div>
                     <div class="name">
-                        <div>Название группы</div>
+                        <div>Название группы <span><a style="text-decoration: none; color: black;" href="/blog#123">Заголовок поста</a></span></div>
                         <label>19:30</label>
                     </div>
                 </div>
@@ -48,16 +48,16 @@
                 <div class="image"><img src="/data/image/blog/test.jpeg" alt=""></div>
                 <div class="statistics">
                     <div>
-                        <span><i class="fa-regular fa-heart"></i></span>
-                        <span><i class="fa-regular fa-message"></i></span>
-                        <span><i class="fa-regular fa-paper-plane"></i></span>
+                        <a href="blog" id="123"  class="spans span spany" style="color: #fff; text-decoration: none;"><i style="margin-right: 5px;" class="fa-regular fa-heart"></i>10</a>
+                        <a href="blog/comments"  id="123" class="spans span spany" type="submit"><i class="fa-regular fa-message"></i></a>     
+                        <a href="page" id="123" class="spans span" type="submit"><i class="fa-regular fa-paper-plane"></i></a> 
                     </div>
                     
                     <i class="fa-solid fa-eye">3123</i>
                 </div>
                 <div class="comments">
                     <form action="" method="post">
-                        <input type="text" placeholder="Оставьте комментарий">
+                        <input type="text" placeholder="Оставить комментарий">
                         <button type="submit"><i class="fa-solid fa-reply"></i></button>
                     </form>
                 </div>
@@ -67,7 +67,7 @@
     </main>
     <aside id="left" class="left">
         <div class="setacc">
-            <div class="avatar"><img src="/data/image/blog/ava.jpg" alt=""></div>
+            <div class="avatar"><img src="/data/image/blog/standart_avatar.png" alt=""></div>
             <div class="info">
                 <div class="name">Александр Павликов</div>
                 <div class="login">+38071451979</div>
@@ -81,13 +81,6 @@
         </div>
     </aside>
 </body>
-
-
-<script >
-    function Check() {
-        document.getElementById('left').classList.toggle("hidden");
-    }
-</script>
 
 {{ template "footer" }}
 

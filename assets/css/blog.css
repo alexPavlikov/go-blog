@@ -22,7 +22,7 @@ aside {
 .right {
     margin-top: 90px;
     position: relative;
-    right: -300px;
+    
     height: 60vh;
     display: flex;
     flex-direction: column;
@@ -34,6 +34,7 @@ aside {
     position: relative;
     right: 0;
     padding: 10px 0;
+    margin-left: 200px;
     text-decoration: none;
     color: rgb(0, 0, 0);
     transition: all .2s linear;
@@ -57,8 +58,8 @@ aside {
     margin-top: 20px;
     display: flex;
     flex-direction: column;
-    height: 440px;
-    width: 600px;
+    height: 550px;
+    width: 700px;
     border-radius: 15px;
     padding: 20px;
 }
@@ -99,6 +100,14 @@ aside {
     font-size: 16px;
     font-weight: 700;
 }
+
+.communities .name div span {
+    float: right;
+    font-size: 22px;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
 .communities .name label {
     font-size: 14px;
     height: 50%;
@@ -127,6 +136,8 @@ aside {
     padding: 3px 0;
     display: flex;
     flex-direction: row;
+    position: relative;
+    width: 100%;
 }
 
 .statistics div {
@@ -137,24 +148,33 @@ aside {
 }
 
 .statistics .fa-solid {
-    margin-top: 12px;
+    width: 40%;
+    margin-top: 25px;
     position: relative;
-    right: -170px;
+    text-align: end;
     font-size: 15px;
 }
 
 .statistics div span {
     border-radius: 10px;
     padding: 5px 14px 5px 10px;
-    background-color: gray;
+    background-color: rgba(128, 128, 128, 0.5);
     opacity: .8;
     margin-right: 15px;
+}
+
+.statistics div span:hover {
+    background-color: gray;
+}
+
+.statistics div span:active {
+    opacity: .7;
 }
 
 .statistics div span i {
     color: #fff;
     font-size: 18px;
-    margin: 1px 0px 1px 5px;
+    margin: 6px 0px 1px 5px;
 
 }
 
@@ -176,7 +196,7 @@ aside {
 
 .comments form input {
     width: 82%;
-    padding: 3px 5px;
+    padding: 6px 8px;
     font-size: 18px;
     border-top-left-radius: 5px;
     border-bottom-left-radius: 5px;
@@ -193,6 +213,7 @@ aside {
     border-bottom-right-radius: 5px;
     border: 1px solid #777;
     border-left: none;
+    font-size: 20px;
 }
 
 .comments form button:hover {
@@ -265,21 +286,26 @@ aside {
     color: rgb(255, 0, 13);
 }
 
-.span {
+.spans {
     border-radius: 10px;
-    padding: 5px 7px;
-    background-color: gray;
+    padding: 10px 15px 0 7px;
+    background-color: rgba(128, 128, 128, 0.5);
     opacity: .8;
-    padding-right: 15px;
+    margin-right: 15px;
     border: none;
 }
 
-.span i {
+.spans i {
     color: #fff;
     font-size: 18px;
     margin: 1px 0px 1px 5px;
 }
 
-.span:hover {
+.spans:hover {
+    background-color: gray;
     cursor: pointer;
+}
+
+.spans:active {
+    opacity: .7;
 }
