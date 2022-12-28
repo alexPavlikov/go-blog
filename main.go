@@ -54,7 +54,7 @@ func handleRequest() {
 	http.HandleFunc("/setting/refresh", refreshSettingHandler)
 	http.HandleFunc("/friends", friendsHandler)
 	http.HandleFunc("/communities", communitiesHandler)
-	http.HandleFunc("/blog/comments", commentsHandler)
+	http.HandleFunc("/comments", commentsHandler)
 }
 
 func logFormHandler(w http.ResponseWriter, r *http.Request) {
@@ -129,8 +129,9 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 	}
 	title := map[string]string{"Title": models.Cfg.SettingTitle}
+	account := map[string]interface{}{"User": userAuth}
 	tmpl.ExecuteTemplate(w, "header", title)
-	tmpl.ExecuteTemplate(w, "setting", nil)
+	tmpl.ExecuteTemplate(w, "setting", account)
 }
 
 func refreshSettingHandler(w http.ResponseWriter, r *http.Request) {
@@ -178,6 +179,15 @@ func blogHandler(w http.ResponseWriter, r *http.Request) {
 
 	posts := database.SelectPosts()
 
+	if r.Method == "GET" {
+		val, _ := strconv.Atoi(postId)
+		err := database.UpdateLikeInPost(val)
+		if err != nil {
+			fmt.Println("Error - blogHandler() UpdateLikeInPost()")
+		}
+		postId = ""
+	}
+
 	if r.Method == "POST" {
 		r.ParseForm()
 		postId = r.FormValue("post_id")
@@ -188,17 +198,8 @@ func blogHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if r.Method == "GET" {
-		val, _ := strconv.Atoi(postId)
-		err := database.UpdateLikeInPost(val)
-		if err != nil {
-			fmt.Println("Error - blogHandler() UpdateLikeInPost()")
-		}
-		postId = ""
-	}
-
 	title := map[string]string{"Title": models.Cfg.BlogTitle}
-	blog := map[string]interface{}{"Post": posts}
+	blog := map[string]interface{}{"Post": posts, "User": userAuth}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "blog", blog)
 }
@@ -213,9 +214,8 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 	//fmt.Println(id) // Сделать добавления поста на страницу пользователя
 
 	title := map[string]string{"Title": userAuth.Name}
-	tmpl.ExecuteTemplate(w, "header", title) //сделать запрос на выборку имени пользователя и вставить в title
+	tmpl.ExecuteTemplate(w, "header", title)
 
-	fmt.Println(userAuth)
 	sendUser := map[string]interface{}{"User": userAuth}
 	tmpl.ExecuteTemplate(w, "page", sendUser)
 }
@@ -226,12 +226,13 @@ func commentsHandler(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 	}
 	fmt.Println("comments", postId)
-	txt := "Комментарии к " + postId
-	title := map[string]string{"Title": txt}
-	// data := database.SelectCommentsByColumn("Posts", postId)
-	// comment := map[string]interface{}{"Comments": data}
+	commentPost := database.SelectCommentsByColumn("Posts", postId)
+	post := database.SelectPostById(postId)
+	//comment := map[string]interface{}{"Comments": commentPost}
+	data := map[string]interface{}{"User": userAuth, "Comments": commentPost, "CommentsTitle": post.Title}
+	title := map[string]interface{}{"Title": models.Cfg.CommentsTitle}
 	tmpl.ExecuteTemplate(w, "header", title)
-	tmpl.ExecuteTemplate(w, "comments", nil)
+	tmpl.ExecuteTemplate(w, "comments", data)
 }
 
 func friendsHandler(w http.ResponseWriter, r *http.Request) {
@@ -250,9 +251,11 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) {
 		// }
 	}
 
+	friends := database.SelectAllFriendsUser(userAuth.Login)
+	data := map[string]interface{}{"User": userAuth, "Friends": friends}
 	title := map[string]string{"Title": models.Cfg.FriendsTitile}
 	tmpl.ExecuteTemplate(w, "header", title)
-	tmpl.ExecuteTemplate(w, "friends", nil)
+	tmpl.ExecuteTemplate(w, "friends", data)
 }
 
 func communitiesHandler(w http.ResponseWriter, r *http.Request) {
@@ -274,10 +277,11 @@ func communitiesHandler(w http.ResponseWriter, r *http.Request) {
 		//}
 		//}
 	}
-
+	communities := database.SelectAllCommunitiesUser("User", userAuth.Login)
+	data := map[string]interface{}{"User": userAuth, "Communities": communities}
 	title := map[string]string{"Title": models.Cfg.CommunitiesTitile}
 	tmpl.ExecuteTemplate(w, "header", title)
-	tmpl.ExecuteTemplate(w, "communities", nil)
+	tmpl.ExecuteTemplate(w, "communities", data)
 }
 
 func Cookies() { // доделать/сделать

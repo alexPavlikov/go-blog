@@ -13,7 +13,7 @@
         <div class="find"><input type="text" placeholder="Найти"></div>
     </div>
     <div class="account">
-        <div class="avatar"><img src="/data/image/blog/ava.jpg" alt=""></div>
+        <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
         <i class="fa-solid fa-chevron-down" onclick="Check()"></i>
     </div>
 </header>
@@ -25,14 +25,14 @@
         <a href="#"><i class="fa-regular fa-comment"></i><span> Сообщения</span></a>
         <a href="/friends"><i class="fa-solid fa-user-group"></i><span> Друзья</span></a>
         <a href="/communities"><i class="fa-solid fa-users"></i><span> Сообщества</span></a>
-        <a href="#">Далее</a>
-        <a href="#">Далее</a>
-        <a href="#">Далее</a>
+        <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+        <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
+        <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
         <a href="#">Далее</a>
     </aside>
     <main>
         <section>
-            <img src="/data/image/blog/standart_avatar.png" alt="">
+            <img src="{{ .User.Photo }}" alt="">
             <div class="name">{{ .User.Name }}</div>
         </section>
         <div class="news">
@@ -67,17 +67,17 @@
     </main>
     <aside id="left" class="left">
         <div class="setacc">
-            <div class="avatar"><img src="/data/image/blog/standart_avatar.png" alt=""></div>
+            <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
             <div class="info">
-                <div class="name">Александр Павликов</div>
-                <div class="login">+38071451979</div>
+                <div class="name">{{ .User.Name }}</div>
+                <div class="login">{{ .User.Login }}</div>
             </div>
         </div>
         <div class="settings">
             <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
             <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
             <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
-            <a id="exit" href="#"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
+            <a id="exit" href="/"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
         </div>
     </aside>
 </body>

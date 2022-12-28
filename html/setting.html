@@ -8,8 +8,8 @@
 <h1 class="title">Настройка страницы</h1>
 <menu style="margin-top: 20vh;">
     <div class="avatar">
-        <div class="img"><img src="/data/image/blog/ava.jpg" alt=""></div>
-        <div class="name">Бред Пит <br><span id="login">gg@gmail.com</span></div>
+        <div class="img"><img src="{{ .User.Photo }}" alt=""></div>
+        <div class="name">{{ .User.Name }} <br><span id="login">{{ .User.Login }}</span></div>
     </div>
     <div class="data">
         <form method="get" action="setting/refresh">

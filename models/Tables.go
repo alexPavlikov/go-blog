@@ -13,9 +13,18 @@ type Posts struct { // structure of the Posts table
 }
 
 type Communities struct { // structure of the Communities table
-	Name   string
-	Author string
-	Photo  string
+	Name     string
+	Author   string
+	Photo    string
+	Category string
+}
+
+type JoinCommunities struct {
+	Communities string
+	User        string
+	Photo       string
+	Author      string
+	Category    string
 }
 
 type Comments struct { // structure of the Comments table
@@ -26,6 +35,15 @@ type Comments struct { // structure of the Comments table
 	Author string
 }
 
+type JoinComments struct { // structure of the Comments table
+	Posts  uint
+	Author string
+	Name   string
+	Photo  string
+	Text   string
+	Like   uint
+}
+
 type Users struct { // structure of the Users table
 	Login       string
 	Password    string
@@ -34,6 +52,15 @@ type Users struct { // structure of the Users table
 	Communities string
 	Photo       string
 	Birthdate   string
+}
+
+type JoinUser struct {
+	Login     string
+	Friend    string
+	Status    string
+	Name      string
+	Photo     string
+	Birthdate string
 }
 
 type Friends struct { // structure of the Friends table

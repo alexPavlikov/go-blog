@@ -17,7 +17,7 @@
         <div class="find"><input type="text" placeholder="Найти"></div>
     </div>
     <div class="account">
-        <div class="avatar"><img src="/data/image/blog/ava.jpg" alt=""></div>
+        <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
         <i class="fa-solid fa-chevron-down" onclick="Check()"></i>
     </div>
 </header>
@@ -35,37 +35,42 @@
         <a href="#">Далее</a>
     </aside>
 
-    <main>   
+    <main style="height:100%">   
         <div class="friends">
+            {{ range $_, $c := .Communities }}
+           
             <div class="friend">
                 <div class="info">
-                    <div class="img"><img src="/data/image/blog/ava.jpg" alt=""></div>
-                    <div class="name">Джон Стоун <br><span>тематика</span></div>
+                    <div class="img"><img src="{{ $c.Photo }}" alt=""></div>
+                    <div class="name">{{ $c.Communities }} <br><span>{{ $c.Category }}</span></div>
                 </div>
                 <div class="menu com">
-                    <div>Подписчиков: <span>32131</span></div>
-                    <form action="" method="get"><input name="Джон Стоун" id="communities" type="submit" value="Отписаться"></form>        
+                    <div></div>
+                    <form action="" method="get"><input name="{{ $c.Communities }}" id="communities" type="submit" value="Отписаться"></form>        
                 </div>
             </div>
+            {{ end }}
         </div>
     </main>
 
     <aside id="left" class="left">
         <div class="setacc">
-            <div class="avatar"><img src="/data/image/blog/ava.jpg" alt=""></div>
+            <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
             <div class="info">
-                <div class="name">Александр Павликов</div>
-                <div class="login">+38071451979</div>
+                <div class="name">{{ .User.Name }}</div>
+                <div class="login">{{ .User.Login }}</div>
             </div>
         </div>
         <div class="settings">
             <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
             <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
             <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
-            <a id="exit" href="#"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
+            <a id="exit" href="/"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
         </div>
     </aside>
 </body>
+
+<script src="/assets/js/style.js"></script>
 
 <script>
         $(document).ready(function(){

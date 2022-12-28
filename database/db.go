@@ -59,7 +59,7 @@ func SelectPostById(id string) models.Posts {
 		fmt.Println("Error - SelectPostById()", err.Error())
 	}
 	for rows.Next() {
-		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo)
+		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo, &post.Category)
 		if err != nil {
 			fmt.Println("Error - SelectPostById() / rows.Next()", err.Error())
 		}
@@ -79,7 +79,7 @@ func SelectPostByCommunities(communities string) []models.Posts {
 		fmt.Println("Error - SelectPostByCommunities()", err.Error())
 	}
 	for rows.Next() {
-		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo)
+		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo, &post.Category)
 		if err != nil {
 			fmt.Println("Error - SelectPostByCommunities() / rows.Next()", err.Error())
 		}
@@ -353,7 +353,7 @@ func SelectCommunities() []models.Communities {
 		fmt.Println("Error - SelectCommunities()", err.Error())
 	}
 	for rows.Next() {
-		err = rows.Scan(&communities.Name, &communities.Author, &communities.Photo)
+		err = rows.Scan(&communities.Name, &communities.Author, &communities.Photo, &communities.Category)
 		if err != nil {
 			fmt.Println("Error - SelectCommunities() rows.Next()", err.Error())
 		}
@@ -374,13 +374,62 @@ func SelectCommunitiesByColumn(column string, value string) []models.Communities
 		fmt.Println("Error - SelectCommunitiesByColumn()", err.Error())
 	}
 	for rows.Next() {
-		err = rows.Scan(&communities.Name, &communities.Author, &communities.Photo)
+		err = rows.Scan(&communities.Name, &communities.Author, &communities.Photo, &communities.Category)
 		if err != nil {
 			fmt.Println("Error - SelectCommunitiesByColumn() rows.Next()", err.Error())
 		}
 		communitiesArr = append(communitiesArr, communities)
 	}
 	return communitiesArr
+}
+
+/*
+Функция выборки все сообщества из таблицы Communities определенного пользователя
+SELECT  "Subscribers"."Communities", "Subscribers"."User",
+
+	"Communities"."Photo", "Communities"."Author", "Communities"."Category"
+
+FROM "Subscribers"
+JOIN "Communities" ON "Communities"."Name" = "Subscribers"."Communities"
+WHERE "Subscribers"."User" = 'a.pavlikov2002@gmail.com';
+*/
+func SelectAllCommunitiesUser(column string, key string) []models.JoinCommunities {
+	var communitie models.JoinCommunities
+	var communities []models.JoinCommunities
+	query := fmt.Sprintf(`
+		SELECT "Subscribers"."Communities", "Subscribers"."User",
+		"Communities"."Photo", "Communities"."Author", "Communities"."Category"
+		FROM "Subscribers"
+		JOIN "Communities" ON "Communities"."Name" = "Subscribers"."Communities"
+		WHERE "Subscribers"."%s" = '%s';
+	`, column, key)
+	rows, err := DB.Query(query)
+	if err != nil {
+		fmt.Println("Error - SelectFriendsByColumn()", err.Error())
+	}
+	for rows.Next() {
+		err = rows.Scan(&communitie.Communities, &communitie.User, &communitie.Photo, &communitie.Author, &communitie.Category)
+		if err != nil {
+			fmt.Println("Error - SelectFriendsByColumn() rows.Next()", err.Error())
+		}
+		communities = append(communities, communitie)
+	}
+	return communities
+}
+
+func SelectCountSubscribersByCommunities(name string) (count uint) {
+	query := fmt.Sprintf(`SELECT count(*) FROM "Subscribers" WHERE "Communities" = '%s'`, name)
+	rows, err := DB.Query(query)
+	if err != nil {
+		fmt.Println("Error - SelectFriendsByColumn()", err.Error())
+	}
+	for rows.Next() {
+		err = rows.Scan(count)
+		if err != nil {
+			fmt.Println("Error - SelectFriendsByColumn() rows.Next()", err.Error())
+		}
+	}
+	return count
 }
 
 /*
@@ -529,15 +578,20 @@ func SelectComments() []models.Comments {
 Функция-конструктор, вводится два значения column и value и подставляются в запрос,
 что позволяет не писать повторяющие запросы SELECT
 */
-func SelectCommentsByColumn(column string, value string) []models.Comments {
-	var comment models.Comments
-	var comments []models.Comments
-	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "Comments" WHERE "%s" = %s`, column, value))
-	if err != nil {
-		fmt.Println("Error - SelectCommentsByColumn()")
-	}
+func SelectCommentsByColumn(column string, value string) []models.JoinComments {
+	var comment models.JoinComments
+	var comments []models.JoinComments
+	rows, _ := DB.Query(fmt.Sprintf(
+		`SELECT "Comments"."Posts", "Comments"."Author", "Users"."Name" , "Users"."Photo",
+		"Comments"."Text", "Comments"."Like"
+		FROM "Users"
+		JOIN "Comments" ON "Comments"."Author" = "Users"."Login"
+		WHERE "Comments"."%s" = '%s'`, column, value))
+	// if err != nil {
+	// 	fmt.Println("Error - SelectCommentsByColumn()")
+	// }
 	for rows.Next() {
-		err = rows.Scan(&comment.Id, &comment.Posts, &comment.Text, &comment.Like, &comment.Author)
+		err = rows.Scan(&comment.Posts, &comment.Author, &comment.Name, &comment.Photo, &comment.Text, &comment.Like)
 		if err != nil {
 			fmt.Println("Error - SelectCommentsByColumn() rows.Next()")
 		}
@@ -614,15 +668,44 @@ func SelectFriends() []models.Friends {
 Функция-конструктор, вводится два значения column и value и подставляются в запрос,
 что позволяет не писать повторяющие запросы SELECT
 */
-func SelectFriendsByColumn() []models.Friends {
+func SelectFriendsByColumn(column string, value string) []models.Friends {
 	var friend models.Friends
 	var friends []models.Friends
-	rows, err := DB.Query(`SELECT * FROM "Friends" WHERE "%s" = %s`)
+	query := fmt.Sprintf(`SELECT * FROM "Friends" WHERE "%s" = '%s'`, column, value)
+	fmt.Println(query)
+	rows, err := DB.Query(query)
 	if err != nil {
 		fmt.Println("Error - SelectFriendsByColumn()", err.Error())
 	}
 	for rows.Next() {
 		err = rows.Scan(&friend.Id, &friend.Login, &friend.Status, &friend.Friend)
+		if err != nil {
+			fmt.Println("Error - SelectFriendsByColumn() rows.Next()", err.Error())
+		}
+		friends = append(friends, friend)
+	}
+	return friends
+}
+
+/*
+Функция выборки всех друзей из таблицы Friends определенного пользователя
+*/
+func SelectAllFriendsUser(key string) []models.JoinUser {
+	var friend models.JoinUser
+	var friends []models.JoinUser
+	query := fmt.Sprintf(`
+		SELECT "Friends"."Login", "Friends"."Friend", "Friends"."Status",
+		"Users"."Name", "Users"."Photo", "Users"."Birthdate"
+		FROM "Friends"
+		JOIN "Users" ON "Users"."Login" = "Friends"."Friend"
+		WHERE "Friends"."Login" = '%s'
+	`, key)
+	rows, err := DB.Query(query)
+	if err != nil {
+		fmt.Println("Error - SelectFriendsByColumn()", err.Error())
+	}
+	for rows.Next() {
+		err = rows.Scan(&friend.Login, &friend.Friend, &friend.Status, &friend.Name, &friend.Photo, &friend.Birthdate)
 		if err != nil {
 			fmt.Println("Error - SelectFriendsByColumn() rows.Next()", err.Error())
 		}
