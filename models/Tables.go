@@ -1,15 +1,16 @@
 package models
 
 type Posts struct { // structure of the Posts table
-	Id          string
-	Title       string
-	Content     string
-	Like        uint
-	View        uint
-	Date        string
-	Communities string
-	Photo       string
-	Category    string
+	Id              string
+	Title           string
+	Content         string
+	Like            uint
+	View            uint
+	Date            string
+	Communities     string
+	Photo           string
+	Category        string
+	CommunitiesPhot string
 }
 
 type Communities struct { // structure of the Communities table
@@ -78,6 +79,28 @@ type Access struct { // structure of the Access table
 	Name string
 }
 
-// func NewPost(id, title, content string) *Post {
-// 	return &Post{id, title, content}
-// }
+type RepostPost struct {
+	User             string
+	Post             uint
+	Title            string
+	Content          string
+	Like             uint
+	View             uint
+	Date             string
+	Communities      string
+	PostPhoto        string
+	Categoty         string
+	CommunitiesPhoto string
+}
+
+type Repost struct {
+	Id   uint32
+	Post int
+	User string
+}
+
+type Subscribers struct {
+	Id          int
+	User        string
+	Communities string
+}

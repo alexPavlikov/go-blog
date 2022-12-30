@@ -30,9 +30,9 @@
         <a href="#"><i class="fa-regular fa-comment"></i><span> Сообщения</span></a>
         <a href="/friends"><i class="fa-solid fa-user-group"></i><span> Друзья</span></a>
         <a href="/communities"><i class="fa-solid fa-users"></i><span> Сообщества</span></a>
-        <a href="#">Далее</a>
-        <a href="#">Далее</a>
-        <a href="#">Далее</a>
+        <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+        <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
+        <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
         <a href="#">Далее</a>
     </aside>
 
@@ -42,7 +42,7 @@
             <div class="friend">
                 <div class="info">
                     <div class="img"><img src="{{ $f.Photo }}" alt=""></div>
-                    <div class="name">{{ $f.Name }} <br><span>{{ $f.Status }}</span></div>
+                    <div class="name"><a style="color: black; text-decoration: none;" class="guestId" id="{{$f.Name}}" href="/guest">{{ $f.Name }}</a> <br><span>{{ $f.Status }}</span></div>
                 </div>
                 <div class="menu">
                     <form action="" method="post">
@@ -105,6 +105,22 @@
                });
        });
    });
+
+   $(document).ready(function(){
+       $('.guestId').click(function(e) {
+           clickId = $(this).attr('id');
+               $.ajax({
+                   url: '/community',
+                   type: 'GET',
+                   dataType: 'html',
+                   data : { guestId: clickId},
+                   success : function(data) {
+                   $('#result').html(data);
+                   },
+               });
+       });
+   });
+
 </script>
 
 {{ template "footer" }}

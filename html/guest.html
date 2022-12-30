@@ -1,0 +1,90 @@
+{{ define "guest" }}
+
+{{ template "header" }}
+<meta http-equiv="refresh" content="2" />
+<link rel="stylesheet" href="/assets/css/page.css">
+<link rel="stylesheet" href="/assets/css/blog.css">
+<link rel="stylesheet" href="/assets/css/style.css">
+<header>
+    <div class="brand">
+        <div class="logos">
+            <img src="/data/image/brand.png" alt="">
+            <span>GOLANG</span>
+        </div>
+        <div class="find"><input type="text" placeholder="Найти"></div>
+    </div>
+    <div class="account">
+        <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
+        <i class="fa-solid fa-chevron-down" onclick="Check()"></i>
+    </div>
+</header>
+
+<body>
+    <aside class="right">
+        <a href="/page#"><i class="fa-regular fa-circle-user"></i><span> Моя страница</span></a>
+        <a href="/blog"><i class="fa-regular fa-newspaper"></i><span> Новости</span></a>
+        <a href="#"><i class="fa-regular fa-comment"></i><span> Сообщения</span></a>
+        <a href="/friends"><i class="fa-solid fa-user-group"></i><span> Друзья</span></a>
+        <a href="/communities"><i class="fa-solid fa-users"></i><span> Сообщества</span></a>
+        <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+        <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
+        <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
+        <a href="#">Далее</a>
+    </aside>
+    <main>
+        <section>
+            <img src="{{ .Guest.Photo }}" alt="">
+            <div class="name">{{ .Guest.Name }}</div>
+        </section>
+        <div class="news">
+            {{ range $_, $r := .Repo }}
+            <div class="post" id="{{$r.Post}}">
+                <div class="communities">
+                    <div class="avatar"><img src="{{ $r.CommunitiesPhoto }}" alt=""></div>
+                    <div class="name">
+                        <div>{{ $r.Communities }} <span><a style="text-decoration: none; color: black;" href="/blog#{{$r.Post}}">{{ $r.Title }}</a></span></div>
+                        <label>{{ $r.Date }}</label>
+                    </div>
+                </div>
+                <div class="title">{{ $r.Content }}</div>
+                <div class="image"><img src="{{ $r.PostPhoto }}" alt=""></div>
+                <div class="statistics">
+                    <div>
+                        <a href="blog" id="{{$r.Post}}"  class="spans span spany" style="color: #fff; text-decoration: none;"><i style="margin-right: 5px;" class="fa-regular fa-heart"></i>{{$r.Like}}</a>
+                        <a href="comments"  id="{{$r.Post}}" class="spans span spany" type="submit"><i class="fa-regular fa-message"></i></a>     
+                        <a href="page" id="{{$r.Post}}" class="spans span" type="submit"><i class="fa-regular fa-paper-plane"></i></a> 
+                    </div>
+                    
+                    <i class="fa-solid fa-eye">{{$r.View}}</i>
+                </div>
+                <div class="comments">
+                    <form action="/" method="post">
+                        <input type="text" placeholder="Оставить комментарий">
+                        <button type="submit"><i class="fa-solid fa-reply"></i></button>
+                    </form>
+                </div>
+            </div>
+            {{ end }}
+        </div>
+
+    </main>
+    <aside id="left" class="left">
+        <div class="setacc">
+            <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
+            <div class="info">
+                <div class="name">{{ .User.Name }}</div>
+                <div class="login">{{ .User.Login }}</div>
+            </div>
+        </div>
+        <div class="settings">
+            <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+            <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
+            <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
+            <a id="exit" href="/"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
+        </div>
+    </aside>
+</body>
+
+{{ template "footer" }}
+
+{{ end }}

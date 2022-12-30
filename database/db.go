@@ -29,7 +29,10 @@ func Connect() (*sql.DB, error) {
 */
 func SelectPosts() []models.Posts {
 
-	rows, err := DB.Query(`SELECT * FROM "Posts" ORDER BY "View" DESC`)
+	rows, err := DB.Query(`SELECT "Posts".*, "Communities"."Photo"
+	FROM "Posts" 
+	JOIN "Communities" ON "Posts"."Communities" = "Communities"."Name"
+	ORDER BY "View" DESC;`)
 	if err != nil {
 		fmt.Println("Error - selectPosts()", err.Error())
 	}
@@ -39,7 +42,7 @@ func SelectPosts() []models.Posts {
 
 	for rows.Next() {
 
-		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo, &post.Category)
+		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo, &post.Category, &post.CommunitiesPhot)
 		if err != nil {
 			fmt.Println("Error - selectPosts() / rows.Next()", err.Error())
 		}
@@ -51,15 +54,18 @@ func SelectPosts() []models.Posts {
 /*
 Функция выборки определенного поста из таблицы Posts по Id
 */
-func SelectPostById(id string) models.Posts {
+func SelectPostById(id int) models.Posts {
 	var post models.Posts
-	query := fmt.Sprintf(`SELECT * FROM "Posts" WHERE "Id" = %s`, id)
+	query := fmt.Sprintf(`SELECT "Posts".*, "Communities"."Photo"
+	FROM "Posts" 
+	JOIN "Communities" ON "Posts"."Communities" = "Communities"."Name"
+	WHERE "Posts"."Id" = '%d' ORDER BY "View" DESC;`, id)
 	rows, err := DB.Query(query)
 	if err != nil {
 		fmt.Println("Error - SelectPostById()", err.Error())
 	}
 	for rows.Next() {
-		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo, &post.Category)
+		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo, &post.Category, &post.CommunitiesPhot)
 		if err != nil {
 			fmt.Println("Error - SelectPostById() / rows.Next()", err.Error())
 		}
@@ -73,13 +79,15 @@ func SelectPostById(id string) models.Posts {
 func SelectPostByCommunities(communities string) []models.Posts {
 	var posts []models.Posts
 	var post models.Posts
-	query := fmt.Sprintf(`SELECT * FROM "Posts" WHERE "Communities" = %s`, communities)
+	query := fmt.Sprintf(`SELECT "Posts".*, "Communities"."Photo"
+	FROM "Posts" 
+	JOIN "Communities" ON "Posts"."Communities" = "Communities"."Name" WHERE "Communities" = '%s'`, communities)
 	rows, err := DB.Query(query)
 	if err != nil {
 		fmt.Println("Error - SelectPostByCommunities()", err.Error())
 	}
 	for rows.Next() {
-		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo, &post.Category)
+		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo, &post.Category, &post.CommunitiesPhot)
 		if err != nil {
 			fmt.Println("Error - SelectPostByCommunities() / rows.Next()", err.Error())
 		}
@@ -250,7 +258,7 @@ func SelectUserByLogPass(log string, pass string) (user models.Users, err error)
 func SelectUsersByColumn(column string, value string) ([]models.Users, error) {
 	var user models.Users
 	var users []models.Users
-	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "Users" WHERE "%s" = %s`, column, value))
+	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "Users" WHERE "%s" = '%s'`, column, value))
 	if err != nil {
 		fmt.Println("Error - SelectUsersByColumn()", err)
 		return users, err
@@ -265,6 +273,24 @@ func SelectUsersByColumn(column string, value string) ([]models.Users, error) {
 		users = append(users, user)
 	}
 	return users, nil
+}
+
+func SelectUserByColumn(column string, value string) (models.Users, error) {
+	var user models.Users
+	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "Users" WHERE "%s" = '%s'`, column, value))
+	if err != nil {
+		fmt.Println("Error - SelectUserByColumn()", err)
+		return user, err
+	}
+
+	for rows.Next() {
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Communities, &user.Photo, &user.Birthdate)
+		if err != nil {
+			fmt.Println("Error - SelectUserByColumn() rows.Next()", err.Error())
+			return user, err
+		}
+	}
+	return user, nil
 }
 
 /*
@@ -362,14 +388,32 @@ func SelectCommunities() []models.Communities {
 	return communitiesArr
 }
 
+func SelectCommunitiesAuthorByName(name string) string {
+
+	var author string
+	rows, err := DB.Query(fmt.Sprintf(`SELECT "Communities"."Author", "Users"."Name"
+	FROM "Communities" 
+	JOIN "Users" ON "Users"."Login" = "Communities"."Author"
+	WHERE "Communities"."Name" = '%s'`, name))
+	if err != nil {
+		fmt.Println("Error - SelectCommunitiesAuthorByName()", err.Error())
+	}
+	for rows.Next() {
+		err = rows.Scan(&author, &name)
+		if err != nil {
+			fmt.Println("Error - SelectCommunitiesAuthorByName() rows.Next()", err.Error())
+		}
+	}
+	return name
+}
+
 /*
 Функция-конструктор, вводится два значения column и value и подставляются в запрос,
 что позволяет не писать повторяющие запросы SELECT
 */
-func SelectCommunitiesByColumn(column string, value string) []models.Communities {
+func SelectCommunitiesByColumn(column string, value string) models.Communities {
 	var communities models.Communities
-	var communitiesArr []models.Communities
-	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "Communities" WHERE "%s" = %s`, column, value))
+	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "Communities" WHERE "%s" = '%s'`, column, value))
 	if err != nil {
 		fmt.Println("Error - SelectCommunitiesByColumn()", err.Error())
 	}
@@ -378,9 +422,8 @@ func SelectCommunitiesByColumn(column string, value string) []models.Communities
 		if err != nil {
 			fmt.Println("Error - SelectCommunitiesByColumn() rows.Next()", err.Error())
 		}
-		communitiesArr = append(communitiesArr, communities)
 	}
-	return communitiesArr
+	return communities
 }
 
 /*
@@ -832,4 +875,74 @@ func InsertStatus(status models.Status) (models.Status, error) {
 	}
 	log.Printf("%d post created ", rows)
 	return status, err
+}
+
+// --------------------Query from RepoPost table--------------------
+
+func SelectRepoPostByUser(user string) []models.RepostPost {
+	var repoPost models.RepostPost
+	var repoPosts []models.RepostPost
+	query := fmt.Sprintf(`SELECT "RepostPost"."User", "RepostPost"."Post", 
+	"Posts"."Title", "Posts"."Content", "Posts"."Like", 
+	"Posts"."View", "Posts"."Date", "Posts"."Communities", "Posts"."Photo", "Posts"."Category", "Communities"."Photo"
+	FROM "RepostPost"
+	JOIN "Posts" ON "Posts"."Id" = "RepostPost"."Post"
+	JOIN "Communities" ON "Communities"."Name" = "Posts"."Communities"
+	WHERE "User"='%s';`, user)
+	rows, err := DB.Query(query)
+	if err != nil {
+		fmt.Println("Error - SelectRepoPostByUser()")
+	}
+	for rows.Next() {
+		err = rows.Scan(&repoPost.User, &repoPost.Post, &repoPost.Title, &repoPost.Content, &repoPost.Like, &repoPost.View, &repoPost.Date, &repoPost.Communities, &repoPost.PostPhoto, &repoPost.Categoty, &repoPost.CommunitiesPhoto)
+		if err != nil {
+			fmt.Println("Error - SelectRepoPostByUser() rows.Scan()")
+		}
+		repoPosts = append(repoPosts, repoPost)
+	}
+	return repoPosts
+}
+
+func InsertRepoPost(reppost models.Repost) (models.Repost, error) {
+	query := `INSERT INTO "RepostPost"("Id", "Post", "User") VALUES ($1, $2, $3)`
+	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelfunc()
+	stmt, err := DB.PrepareContext(ctx, query)
+	if err != nil {
+		log.Printf("Error %s when preparing SQL statement", err)
+		return reppost, err
+	}
+	defer stmt.Close()
+	res, err := stmt.ExecContext(ctx, reppost.Id, reppost.Post, reppost.User)
+	if err != nil {
+		log.Printf("Error %s when inserting row into RepostPost table", err)
+		return reppost, err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		log.Printf("Error %s when finding rows affected", err)
+		return reppost, err
+	}
+	log.Printf("%d post created ", rows)
+	return reppost, err
+}
+
+// --------------------Query from Subscribers table--------------------
+
+func SelectSubscribersBtCommunities(communities string) []models.Subscribers {
+	var sub models.Subscribers
+	var subs []models.Subscribers
+	query := fmt.Sprintf(`SELECT * FROM "Subscribers" WHERE "Communities" = '%s'`, communities)
+	rows, err := DB.Query(query)
+	if err != nil {
+		fmt.Println("Error - SelectSubscribersBtCommunities()")
+	}
+	for rows.Next() {
+		err = rows.Scan(&sub.Id, &sub.User, &sub.Communities)
+		if err != nil {
+			fmt.Println("Error - SelectSubscribersBtCommunities() rows.Next()")
+		}
+		subs = append(subs, sub)
+	}
+	return subs
 }

@@ -108,6 +108,11 @@ aside {
     font-weight: 700;
 }
 
+.communities .name div .communa {
+    color: black;
+    text-decoration: none;
+}
+
 .communities .name label {
     font-size: 14px;
     height: 50%;

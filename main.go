@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
 	"os"
@@ -20,6 +21,9 @@ import (
 var client http.Client
 var postId string
 var id string
+var posts []models.Posts
+var post models.Posts
+var guestId string
 
 func init() {
 	setting.Config()
@@ -55,6 +59,8 @@ func handleRequest() {
 	http.HandleFunc("/friends", friendsHandler)
 	http.HandleFunc("/communities", communitiesHandler)
 	http.HandleFunc("/comments", commentsHandler)
+	http.HandleFunc("/community", communityHandler)
+	http.HandleFunc("/guest", guestHandler)
 }
 
 func logFormHandler(w http.ResponseWriter, r *http.Request) {
@@ -171,6 +177,8 @@ func refreshSettingHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+var export string
+
 func blogHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles("html/blog.html", "html/header.html", "html/footer.html")
 	if err != nil {
@@ -186,6 +194,7 @@ func blogHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("Error - blogHandler() UpdateLikeInPost()")
 		}
 		postId = ""
+		export = r.FormValue("community_id")
 	}
 
 	if r.Method == "POST" {
@@ -210,13 +219,21 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 	}
 	fmt.Println("page", postId)
-	//id, _ := strconv.Atoi(postId)
-	//fmt.Println(id) // Сделать добавления поста на страницу пользователя
+	var rep models.Repost
+	rep.Id = rand.Uint32() / 10000
+	rep.Post, _ = strconv.Atoi(postId)
+	rep.User = userAuth.Login
 
+	result, err := database.InsertRepoPost(rep)
+	if err != nil {
+		fmt.Println("Error - pageHandler() InsertRepoPost()")
+	}
+	fmt.Println(result)
+	data := database.SelectRepoPostByUser(userAuth.Login)
 	title := map[string]string{"Title": userAuth.Name}
 	tmpl.ExecuteTemplate(w, "header", title)
 
-	sendUser := map[string]interface{}{"User": userAuth}
+	sendUser := map[string]interface{}{"User": userAuth, "Repo": data}
 	tmpl.ExecuteTemplate(w, "page", sendUser)
 }
 
@@ -227,7 +244,8 @@ func commentsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("comments", postId)
 	commentPost := database.SelectCommentsByColumn("Posts", postId)
-	post := database.SelectPostById(postId)
+	res, _ := strconv.Atoi(postId)
+	post := database.SelectPostById(res)
 	//comment := map[string]interface{}{"Comments": commentPost}
 	data := map[string]interface{}{"User": userAuth, "Comments": commentPost, "CommentsTitle": post.Title}
 	title := map[string]interface{}{"Title": models.Cfg.CommentsTitle}
@@ -250,13 +268,18 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) {
 		// 	fmt.Println("Error - friendsDelHandler() DeleteFriendsById()")
 		// }
 	}
-
+	if r.Method == "GET" {
+		guestId = r.FormValue("guestId")
+		fmt.Println("GET", guestId)
+	}
 	friends := database.SelectAllFriendsUser(userAuth.Login)
 	data := map[string]interface{}{"User": userAuth, "Friends": friends}
 	title := map[string]string{"Title": models.Cfg.FriendsTitile}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "friends", data)
 }
+
+var communitiesName string
 
 func communitiesHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles("html/communities.html", "html/header.html", "html/footer.html")
@@ -277,11 +300,96 @@ func communitiesHandler(w http.ResponseWriter, r *http.Request) {
 		//}
 		//}
 	}
+	if r.Method == "POST" {
+		r.ParseForm()
+		communitiesName = r.FormValue("community_id")
+		fmt.Println("POST", communitiesName)
+	}
+
 	communities := database.SelectAllCommunitiesUser("User", userAuth.Login)
 	data := map[string]interface{}{"User": userAuth, "Communities": communities}
 	title := map[string]string{"Title": models.Cfg.CommunitiesTitile}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "communities", data)
+}
+
+func communityHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/community.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+
+	res, _ := strconv.Atoi(export)
+	post = database.SelectPostById(res)
+	type Comm struct {
+		Name  string
+		Photo string
+	}
+	var Foo Comm
+	Foo.Name = post.Communities
+	Foo.Photo = post.CommunitiesPhot
+	if post.Communities == "" {
+		post.Communities = communitiesName
+		Foo.Name = post.Communities
+		check := database.SelectCommunitiesByColumn("Name", post.Communities)
+		Foo.Photo = check.Photo
+	}
+	posts = database.SelectPostByCommunities(post.Communities)
+	subs := database.SelectSubscribersBtCommunities(post.Communities)
+	author := database.SelectCommunitiesAuthorByName(post.Communities)
+
+	if r.Method == "GET" {
+		val, _ := strconv.Atoi(postId)
+		err := database.UpdateLikeInPost(val)
+		if err != nil {
+			fmt.Println("Error - communityHandler() UpdateLikeInPost()")
+		}
+		postId = ""
+		r.ParseForm()
+		guestId = r.FormValue("guestId")
+		fmt.Println("Get", guestId)
+	}
+
+	if r.Method == "POST" {
+		r.ParseForm()
+		postId = r.FormValue("post_id")
+		fmt.Println("blog", postId)
+		err = database.UpdateViewInPost()
+		if err != nil {
+			fmt.Println("Error - communityHandler() UpdateViewInPost()")
+		}
+	}
+
+	title := map[string]string{"Title": Foo.Name}
+	blog := map[string]interface{}{"Post": posts, "User": userAuth, "Subs": subs, "Author": author, "Communities": Foo}
+	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "community", blog)
+}
+
+func guestHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/guest.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+
+	fmt.Println("guest", guestId)
+	var rep models.Repost
+	rep.Id = rand.Uint32() / 10000
+	rep.Post, _ = strconv.Atoi(guestId)
+	rep.User = userAuth.Login
+	userGuest, err := database.SelectUserByColumn("Name", guestId)
+	if err != nil {
+		fmt.Println("Error - guestHandler() SelectUsersByColumn()")
+	}
+	fmt.Println(userGuest)
+
+	data := database.SelectRepoPostByUser(userGuest.Login)
+	title := map[string]string{"Title": userGuest.Name}
+	tmpl.ExecuteTemplate(w, "header", title)
+
+	sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Guest": userGuest}
+
+	tmpl.ExecuteTemplate(w, "guest", sendUser)
 }
 
 func Cookies() { // доделать/сделать

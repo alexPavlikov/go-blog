@@ -29,20 +29,19 @@
         <a href="#"><i class="fa-regular fa-comment"></i><span> Сообщения</span></a>
         <a href="/friends"><i class="fa-solid fa-user-group"></i><span> Друзья</span></a>
         <a href="/communities"><i class="fa-solid fa-users"></i><span> Сообщества</span></a>
-        <a href="#">Далее</a>
-        <a href="#">Далее</a>
-        <a href="#">Далее</a>
+        <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+        <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
+        <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
         <a href="#">Далее</a>
     </aside>
 
     <main style="height:100%">   
         <div class="friends">
-            {{ range $_, $c := .Communities }}
-           
+            {{ range $_, $c := .Communities }}         
             <div class="friend">
                 <div class="info">
                     <div class="img"><img src="{{ $c.Photo }}" alt=""></div>
-                    <div class="name">{{ $c.Communities }} <br><span>{{ $c.Category }}</span></div>
+                    <div class="name"><a style="color: black; text-decoration: none;" class="communa" id="{{$c.Communities}}" href="/community">{{ $c.Communities }}</a> <br><span>{{ $c.Category }}</span></div>
                 </div>
                 <div class="menu com">
                     <div></div>
@@ -89,6 +88,23 @@
                 alert(name_com);
             });
         });
+
+        $(document).ready(function(){
+            $('.communa').click(function(e) {
+                clickId = $(this).attr('id');
+                // alert('fa'+clickId);
+                    $.ajax({
+                        url: '/communities',
+                        type: 'POST',
+                        dataType: 'html',
+                        data : { community_id: clickId},
+                        success : function(data) {
+                        $('#result').html(data);
+                        },
+                    });
+            });
+        });
+
 </script>
 
 {{ template "footer" }}

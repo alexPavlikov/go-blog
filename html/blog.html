@@ -26,9 +26,9 @@
         <a href="#"><i class="fa-regular fa-comment"></i><span> Сообщения</span></a>
         <a href="/friends"><i class="fa-solid fa-user-group"></i><span> Друзья</span></a>
         <a href="/communities"><i class="fa-solid fa-users"></i><span> Сообщества</span></a>
-        <a href="#">Далее</a>
-        <a href="#">Далее</a>
-        <a href="#">Далее</a>
+        <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+        <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
+        <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
         <a href="#">Далее</a>
     </aside>
     <main>
@@ -36,9 +36,9 @@
             {{ range $_, $p := .Post }}
             <div class="post" id="{{ $p.Id }}">
                 <div class="communities">
-                    <div class="avatar"><img src="/data/image/blog/ava.jpg" alt=""></div>
+                    <div class="avatar"><img src="{{$p.CommunitiesPhot}}" alt=""></div>
                     <div class="name">
-                        <div>{{ $p.Communities }} <span><a style="text-decoration: none; color: black;" href="/blog#{{$p.Id}}">{{ $p.Title }}</a></span></div>
+                        <div><a id="{{$p.Id}}" class="communa" href="/community">{{ $p.Communities }}</a> <span><a style="text-decoration: none; color: black;" href="/blog#{{$p.Id}}">{{ $p.Title }}</a></span></div>
                         <label>{{ $p.Date }}</label>
                     </div>
                 </div>
@@ -61,7 +61,7 @@
                 </div>
             </div>
             {{ end }}
-            <div class="post" id="456">
+            <!-- <div class="post" id="456">
                 <div class="communities">
                     <div class="avatar"><img src="/data/image/blog/ava.jpg" alt=""></div>
                     <div class="name">
@@ -86,7 +86,7 @@
                         <button type="submit"><i class="fa-solid fa-reply"></i></button>
                     </form>
                 </div>
-            </div>
+            </div> -->
         </div>
     </main>
     <aside id="left" class="left">
@@ -121,6 +121,22 @@
                         },
                     });
                 alert(post_id);
+            });
+        });
+
+        $(document).ready(function(){
+            $('.communa').click(function(e) {
+                clickId = $(this).attr('id');
+                // alert('fa'+clickId);
+                    $.ajax({
+                        url: '/blog',
+                        type: 'GET',
+                        dataType: 'html',
+                        data : { community_id: clickId},
+                        success : function(data) {
+                        $('#result').html(data);
+                        },
+                    });
             });
         });
 

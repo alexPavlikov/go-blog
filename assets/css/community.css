@@ -1,0 +1,43 @@
+section {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+section div {
+    width: 100%;
+}
+
+.com_stat {
+    background-color: azure;
+    border-radius: 15px;
+    width: 40%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+section .com_stat .txt {
+    font-size: 18px;
+    color: rgb(2 185 255);
+    text-shadow: 1px 1px 2px #ffffff;
+    font-weight: normal;
+    justify-content: center;
+    text-transform: uppercase;
+}
+
+section .com_stat .txt a {
+    color: rgb(2 185 255);
+    text-decoration: none;
+    text-transform: none;
+    font-weight: 600;
+}
+
+section .com_stat .txt span {
+    font-weight: 600;
+}
+
+.photo {
+    display: flex;
+    flex-direction: row;
+}
