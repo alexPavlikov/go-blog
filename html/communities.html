@@ -45,7 +45,22 @@
                 </div>
                 <div class="menu com">
                     <div></div>
-                    <form action="" method="get"><input name="{{ $c.Communities }}" id="communities" type="submit" value="Отписаться"></form>        
+                    <form action="" method="get"><input name="{{ $c.Communities }}" id="communities" class="coms" type="submit" value="Отписаться"></form>        
+                </div>
+            </div>
+            {{ end }}
+        </div>
+        <h2 class="subtitle">Рекомендуемые сообщества</h2>
+        <div class="friends">
+            {{ range $_, $rc := .RecCommunities }}         
+            <div class="friend">
+                <div class="info">
+                    <div class="img"><img src="{{ $rc.Photo }}" alt=""></div>
+                    <div class="name"><a style="color: black; text-decoration: none;" href="/community">{{ $rc.Name }}</a> <br><span>{{ $rc.Category }}</span></div>
+                </div>
+                <div class="menu com">
+                    <div></div>
+                    <form action="" method="post"><input name="{{ $rc.Name }}" class="communaRec communitiesSub" id="{{$rc.Name}}" class="coms" type="submit" value="Подписаться"></form>        
                 </div>
             </div>
             {{ end }}
@@ -73,7 +88,7 @@
 
 <script>
         $(document).ready(function(){
-            $('#communities').click(function(e) {
+            $('.coms').click(function(e) {
                 clickId = $(this).attr('name');
                     $.ajax({
                         url: '/communities',
@@ -98,6 +113,22 @@
                         type: 'POST',
                         dataType: 'html',
                         data : { community_id: clickId},
+                        success : function(data) {
+                        $('#result').html(data);
+                        },
+                    });
+            });
+        });
+
+        $(document).ready(function(){
+            $('.communaRec').click(function(e) {
+                clickId = $(this).attr('id');
+                // alert('fa'+clickId);
+                    $.ajax({
+                        url: '/communities',
+                        type: 'POST',
+                        dataType: 'html',
+                        data : { communityRec: clickId},
                         success : function(data) {
                         $('#result').html(data);
                         },

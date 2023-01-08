@@ -4,6 +4,7 @@
 <link rel="stylesheet" href="/assets/css/page.css">
 <link rel="stylesheet" href="/assets/css/blog.css">
 <link rel="stylesheet" href="/assets/css/style.css">
+<link rel="stylesheet" href="/assets/css/community.css">
 <header>
     <div class="brand">
         <div class="logos">
@@ -32,8 +33,17 @@
     </aside>
     <main>
         <section>
-            <img src="{{ .User.Photo }}" alt="">
-            <div class="name">{{ .User.Name }}</div>
+
+            <div class="photo">
+                <img src="{{ .User.Photo }}" alt="">
+                <div class="name">{{ .User.Name }}</div>
+            </div>
+            <div class="com_stat">               
+                <div class="txt">Дата рождения: <span>{{ .Statistics.HappyBithday }}</span></div>
+                <div class="txt">Сообществ <a id="" class="guestId" href="/communities">{{ .Statistics.CommunitiesLen }}</a></div>
+                <div class="txt">Друзей <a id="" class="guestId" href="/friends">{{ .Statistics.FrinedsLen }}</a></div>
+            </div>
+
         </section>
         <div class="news">
             {{ range $_, $r := .Repo }}
@@ -56,12 +66,12 @@
                     
                     <i class="fa-solid fa-eye">{{$r.View}}</i>
                 </div>
-                <div class="comments">
+                <!-- <div class="comments">
                     <form action="/" method="post">
                         <input type="text" placeholder="Оставить комментарий">
                         <button type="submit"><i class="fa-solid fa-reply"></i></button>
                     </form>
-                </div>
+                </div> -->
             </div>
             {{ end }}
         </div>

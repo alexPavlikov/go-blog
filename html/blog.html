@@ -53,12 +53,7 @@
                     
                     <i class="fa-solid fa-eye">{{ $p.View }}</i>
                 </div>
-                <div class="comments">
-                    <form action="" method="post">
-                        <input type="text" placeholder="Оставить комментарий">
-                        <button type="submit"><i class="fa-solid fa-reply"></i></button>
-                    </form>
-                </div>
+                
             </div>
             {{ end }}
             <!-- <div class="post" id="456">
@@ -125,6 +120,23 @@
         });
 
         $(document).ready(function(){
+            $('.btns').click(function(e) {
+                clickId = $(this).attr('name');
+                // alert('fa'+clickId);
+                    $.ajax({
+                        url: '/blog',
+                        type: 'GET',
+                        dataType: 'html',
+                        data : { btns: clickId},
+                        success : function(data) {
+                        $('#result').html(data);
+                        },
+                    });
+                alert(btns);
+            });
+        });
+
+        $(document).ready(function(){
             $('.communa').click(function(e) {
                 clickId = $(this).attr('id');
                 // alert('fa'+clickId);
@@ -137,6 +149,7 @@
                         $('#result').html(data);
                         },
                     });
+                alert(community_id);
             });
         });
 

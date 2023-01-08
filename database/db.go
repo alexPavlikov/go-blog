@@ -388,9 +388,28 @@ func SelectCommunities() []models.Communities {
 	return communitiesArr
 }
 
-func SelectCommunitiesAuthorByName(name string) string {
+func SelectCommunitiesWithOutSub(user string) []models.Communities {
+	var communities models.Communities
+	var communitiesArr []models.Communities
+	rows, err := DB.Query(fmt.Sprintf(`SELECT "Communities".*
+	FROM "Communities"
+	JOIN "Subscribers" ON "Subscribers"."Communities" <> "Communities"."Name"
+	WHERE "Subscribers"."User"='%s';`, user))
+	if err != nil {
+		fmt.Println("Error - SelectCommunities()", err.Error())
+	}
+	for rows.Next() {
+		err = rows.Scan(&communities.Name, &communities.Author, &communities.Photo, &communities.Category)
+		if err != nil {
+			fmt.Println("Error - SelectCommunities() rows.Next()", err.Error())
+		}
+		communitiesArr = append(communitiesArr, communities)
+	}
+	return communitiesArr
+}
 
-	var author string
+func SelectCommunitiesAuthorByName(name string) (author string, names string) {
+
 	rows, err := DB.Query(fmt.Sprintf(`SELECT "Communities"."Author", "Users"."Name"
 	FROM "Communities" 
 	JOIN "Users" ON "Users"."Login" = "Communities"."Author"
@@ -399,12 +418,12 @@ func SelectCommunitiesAuthorByName(name string) string {
 		fmt.Println("Error - SelectCommunitiesAuthorByName()", err.Error())
 	}
 	for rows.Next() {
-		err = rows.Scan(&author, &name)
+		err = rows.Scan(&author, &names)
 		if err != nil {
 			fmt.Println("Error - SelectCommunitiesAuthorByName() rows.Next()", err.Error())
 		}
 	}
-	return name
+	return author, names
 }
 
 /*
@@ -945,4 +964,43 @@ func SelectSubscribersBtCommunities(communities string) []models.Subscribers {
 		subs = append(subs, sub)
 	}
 	return subs
+}
+
+/*
+Функция удаления статуса из таблицы Subscribers
+*/
+func DeleteSubOnCommunities(communities string, user string) error {
+	res, err := DB.Exec(`DELETE FROM "Subscribers" WHERE "Communities" = ($1) AND "User" = ($2)`, communities, user)
+	if err == nil {
+		count, err := res.RowsAffected()
+		if err == nil {
+			fmt.Println(count)
+		}
+		return nil
+	}
+	return err
+}
+
+func InsertSubscribersToUser(user string, communities string) error {
+	query := `INSERT INTO "Subscribers"("User", "Communities") VALUES($1, $2)`
+	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelfunc()
+	stmt, err := DB.PrepareContext(ctx, query)
+	if err != nil {
+		log.Printf("Error %s when preparing SQL statement", err)
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.ExecContext(ctx, user, communities)
+	if err != nil {
+		log.Printf("Error %s when inserting row into RepostPost table", err)
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		log.Printf("Error %s when finding rows affected", err)
+		return err
+	}
+	log.Printf("%d post created ", rows)
+	return err
 }

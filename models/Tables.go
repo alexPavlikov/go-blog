@@ -29,8 +29,8 @@ type JoinCommunities struct {
 }
 
 type Comments struct { // structure of the Comments table
-	Id     uint
-	Posts  uint
+	Id     uint32
+	Posts  int
 	Text   string
 	Like   uint
 	Author string

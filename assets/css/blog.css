@@ -58,7 +58,7 @@ aside {
     margin-top: 20px;
     display: flex;
     flex-direction: column;
-    height: 550px;
+    height: 450px;
     width: 700px;
     border-radius: 15px;
     padding: 20px;
@@ -126,7 +126,7 @@ aside {
 }
 
 .image {
-    height: 54%;
+    height: 65%;
     padding: 3px 0;
 }
 
@@ -147,6 +147,7 @@ aside {
 
 .statistics div {
     width: 60%;
+    height: 40px;
     margin-top: 10px;
     display: flex;
     flex-direction: row;
@@ -190,33 +191,35 @@ aside {
 .comments {
     height: 13%;
     padding: 3px 0;
+    width: 50%;
+    margin: 0 25%;
 }
 
 .comments form {
     display: flex;
     flex-direction: row;
     width: 100%;
-    margin: 10px 35px;
+    /* margin: 10px 35px; */
 }
 
 .comments form input {
-    width: 82%;
+    width: 100%;
     padding: 6px 8px;
     font-size: 18px;
     border-top-left-radius: 5px;
     border-bottom-left-radius: 5px;
     background-color: inherit;
-    border: 1px solid #777;
+    border: 1px solid rgb(255, 255, 255);
     border-right: none;
     outline:none;
 }
 
 .comments form button {
     background-color: inherit;
-    color: #777;
+    color: rgb(255, 255, 255);
     border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
-    border: 1px solid #777;
+    border: 1px solid rgb(255, 255, 255);
     border-left: none;
     font-size: 20px;
 }

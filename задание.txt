@@ -3,8 +3,12 @@
 тоже самое с подписчиками сообщества, если человек создал группу он будет первым подписчиком
 
 
-на станице сообщества сделать ссылку на сообщество
-в сообществе сделать ссылку на автора сообщества
+ошибка в консоли при выводе комментариев...
+
+SELECT "Communities".* //тупо работает когда все сообщества в подписках присутствуют у пользователя
+	FROM "Communities"
+	JOIN "Subscribers" ON "Subscribers"."Communities" is distinct from "Communities"."Name"
+	WHERE "Subscribers"."User"='a.pavlikov2002@gmail.com';
 
 
-database.SelectUserByColumn("Name", guestId) - name заменить на login
+реализовать друзей гостя и сообщества гостя и выводить их кол-во на странице пользователя

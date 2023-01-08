@@ -1,7 +1,7 @@
 {{ define "community" }}
 
 {{ template "header" }}
-<meta http-equiv="refresh" content="2" />
+<!-- <meta http-equiv="refresh" content="2" /> -->
 <link rel="stylesheet" href="/assets/css/page.css">
 <link rel="stylesheet" href="/assets/css/blog.css">
 <link rel="stylesheet" href="/assets/css/style.css">
@@ -46,39 +46,60 @@
                 {{ $lengthSubs := len .Subs }}
                 <div class="txt">Подписчиков: <span>{{$lengthSubs}}</span></div>
                 <div class="txt">Записей: <span>{{$lengthPost}}</span></div>
-                <div class="txt">Создатель: <a id="{{.Author}}" class="guestId" href="/guest">{{.Author}}</a></div>
+                <div class="txt">Создатель: <a id="{{.Author}}" class="guestId" href="/guest">{{.Names}}</a></div>
             </div>
         </section>
 
         <div class="news">
-            {{ range $_, $y := .Post }}
-            <div class="post" id="{{ $y.Id }}">
+            {{ range $_, $p := .Post }}
+            <div class="post" id="{{ $p.Id }}">
                 <div class="communities">
-                    <div class="avatar"><img src="{{$y.CommunitiesPhot}}" alt=""></div>
+                    <div class="avatar"><img src="{{$p.CommunitiesPhot}}" alt=""></div>
                     <div class="name">
-                        <div>{{ $y.Communities }} <span><a style="text-decoration: none; color: black;" href="/blog#{{$y.Id}}">{{ $y.Title }}</a></span></div>
-                        <label>{{ $y.Date }}</label>
+                        <div><a id="{{$p.Id}}" class="communa" href="/community">{{ $p.Communities }}</a> <span><a style="text-decoration: none; color: black;" href="/blog#{{$p.Id}}">{{ $p.Title }}</a></span></div>
+                        <label>{{ $p.Date }}</label>
                     </div>
                 </div>
-                <div class="title"> {{ $y.Content }}</div>
-                <div class="image"><img src="{{ $y.Photo }}" alt=""></div>
+                <div class="title"> {{ $p.Content }}</div>
+                <div class="image"><img src="{{ $p.Photo }}" alt=""></div>
                 <div class="statistics">
                     <div>
-                        <a href="blog" id="{{ $y.Id }}"  class="spans span spany" style="color: #fff; text-decoration: none;"><i style="margin-right: 5px;" class="fa-regular fa-heart"></i>{{ $y.Like }}</a>
-                        <a href="comments"  id="{{ $y.Id }}" class="spans span spany" type="submit"><i class="fa-regular fa-message"></i></a>     
-                        <a href="page" id="{{ $y.Id }}" class="spans span" type="submit"><i class="fa-regular fa-paper-plane"></i></a> 
+                        <a href="blog" id="{{ $p.Id }}"  class="spans span spany" style="color: #fff; text-decoration: none;"><i style="margin-right: 5px;" class="fa-regular fa-heart"></i>{{ $p.Like }}</a>
+                        <a href="comments"  id="{{ $p.Id }}" class="spans span spany" type="submit"><i class="fa-regular fa-message"></i></a>     
+                        <a href="page" id="{{ $p.Id }}" class="spans span" type="submit"><i class="fa-regular fa-paper-plane"></i></a> 
                     </div>
                     
-                    <i class="fa-solid fa-eye">{{ $y.View }}</i>
+                    <i class="fa-solid fa-eye">{{ $p.View }}</i>
+                </div>
+                
+            </div>
+            {{ end }}
+            <!-- <div class="post" id="456">
+                <div class="communities">
+                    <div class="avatar"><img src="/data/image/blog/ava.jpg" alt=""></div>
+                    <div class="name">
+                        <div>Название группы <span><a style="text-decoration: none; color: black;" href="/blog#456">Заголовок поста</a></span></div>
+                        <label>19:30</label>
+                    </div>
+                </div>
+                <div class="title">Lorem ipsum dolor, sit amet consectetur adipisicing elit. Ipsum possimus, eos iure autem voluptates fuga doloremque nobis deleniti dignissimos quo maxime iusto ullam deserunt aspernatur ab. Tenetur molestias eaque repellendus.</div>
+                <div class="image"><img src="/data/image/blog/test.jpeg" alt=""></div>
+                <div class="statistics">
+                    <div>
+                        <a href="blog" id="456"  class="spans span spany" style="color: #fff; text-decoration: none;"><i style="margin-right: 5px;" class="fa-regular fa-heart"></i>10</a>
+                        <a href="blog/comments" id="456" class="spans span" type="submit"><i class="fa-regular fa-message"></i></a>     
+                        <a href="page" id="456" class="spans span" type="submit"><i class="fa-regular fa-paper-plane"></i></a> 
+                    </div>
+                    
+                    <i class="fa-solid fa-eye">3123</i>
                 </div>
                 <div class="comments">
-                    <form action="/" method="post">
+                    <form action="" method="post">
                         <input type="text" placeholder="Оставить комментарий">
                         <button type="submit"><i class="fa-solid fa-reply"></i></button>
                     </form>
                 </div>
-            </div>
-            {{ end }}
+            </div> -->
         </div>
     </main>
 <aside id="left" class="left">

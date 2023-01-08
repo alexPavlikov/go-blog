@@ -1,7 +1,7 @@
 {{ define "guest" }}
 
 {{ template "header" }}
-<meta http-equiv="refresh" content="2" />
+
 <link rel="stylesheet" href="/assets/css/page.css">
 <link rel="stylesheet" href="/assets/css/blog.css">
 <link rel="stylesheet" href="/assets/css/style.css">
@@ -33,8 +33,15 @@
     </aside>
     <main>
         <section>
-            <img src="{{ .Guest.Photo }}" alt="">
-            <div class="name">{{ .Guest.Name }}</div>
+            <div class="photo">
+                <img src="{{ .Guest.Photo }}" alt="">
+                <div class="name">{{ .Guest.Name }}</div>
+            </div>
+            <div class="com_stat">               
+                <div class="txt">Дата рождения: <span>31</span></div>
+                <div class="txt">Сообществ <a id="" class="guestId" href="/communities">321</a></div>
+                <div class="txt">Друзей <a id="" class="guestId" href="/friends">312</a></div>
+            </div>
         </section>
         <div class="news">
             {{ range $_, $r := .Repo }}

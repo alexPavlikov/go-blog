@@ -24,6 +24,9 @@ var id string
 var posts []models.Posts
 var post models.Posts
 var guestId string
+var communitiesName string
+var communitiesPhoto string
+var inputComment string
 
 func init() {
 	setting.Config()
@@ -185,6 +188,9 @@ func blogHandler(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 	}
 
+	communitiesName = ""
+	communitiesPhoto = ""
+
 	posts := database.SelectPosts()
 
 	if r.Method == "GET" {
@@ -223,6 +229,19 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 	rep.Id = rand.Uint32() / 10000
 	rep.Post, _ = strconv.Atoi(postId)
 	rep.User = userAuth.Login
+	frd := database.SelectAllFriendsUser(userAuth.Login)
+	comnt := database.SelectAllCommunitiesUser("User", userAuth.Login)
+
+	type statistics struct {
+		FrinedsLen     int
+		CommunitiesLen int
+		HappyBithday   string
+	}
+
+	var stat statistics
+	stat.CommunitiesLen = len(comnt)
+	stat.FrinedsLen = len(frd)
+	stat.HappyBithday = userAuth.Birthdate
 
 	result, err := database.InsertRepoPost(rep)
 	if err != nil {
@@ -233,7 +252,7 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 	title := map[string]string{"Title": userAuth.Name}
 	tmpl.ExecuteTemplate(w, "header", title)
 
-	sendUser := map[string]interface{}{"User": userAuth, "Repo": data}
+	sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Statistics": stat}
 	tmpl.ExecuteTemplate(w, "page", sendUser)
 }
 
@@ -242,7 +261,27 @@ func commentsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.NotFound(w, r)
 	}
+
 	fmt.Println("comments", postId)
+
+	if r.Method == "GET" {
+		r.ParseForm()
+		inputComment = r.FormValue("commentsInput")
+		var comment models.Comments
+		if inputComment != "" {
+			comment.Posts, _ = strconv.Atoi(postId)
+			comment.Author = userAuth.Login
+			comment.Like = 1
+			comment.Text = inputComment
+			fmt.Println(comment)
+			_, err = database.InsertComment(comment)
+
+			if err != nil {
+				fmt.Println("Error - commentsHandler() InsertComment()")
+			}
+		}
+	}
+
 	commentPost := database.SelectCommentsByColumn("Posts", postId)
 	res, _ := strconv.Atoi(postId)
 	post := database.SelectPostById(res)
@@ -279,8 +318,6 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "friends", data)
 }
 
-var communitiesName string
-
 func communitiesHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles("html/communities.html", "html/header.html", "html/footer.html")
 	if err != nil {
@@ -290,24 +327,32 @@ func communitiesHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		r.ParseForm()
 		data := r.FormValue("name_com")
-		fmt.Println("GET", data)
-		//if data != "" {
-		// err := database.DeleteCommunitiesByName()
-		// if err != nil {
-		// 	fmt.Println("Error - communitiesHandler() DeleteCommunitiesByName()")
-		// } else {
-		//	http.Redirect(w, r, "/page", http.StatusSeeOther)
-		//}
-		//}
+		fmt.Println("GET Отписка от сообщества", data, userAuth.Login)
+		if data != "" {
+			err := database.DeleteSubOnCommunities(data, userAuth.Login)
+			if err != nil {
+				fmt.Println("Error - communitiesHandler() DeleteCommunitiesByName()")
+			}
+		}
 	}
 	if r.Method == "POST" {
 		r.ParseForm()
+		subCom := r.FormValue("communityRec")
+		fmt.Println(subCom)
+		if subCom != "" {
+			err := database.InsertSubscribersToUser(userAuth.Login, subCom)
+			if err != nil {
+				fmt.Println("Error - communitiesHandler() InsertSubscribersToUser()", err.Error())
+			}
+		}
 		communitiesName = r.FormValue("community_id")
 		fmt.Println("POST", communitiesName)
+		communities := database.SelectCommunitiesByColumn("Name", communitiesName)
+		communitiesPhoto = communities.Photo
 	}
-
+	comWithOutSub := database.SelectCommunitiesWithOutSub(userAuth.Login)
 	communities := database.SelectAllCommunitiesUser("User", userAuth.Login)
-	data := map[string]interface{}{"User": userAuth, "Communities": communities}
+	data := map[string]interface{}{"User": userAuth, "Communities": communities, "RecCommunities": comWithOutSub}
 	title := map[string]string{"Title": models.Cfg.CommunitiesTitile}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "communities", data)
@@ -325,18 +370,17 @@ func communityHandler(w http.ResponseWriter, r *http.Request) {
 		Name  string
 		Photo string
 	}
+	if communitiesName != "" {
+		post.Communities = communitiesName
+		post.CommunitiesPhot = communitiesPhoto
+	}
 	var Foo Comm
 	Foo.Name = post.Communities
 	Foo.Photo = post.CommunitiesPhot
-	if post.Communities == "" {
-		post.Communities = communitiesName
-		Foo.Name = post.Communities
-		check := database.SelectCommunitiesByColumn("Name", post.Communities)
-		Foo.Photo = check.Photo
-	}
+
 	posts = database.SelectPostByCommunities(post.Communities)
 	subs := database.SelectSubscribersBtCommunities(post.Communities)
-	author := database.SelectCommunitiesAuthorByName(post.Communities)
+	author, names := database.SelectCommunitiesAuthorByName(post.Communities)
 
 	if r.Method == "GET" {
 		val, _ := strconv.Atoi(postId)
@@ -361,7 +405,7 @@ func communityHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	title := map[string]string{"Title": Foo.Name}
-	blog := map[string]interface{}{"Post": posts, "User": userAuth, "Subs": subs, "Author": author, "Communities": Foo}
+	blog := map[string]interface{}{"Post": posts, "User": userAuth, "Subs": subs, "Author": author, "Names": names, "Communities": Foo}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "community", blog)
 }
@@ -373,11 +417,11 @@ func guestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println("guest", guestId)
-	var rep models.Repost
-	rep.Id = rand.Uint32() / 10000
-	rep.Post, _ = strconv.Atoi(guestId)
-	rep.User = userAuth.Login
-	userGuest, err := database.SelectUserByColumn("Name", guestId)
+	// var rep models.Repost
+	// rep.Id = rand.Uint32() / 10000
+	// rep.Post, _ = strconv.Atoi(guestId)
+	// rep.User = userAuth.Login
+	userGuest, err := database.SelectUserByColumn("Login", guestId)
 	if err != nil {
 		fmt.Println("Error - guestHandler() SelectUsersByColumn()")
 	}
