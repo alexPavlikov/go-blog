@@ -46,33 +46,31 @@
 
         </section>
         <div class="news">
-            {{ range $_, $r := .Repo }}
-            <div class="post" id="{{$r.Post}}">
-                <div class="communities">
-                    <div class="avatar"><img src="{{ $r.CommunitiesPhoto }}" alt=""></div>
-                    <div class="name">
-                        <div>{{ $r.Communities }} <span><a style="text-decoration: none; color: black;" href="/blog#{{$r.Post}}">{{ $r.Title }}</a></span></div>
-                        <label>{{ $r.Date }}</label>
+            {{ if .Done }}
+                {{ range $_, $r := .Repo }}
+                <div class="post" id="{{$r.Post}}">
+                    <div class="communities">
+                        <div class="avatar"><img src="{{ $r.CommunitiesPhoto }}" alt=""></div>
+                        <div class="name">
+                            <div>{{ $r.Communities }} <span><a style="text-decoration: none; color: black;" href="/blog#{{$r.Post}}">{{ $r.Title }}</a></span></div>
+                            <label>{{ $r.Date }}</label>
+                        </div>
+                    </div>
+                    <div class="title">{{ $r.Content }}</div>
+                    <div class="image"><img src="{{ $r.PostPhoto }}" alt=""></div>
+                    <div class="statistics">
+                        <div>
+                            <a href="blog" id="{{$r.Post}}"  class="spans span spany" style="color: #fff; text-decoration: none;"><i style="margin-right: 5px;" class="fa-regular fa-heart"></i>{{$r.Like}}</a>
+                            <a href="comments"  id="{{$r.Post}}" class="spans span spany" type="submit"><i class="fa-regular fa-message"></i></a>     
+                            <a href="page" id="{{$r.Post}}" class="spans span" type="submit"><i class="fa-regular fa-paper-plane"></i></a> 
+                        </div>
+                        
+                        <i class="fa-solid fa-eye">{{$r.View}}</i>
                     </div>
                 </div>
-                <div class="title">{{ $r.Content }}</div>
-                <div class="image"><img src="{{ $r.PostPhoto }}" alt=""></div>
-                <div class="statistics">
-                    <div>
-                        <a href="blog" id="{{$r.Post}}"  class="spans span spany" style="color: #fff; text-decoration: none;"><i style="margin-right: 5px;" class="fa-regular fa-heart"></i>{{$r.Like}}</a>
-                        <a href="comments"  id="{{$r.Post}}" class="spans span spany" type="submit"><i class="fa-regular fa-message"></i></a>     
-                        <a href="page" id="{{$r.Post}}" class="spans span" type="submit"><i class="fa-regular fa-paper-plane"></i></a> 
-                    </div>
-                    
-                    <i class="fa-solid fa-eye">{{$r.View}}</i>
-                </div>
-                <!-- <div class="comments">
-                    <form action="/" method="post">
-                        <input type="text" placeholder="Оставить комментарий">
-                        <button type="submit"><i class="fa-solid fa-reply"></i></button>
-                    </form>
-                </div> -->
-            </div>
+                {{ end }}
+            {{else}}
+                <h2 class="subtitles">На стене пока нет ни одной записи</h2>
             {{ end }}
         </div>
 

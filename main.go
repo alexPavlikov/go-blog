@@ -27,6 +27,7 @@ var guestId string
 var communitiesName string
 var communitiesPhoto string
 var inputComment string
+var guestLogin string
 
 func init() {
 	setting.Config()
@@ -64,6 +65,8 @@ func handleRequest() {
 	http.HandleFunc("/comments", commentsHandler)
 	http.HandleFunc("/community", communityHandler)
 	http.HandleFunc("/guest", guestHandler)
+	http.HandleFunc("/guest/friends", guestFriendsHandler)
+	http.HandleFunc("/guest/communities", guestCommunitiesHandler)
 }
 
 func logFormHandler(w http.ResponseWriter, r *http.Request) {
@@ -248,11 +251,15 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Error - pageHandler() InsertRepoPost()")
 	}
 	fmt.Println(result)
+	Done := true
 	data := database.SelectRepoPostByUser(userAuth.Login)
+	if len(data) == 0 {
+		Done = false
+	}
 	title := map[string]string{"Title": userAuth.Name}
 	tmpl.ExecuteTemplate(w, "header", title)
 
-	sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Statistics": stat}
+	sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Statistics": stat, "Done": Done}
 	tmpl.ExecuteTemplate(w, "page", sendUser)
 }
 
@@ -302,10 +309,10 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		id = r.FormValue("friend_id")
 		fmt.Println(id)
-		// err := database.DeleteFriendsById(id)
-		// if err != nil {
-		// 	fmt.Println("Error - friendsDelHandler() DeleteFriendsById()")
-		// }
+		err := database.DeleteFriendsById(id)
+		if err != nil {
+			fmt.Println("Error - friendsDelHandler() DeleteFriendsById()")
+		}
 	}
 	if r.Method == "GET" {
 		guestId = r.FormValue("guestId")
@@ -313,6 +320,29 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	friends := database.SelectAllFriendsUser(userAuth.Login)
 	data := map[string]interface{}{"User": userAuth, "Friends": friends}
+	title := map[string]string{"Title": models.Cfg.FriendsTitile}
+	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "friends", data)
+}
+
+func guestFriendsHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/friends.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+
+	r.ParseForm()
+	if r.Method == "POST" {
+		id = r.FormValue("friend_id")
+		fmt.Println(id)
+	}
+	if r.Method == "GET" {
+		guestId = r.FormValue("guestId")
+		fmt.Println("GET", guestId)
+	}
+	gst, _ := database.SelectUserByColumn("Login", guestId)
+	friends := database.SelectAllFriendsUser(guestLogin)
+	data := map[string]interface{}{"User": userAuth, "Friends": friends, "Guest": gst}
 	title := map[string]string{"Title": models.Cfg.FriendsTitile}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "friends", data)
@@ -350,9 +380,34 @@ func communitiesHandler(w http.ResponseWriter, r *http.Request) {
 		communities := database.SelectCommunitiesByColumn("Name", communitiesName)
 		communitiesPhoto = communities.Photo
 	}
+	done := true
 	comWithOutSub := database.SelectCommunitiesWithOutSub(userAuth.Login)
 	communities := database.SelectAllCommunitiesUser("User", userAuth.Login)
-	data := map[string]interface{}{"User": userAuth, "Communities": communities, "RecCommunities": comWithOutSub}
+	data := map[string]interface{}{"User": userAuth, "Communities": communities, "RecCommunities": comWithOutSub, "Done": done}
+	title := map[string]string{"Title": models.Cfg.CommunitiesTitile}
+	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "communities", data)
+}
+
+func guestCommunitiesHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/communities.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+
+	if r.Method == "POST" {
+		r.ParseForm()
+		subCom := r.FormValue("communityRec")
+		fmt.Println(subCom)
+		communitiesName = r.FormValue("community_id")
+		fmt.Println("POST", communitiesName)
+		communities := database.SelectCommunitiesByColumn("Name", communitiesName)
+		communitiesPhoto = communities.Photo
+	}
+	done := false
+	comWithOutSub := database.SelectCommunitiesWithOutSub(guestLogin)
+	communities := database.SelectAllCommunitiesUser("User", guestLogin)
+	data := map[string]interface{}{"User": userAuth, "Communities": communities, "RecCommunities": comWithOutSub, "Done": done}
 	title := map[string]string{"Title": models.Cfg.CommunitiesTitile}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "communities", data)
@@ -417,21 +472,40 @@ func guestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Println("guest", guestId)
-	// var rep models.Repost
-	// rep.Id = rand.Uint32() / 10000
-	// rep.Post, _ = strconv.Atoi(guestId)
-	// rep.User = userAuth.Login
+	if r.Method == "GET" {
+		r.ParseForm()
+		guestLogin = r.FormValue("guestLogin")
+	}
+
 	userGuest, err := database.SelectUserByColumn("Login", guestId)
 	if err != nil {
 		fmt.Println("Error - guestHandler() SelectUsersByColumn()")
 	}
 	fmt.Println(userGuest)
 
+	frd := database.SelectAllFriendsUser(userGuest.Login)
+	comnt := database.SelectAllCommunitiesUser("User", userGuest.Login)
+
+	type statistics struct {
+		FrinedsLen     int
+		CommunitiesLen int
+		HappyBithday   string
+	}
+
+	var stat statistics
+
+	stat.CommunitiesLen = len(comnt)
+	stat.FrinedsLen = len(frd)
+	stat.HappyBithday = userGuest.Birthdate
+	Done := true
 	data := database.SelectRepoPostByUser(userGuest.Login)
+	if len(data) == 0 {
+		Done = false
+	}
 	title := map[string]string{"Title": userGuest.Name}
 	tmpl.ExecuteTemplate(w, "header", title)
 
-	sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Guest": userGuest}
+	sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Guest": userGuest, "Statistics": stat, "Done": Done}
 
 	tmpl.ExecuteTemplate(w, "guest", sendUser)
 }

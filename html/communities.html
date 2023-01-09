@@ -34,7 +34,39 @@
         <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
         <a href="#">Далее</a>
     </aside>
-
+    {{ if .Done }}
+        <main style="height:100%">   
+            <div class="friends">
+                {{ range $_, $c := .Communities }}         
+                <div class="friend">
+                    <div class="info">
+                        <div class="img"><img src="{{ $c.Photo }}" alt=""></div>
+                        <div class="name"><a style="color: black; text-decoration: none;" class="communa" id="{{$c.Communities}}" href="/community">{{ $c.Communities }}</a> <br><span>{{ $c.Category }}</span></div>
+                    </div>
+                    <div class="menu com">
+                        <div></div>
+                        <form action="" method="get"><input name="{{ $c.Communities }}" id="communities" class="coms" type="submit" value="Отписаться"></form>        
+                    </div>
+                </div>
+                {{ end }}
+            </div>
+            <h2 class="subtitle">Рекомендуемые сообщества</h2>
+            <div class="friends">
+                {{ range $_, $rc := .RecCommunities }}         
+                <div class="friend">
+                    <div class="info">
+                        <div class="img"><img src="{{ $rc.Photo }}" alt=""></div>
+                        <div class="name"><a style="color: black; text-decoration: none;" href="/community">{{ $rc.Name }}</a> <br><span>{{ $rc.Category }}</span></div>
+                    </div>
+                    <div class="menu com">
+                        <div></div>
+                        <form action="" method="post"><input name="{{ $rc.Name }}" class="communaRec communitiesSub" id="{{$rc.Name}}" class="coms" type="submit" value="Подписаться"></form>        
+                    </div>
+                </div>
+                {{ end }}
+            </div>
+        </main>
+    {{else}}
     <main style="height:100%">   
         <div class="friends">
             {{ range $_, $c := .Communities }}         
@@ -45,28 +77,13 @@
                 </div>
                 <div class="menu com">
                     <div></div>
-                    <form action="" method="get"><input name="{{ $c.Communities }}" id="communities" class="coms" type="submit" value="Отписаться"></form>        
-                </div>
-            </div>
-            {{ end }}
-        </div>
-        <h2 class="subtitle">Рекомендуемые сообщества</h2>
-        <div class="friends">
-            {{ range $_, $rc := .RecCommunities }}         
-            <div class="friend">
-                <div class="info">
-                    <div class="img"><img src="{{ $rc.Photo }}" alt=""></div>
-                    <div class="name"><a style="color: black; text-decoration: none;" href="/community">{{ $rc.Name }}</a> <br><span>{{ $rc.Category }}</span></div>
-                </div>
-                <div class="menu com">
-                    <div></div>
-                    <form action="" method="post"><input name="{{ $rc.Name }}" class="communaRec communitiesSub" id="{{$rc.Name}}" class="coms" type="submit" value="Подписаться"></form>        
+                          
                 </div>
             </div>
             {{ end }}
         </div>
     </main>
-
+    {{ end }}
     <aside id="left" class="left">
         <div class="setacc">
             <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
