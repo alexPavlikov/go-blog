@@ -67,6 +67,7 @@ func handleRequest() {
 	http.HandleFunc("/guest", guestHandler)
 	http.HandleFunc("/guest/friends", guestFriendsHandler)
 	http.HandleFunc("/guest/communities", guestCommunitiesHandler)
+	http.HandleFunc("/message", messageHandler)
 }
 
 func logFormHandler(w http.ResponseWriter, r *http.Request) {
@@ -508,6 +509,29 @@ func guestHandler(w http.ResponseWriter, r *http.Request) {
 	sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Guest": userGuest, "Statistics": stat, "Done": Done}
 
 	tmpl.ExecuteTemplate(w, "guest", sendUser)
+}
+
+func messageHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/message.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+	if r.Method == "GET" {
+		r.ParseForm()
+		message := r.FormValue("commentsInput")
+		fmt.Println(message)
+	}
+
+	if r.Method == "POST" {
+		r.ParseForm()
+		usrMesg := r.FormValue("user_id")
+		fmt.Println(usrMesg)
+	}
+
+	title := map[string]string{"Title": "Сообщения"}
+	tmpl.ExecuteTemplate(w, "header", title)
+	sendUser := map[string]interface{}{"User": userAuth}
+	tmpl.ExecuteTemplate(w, "message", sendUser)
 }
 
 func Cookies() { // доделать/сделать

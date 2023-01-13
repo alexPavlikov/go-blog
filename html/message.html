@@ -1,0 +1,169 @@
+{{ define "message" }}
+
+{{ template "header" }}
+
+<link rel="stylesheet" href="/assets/css/friends.css">
+<link rel="stylesheet" href="/assets/css/style.css">
+<link rel="stylesheet" href="/assets/css/blog.css">
+<link rel="stylesheet" href="/assets/css/friends.css">
+<link rel="stylesheet" href="/assets/css/message.css">
+
+<script src='//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js'></script>
+
+<header>
+    <div class="brand">
+        <div class="logos">
+            <img src="/data/image/brand.png" alt="">
+            <span>GOLANG</span>
+        </div>
+        <div class="find"><input type="text" placeholder="Найти"></div>
+    </div>
+    <div class="account">
+        <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
+        <i class="fa-solid fa-chevron-down" onclick="Check()"></i>
+    </div>
+</header>
+
+<body>
+    <aside class="right">
+        <a href="/page#"><i class="fa-regular fa-circle-user"></i><span> Моя страница</span></a>
+        <a href="/blog"><i class="fa-regular fa-newspaper"></i><span> Новости</span></a>
+        <a href="/message"><i class="fa-regular fa-comment"></i><span> Сообщения</span></a>
+        <a href="/friends"><i class="fa-solid fa-user-group"></i><span> Друзья</span></a>
+        <a href="/communities"><i class="fa-solid fa-users"></i><span> Сообщества</span></a>
+        <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+        <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
+        <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
+        <a href="#">Далее</a>
+    </aside>
+
+    <main>   
+        <section class="msg-list">
+			<div class="user head-chat" id="{{ .User.Login }}">
+				<div class="setacc">
+					<div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
+					<div class="info">
+						<div class="name">{{ .User.Name }}</div>
+					</div>
+				</div>
+			</div>
+			<div class="user head-chat" id="{{ .User.Login }}">
+				<div class="setacc">
+					<div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
+					<div class="info">
+						<div class="name">{{ .User.Name }}</div>
+					</div>
+				</div>
+			</div>
+			<div class="user head-chat" id="{{ .User.Login }}">
+				<div class="setacc">
+					<div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
+					<div class="info">
+						<div class="name">{{ .User.Name }}</div>
+					</div>
+				</div>
+			</div>
+		</section>
+        <section class="chat">
+          <div class="head-chat">
+			<div class="setacc">
+				<div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
+				<div class="info">
+					<div class="name">{{ .User.Name }}</div>
+				</div>
+			</div>
+          </div>
+
+            <div class="message message--user-1">
+              <time class="message__time">21.02.2017 21:12:07</time>
+              <figure class="message__author-pic">
+                <img src="http://pipsum.com/40x40.jpg">
+              </figure>
+              <div class="message__text">
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis at purus nibh. Cras metus nulla, vestibulum in auctor ac, fermentum vitae tellus.</p>
+              </div>
+            </div>
+    
+    
+            <div class="message message--user-2">
+              <time class="message__time">21.02.2017 21:12:07</time>
+              <figure class="message__author-pic">
+                <img src="https://placeimg.com/40/40/people">
+              </figure>
+              <div class="message__text">
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis at purus nibh. Cras metus nulla, vestibulum in auctor ac, fermentum vitae tellus.</p>
+              </div>
+            </div>
+    
+    
+            <div class="message message--user-2">
+              <time class="message__time">21.02.2017 21:12:07</time>
+              <figure class="message__author-pic">
+                <img src="https://placeimg.com/40/40/people">
+              </figure>
+              <div class="message__text">
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis at purus nibh. Cras metus nulla, vestibulum in auctor ac, fermentum vitae tellus.</p>
+              </div>
+            </div>
+    
+    
+            <div class="message message--user-1">
+              <time class="message__time">21.02.2017 21:12:07</time>
+              <figure class="message__author-pic">
+                <img src="http://pipsum.com/40x40.jpg">
+              </figure>
+              <div class="message__text">
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis at purus nibh. Cras metus nulla, vestibulum in auctor ac, fermentum vitae tellus.</p>
+              </div>
+            </div>
+			
+			<div class="comments2">
+                <form action="" method="get">
+                    <input name="commentsInput" id="commentsInput" type="text" placeholder="Написать сообщение">
+                    <button name="" class="btns" type="submit"><i class="fa-solid fa-reply"></i></button>
+                </form>
+            </div>
+    
+          </section>
+
+    </main>
+
+    <aside id="left" class="left">
+        <div class="setacc">
+            <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
+            <div class="info">
+                <div class="name">{{ .User.Name }}</div>
+                <div class="login">{{ .User.Login }}</div>
+            </div>
+        </div>
+        <div class="settings">
+            <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+            <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
+            <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
+            <a id="exit" href="/"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
+        </div>
+    </aside>
+</body>
+
+<script src="/assets/js/style.js"></script>
+
+<script>
+    $(document).ready(function(){
+       $('.user').click(function(e) {
+           clickId = $(this).attr('id');
+               $.ajax({
+                   url: '/message',
+                   type: 'POST',
+                   dataType: 'html',
+                   data : { user_id: clickId},
+                   success : function(data) {
+                   $('#result').html(data);
+                   },
+               });
+       });
+   });
+</script>
+
+{{ template "footer" }}
+
+{{ end }}
