@@ -136,6 +136,21 @@
        });
    });
 
+   $(document).ready(function(){
+       $('.spany').click(function(e) {
+           clickId = $(this).attr('id');
+               $.ajax({
+                   url: '/community',
+                   type: 'POST',
+                   dataType: 'html',
+                   data : { postId: clickId},
+                   success : function(data) {
+                   $('#result').html(data);
+                   },
+               });
+       });
+   });
+
 </script>
 
 {{ template "footer" }}

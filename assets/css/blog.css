@@ -8,7 +8,7 @@ body {
 }
 
 main {
-    width: 60%;
+    width: 70%;
     height: 100vh;
     margin-top: 60px;
 }
@@ -242,6 +242,8 @@ aside {
     background-color: rgb(233, 233, 233);
     height: 25vh;
     border: 1px solid #777;
+    position: fixed;
+    right: 0;
 }
 .left .setacc {
     width: 80%;

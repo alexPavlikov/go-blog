@@ -17,6 +17,7 @@ type Setting struct {
 	FriendsTitile     string
 	CommunitiesTitile string
 	CommentsTitle     string
+	MessageTitle      string
 }
 
 var Cfg Setting

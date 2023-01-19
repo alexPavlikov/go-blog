@@ -36,7 +36,7 @@
         <a href="#">Далее</a>
     </aside>
 
-    <main>   
+    <main> 
         <div class="friends">
             {{ range $_, $f := .Friends }}
             <div class="friend">
@@ -45,11 +45,11 @@
                     <div class="name"><a style="color: black; text-decoration: none;" class="guestId" id="{{$f.Friend}}" href="/guest">{{ $f.Name }}</a> <br><span>{{ $f.Status }}</span></div>
                 </div>
                 <div class="menu">
-                    <form action="" method="post">
-                        <input type="submit" value="Написть">
+                    <form action="message#{{ $f.Name }}" method="get">
+                        <input type="submit" id="{{$f.Friend}}" class="inputFriends" value="Написть">
                     </form>
                     <form action="friends" method="post">
-                        <input class="input" id="1" type="submit" value="Удалить" onclick="ReadId(this)">
+                        <input class="input" id="{{$f.Friend}}" type="submit" value="Удалить" onclick="ReadId(this)">
                     </form>
                 </div>
             </div>
@@ -114,6 +114,21 @@
                    type: 'GET',
                    dataType: 'html',
                    data : { guestId: clickId},
+                   success : function(data) {
+                   $('#result').html(data);
+                   },
+               });
+       });
+   });
+
+   $(document).ready(function(){
+       $('.inputFriends').click(function(e) {
+           clickId = $(this).attr('id');
+               $.ajax({
+                   url: '/friends',
+                   type: 'GET',
+                   dataType: 'html',
+                   data : { Id: clickId},
                    success : function(data) {
                    $('#result').html(data);
                    },

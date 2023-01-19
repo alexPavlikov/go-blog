@@ -10,7 +10,22 @@ SELECT "Communities".* //тупо работает когда все сообщ�
 	JOIN "Subscribers" ON "Subscribers"."Communities" is distinct from "Communities"."Name"
 	WHERE "Subscribers"."User"='a.pavlikov2002@gmail.com';
 
+решать вопрос с мессенджером 
 
-реализовать друзей гостя и сообщества гостя и выводить их кол-во на странице пользователя
 
-верстать мессенджер и надеяться что смогу его реализовать
+
+
+
+
+			msg := models.Message{User: usrMesg, Message: message, Status: ok}
+			// var data []models.Message
+			// data = append(data, msg)
+
+			f.Write([]byte("[\n"))
+			jsn, err = json.MarshalIndent(msg, "", "\t")
+			if err != nil {
+				fmt.Println("Error - message() json.MarshalIndent()")
+			}
+			f.Write(jsn)
+			f.Write([]byte(",\n"))
+			f.Write([]byte("]\n"))

@@ -39,92 +39,94 @@
 
     <main>   
         <section class="msg-list">
-			<div class="user head-chat" id="{{ .User.Login }}">
+            {{ range $_, $c := .Companions }}  
+			<div class="user head-chat" id="{{$c.Name}}" data-log="{{$c.Companion}}">
 				<div class="setacc">
-					<div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
+					<div class="avatar"><img src="{{ $c.Photo }}" alt=""></div>
 					<div class="info">
-						<div class="name">{{ .User.Name }}</div>
+						<div class="name">{{ $c.Name }}</div>
 					</div>
 				</div>
 			</div>
-			<div class="user head-chat" id="{{ .User.Login }}">
-				<div class="setacc">
-					<div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
-					<div class="info">
-						<div class="name">{{ .User.Name }}</div>
-					</div>
-				</div>
-			</div>
-			<div class="user head-chat" id="{{ .User.Login }}">
-				<div class="setacc">
-					<div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
-					<div class="info">
-						<div class="name">{{ .User.Name }}</div>
-					</div>
-				</div>
-			</div>
+            {{ end }}
 		</section>
-        <section class="chat">
-          <div class="head-chat">
-			<div class="setacc">
-				<div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
-				<div class="info">
-					<div class="name">{{ .User.Name }}</div>
-				</div>
-			</div>
-          </div>
 
-            <div class="message message--user-1">
-              <time class="message__time">21.02.2017 21:12:07</time>
-              <figure class="message__author-pic">
-                <img src="http://pipsum.com/40x40.jpg">
-              </figure>
-              <div class="message__text">
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis at purus nibh. Cras metus nulla, vestibulum in auctor ac, fermentum vitae tellus.</p>
-              </div>
-            </div>
-    
-    
-            <div class="message message--user-2">
-              <time class="message__time">21.02.2017 21:12:07</time>
-              <figure class="message__author-pic">
-                <img src="https://placeimg.com/40/40/people">
-              </figure>
-              <div class="message__text">
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis at purus nibh. Cras metus nulla, vestibulum in auctor ac, fermentum vitae tellus.</p>
-              </div>
-            </div>
-    
-    
-            <div class="message message--user-2">
-              <time class="message__time">21.02.2017 21:12:07</time>
-              <figure class="message__author-pic">
-                <img src="https://placeimg.com/40/40/people">
-              </figure>
-              <div class="message__text">
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis at purus nibh. Cras metus nulla, vestibulum in auctor ac, fermentum vitae tellus.</p>
-              </div>
-            </div>
-    
-    
-            <div class="message message--user-1">
-              <time class="message__time">21.02.2017 21:12:07</time>
-              <figure class="message__author-pic">
-                <img src="http://pipsum.com/40x40.jpg">
-              </figure>
-              <div class="message__text">
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis at purus nibh. Cras metus nulla, vestibulum in auctor ac, fermentum vitae tellus.</p>
-              </div>
-            </div>
-			
-			<div class="comments2">
-                <form action="" method="get">
-                    <input name="commentsInput" id="commentsInput" type="text" placeholder="Написать сообщение">
-                    <button name="" class="btns" type="submit"><i class="fa-solid fa-reply"></i></button>
-                </form>
-            </div>
-    
-          </section>
+        {{ if .Done }}
+
+            <section class="chat">
+                
+                <div class="head-chat">
+                    <div class="setacc">
+                        <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
+                        <div class="info">
+                        <div class="name">{{ .User.Name }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                {{ if .OK }}
+
+                    <div class="message message--user-1">
+                    <time class="message__time">21.02.2017 21:12:07</time>
+                    <figure class="message__author-pic">
+                        <img src="http://pipsum.com/40x40.jpg">
+                    </figure>
+                    <div class="message__text">
+                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis at purus nibh. Cras metus nulla, vestibulum in auctor ac, fermentum vitae tellus.</p>
+                    </div>
+                    </div>
+            
+            
+                    <div class="message message--user-2">
+                    <time class="message__time">21.02.2017 21:12:07</time>
+                    <figure class="message__author-pic">
+                        <img src="https://placeimg.com/40/40/people">
+                    </figure>
+                    <div class="message__text">
+                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis at purus nibh. Cras metus nulla, vestibulum in auctor ac, fermentum vitae tellus.</p>
+                    </div>
+                    </div>
+            
+            
+                    <div class="message message--user-2">
+                    <time class="message__time">21.02.2017 21:12:07</time>
+                    <figure class="message__author-pic">
+                        <img src="https://placeimg.com/40/40/people">
+                    </figure>
+                    <div class="message__text">
+                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis at purus nibh. Cras metus nulla, vestibulum in auctor ac, fermentum vitae tellus.</p>
+                    </div>
+                    </div>
+            
+            
+                    <div class="message message--user-1">
+                    <time class="message__time">21.02.2017 21:12:07</time>
+                    <figure class="message__author-pic">
+                        <img src="http://pipsum.com/40x40.jpg">
+                    </figure>
+                    <div class="message__text">
+                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis at purus nibh. Cras metus nulla, vestibulum in auctor ac, fermentum vitae tellus.</p>
+                    </div>
+                    </div>
+                {{ else }}    
+
+                <h2 class="subtitles">Стань первым. Напиши сообщение {{ .User.Name }}</h2>
+                    
+                {{ end }}
+
+                    <div class="comments2">
+                        <form action="" method="get">
+                            <input name="commentsInput" id="commentsInput" type="text" placeholder="Написать сообщение">
+                            <button name="" class="btns" type="submit"><i class="fa-solid fa-reply"></i></button>
+                        </form>
+                    </div>
+            
+            </section>
+        {{ else }}    
+
+            <h2 class="subtitles">Выберите чат</h2>    
+
+        {{ end }}
 
     </main>
 
@@ -150,7 +152,7 @@
 <script>
     $(document).ready(function(){
        $('.user').click(function(e) {
-           clickId = $(this).attr('id');
+           clickId = $(this).attr('data-log');
                $.ajax({
                    url: '/message',
                    type: 'POST',

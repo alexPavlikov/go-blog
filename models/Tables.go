@@ -104,3 +104,28 @@ type Subscribers struct {
 	User        string
 	Communities string
 }
+
+type Message struct {
+	User    string `json:"User"`
+	Message string `json:"Message"`
+}
+
+type Messenger struct {
+	Messenge []Message
+}
+
+type MessageList struct {
+	LinkId         uint32
+	Main           string
+	Companion      string
+	MessageHistory string
+}
+
+type Companions struct {
+	LinkId         int
+	Main           string
+	Companion      string
+	MessageHistory string
+	Name           string
+	Photo          string
+}

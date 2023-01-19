@@ -86,3 +86,9 @@ header .account i:hover {
     cursor: pointer;
     opacity: .8;
 }
+
+.subtitles {
+    width: 65%;
+    color: rgba(60, 161, 255, 0.550);
+    text-align: center;
+}

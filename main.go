@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -28,6 +30,8 @@ var communitiesName string
 var communitiesPhoto string
 var inputComment string
 var guestLogin string
+var Path string
+var Communication []models.Message
 
 func init() {
 	setting.Config()
@@ -316,8 +320,22 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if r.Method == "GET" {
-		guestId = r.FormValue("guestId")
+		r.ParseForm()
+		guestId = r.FormValue("Id")
 		fmt.Println("GET", guestId)
+		check, err := database.SelectMessengeListbyUsers(userAuth.Login, guestId)
+		if err != nil {
+			fmt.Println("Error - friendsHandler() SelectMessengeListbyUsers()")
+		}
+		if check.MessageHistory == "" {
+			value := models.MessageList{
+				LinkId:         rand.Uint32() / 10000,
+				Main:           userAuth.Login,
+				Companion:      guestId,
+				MessageHistory: userAuth.Login + "&" + guestId + ".json",
+			}
+			database.InsertMessengeListbyUsers(value)
+		}
 	}
 	friends := database.SelectAllFriendsUser(userAuth.Login)
 	data := map[string]interface{}{"User": userAuth, "Friends": friends}
@@ -452,12 +470,12 @@ func communityHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
 		r.ParseForm()
-		postId = r.FormValue("post_id")
+		postId = r.FormValue("postId")
 		fmt.Println("blog", postId)
-		err = database.UpdateViewInPost()
-		if err != nil {
-			fmt.Println("Error - communityHandler() UpdateViewInPost()")
-		}
+		// err = database.UpdateViewInPost()
+		// if err != nil {
+		// 	fmt.Println("Error - communityHandler() UpdateViewInPost()")
+		// }
 	}
 
 	title := map[string]string{"Title": Foo.Name}
@@ -512,26 +530,91 @@ func guestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func messageHandler(w http.ResponseWriter, r *http.Request) {
+	var usrMesg string
+	var f *os.File
+	var err error
+	var OK bool
+	var companion []models.Companions
+	//var jsn []byte
+
 	tmpl, err := template.ParseFiles("html/message.html", "html/header.html", "html/footer.html")
 	if err != nil {
 		http.NotFound(w, r)
 	}
+	companion = database.SelectCompanionsByLogin(userAuth.Login)
+	if r.Method == "POST" {
+		r.ParseForm()
+		usrMesg = r.FormValue("user_id")
+		fmt.Println(usrMesg)
+		OK = true
+		UsersLink, err := database.SelectMessengeListbyUsers(userAuth.Login, usrMesg)
+		if err != nil {
+			fmt.Println("Error - messageHandler() SelectMessengeListbyUsers()", err)
+		}
+		Path = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
+		fmt.Println("messageHandler", Path)
+	}
 	if r.Method == "GET" {
 		r.ParseForm()
 		message := r.FormValue("commentsInput")
-		fmt.Println(message)
+
+		if message != "" {
+
+			f, err = os.OpenFile(Path, os.O_WRONLY|os.O_APPEND, 0755)
+			if err != nil {
+				fmt.Println("Error - messageHandler() os.OpenFile()")
+			}
+			defer f.Close()
+
+			msg := models.Message{
+				User:    userAuth.Login,
+				Message: message,
+			}
+			data := JSON(msg)
+			fmt.Println(data)
+		}
 	}
 
-	if r.Method == "POST" {
-		r.ParseForm()
-		usrMesg := r.FormValue("user_id")
-		fmt.Println(usrMesg)
-	}
+	// defer f.Write(jsn)
 
-	title := map[string]string{"Title": "Сообщения"}
+	title := map[string]string{"Title": models.Cfg.MessageTitle}
 	tmpl.ExecuteTemplate(w, "header", title)
-	sendUser := map[string]interface{}{"User": userAuth}
-	tmpl.ExecuteTemplate(w, "message", sendUser)
+	fmt.Println(OK)
+	data := map[string]interface{}{"User": userAuth, "Done": OK, "OK": OK, "Companions": companion}
+	tmpl.ExecuteTemplate(w, "message", data)
+}
+
+func JSON(msg models.Message) models.Messenger {
+
+	rawDataIn, err := ioutil.ReadFile(Path)
+	fmt.Println(Path)
+	if err != nil {
+		log.Fatal("Cannot load settings:", err)
+	}
+
+	var settings models.Messenger
+	err = json.Unmarshal(rawDataIn, &settings)
+	if err != nil {
+		log.Fatal("Invalid settings format:", err)
+	}
+
+	newClient := models.Message{
+		User:    msg.User,
+		Message: msg.Message,
+	}
+
+	settings.Messenge = append(settings.Messenge, newClient)
+
+	rawDataOut, err := json.MarshalIndent(&settings, "", "  ")
+	if err != nil {
+		log.Fatal("JSON marshaling failed:", err)
+	}
+
+	err = ioutil.WriteFile("C:/Users/admin/go/src/go-blog/data/files/message/test.json", rawDataOut, 0)
+	if err != nil {
+		log.Fatal("Cannot write updated settings file:", err)
+	}
+	return settings
 }
 
 func Cookies() { // доделать/сделать

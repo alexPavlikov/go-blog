@@ -42,9 +42,3 @@ section .com_stat .txt span {
     display: flex;
     flex-direction: row;
 }
-
-.subtitles {
-    width: 100%;
-    color: rgba(60, 161, 255, 0.550);
-    text-align: center;
-}

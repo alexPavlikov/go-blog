@@ -1004,3 +1004,93 @@ func InsertSubscribersToUser(user string, communities string) error {
 	log.Printf("%d post created ", rows)
 	return err
 }
+
+// --------------------Query from MessengeList table--------------------
+
+func SelectMessengeListbyUsers(author string, guest string) (models.MessageList, error) {
+	var messageList models.MessageList
+	query := fmt.Sprintf(`SELECT * FROM "MessageList" 
+	WHERE "Main" = '%s' 
+	AND "Companion" = '%s';`, author, guest)
+	rows, err := DB.Query(query)
+	if err != nil {
+		fmt.Println("Error - SelectMessengeListbyUsers()")
+		return messageList, err
+	}
+	for rows.Next() {
+		err = rows.Scan(&messageList.LinkId, &messageList.Main, &messageList.Companion, &messageList.MessageHistory)
+		if err != nil {
+			fmt.Println("Error - SelectMessengeListbyUsers() rows.Next()")
+			return messageList, err
+		}
+	}
+	return messageList, nil
+}
+
+func SelectMessengeListbyLogin(author string, guest string) []models.MessageList {
+	var messageList models.MessageList
+	var msgArr []models.MessageList
+	query := fmt.Sprintf(`SELECT "MessageList".*, "Users"."Name", "Users"."Photo" FROM "MessageList"
+	JOIN "Users" ON "Users"."Login" = "MessageList"."Main"
+	OR "Users"."Login" = "MessageList"."Companion"
+	WHERE "Main" = '%s' 
+	AND "Companion" = '%s';`, author, guest)
+	rows, err := DB.Query(query)
+	if err != nil {
+		fmt.Println("Error - SelectMessengeListbyUsers()")
+	}
+	for rows.Next() {
+		err = rows.Scan(&messageList.LinkId, &messageList.Main, &messageList.Companion, &messageList.MessageHistory)
+		if err != nil {
+			fmt.Println("Error - SelectMessengeListbyUsers() rows.Next()")
+		}
+		msgArr = append(msgArr, messageList)
+	}
+	return msgArr
+}
+
+func SelectCompanionsByLogin(user string) []models.Companions {
+	var companion models.Companions
+	var companions []models.Companions
+	query := fmt.Sprintf(`
+	SELECT "MessageList".*, "Users"."Name", "Users"."Photo"
+	FROM "MessageList"
+	JOIN "Users" ON "Users"."Login" = "MessageList"."Companion"
+	WHERE "Main" = '%s';`, user)
+	rows, err := DB.Query(query)
+	if err != nil {
+		fmt.Println("Error - SelectCompanionsByLogin()")
+	}
+	for rows.Next() {
+		err = rows.Scan(&companion.LinkId, &companion.Main, &companion.Companion, &companion.MessageHistory, &companion.Name, &companion.Photo)
+		if err != nil {
+			fmt.Println("Error - SelectCompanionsByLogin() rows.Next()")
+		}
+		companions = append(companions, companion)
+	}
+	return companions
+}
+
+func InsertMessengeListbyUsers(data models.MessageList) error {
+	query := `INSERT INTO "MessageList"("LinkId", "Main", "Companion", "MessageHistory") VALUES($1, $2, $3, $4)`
+	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelfunc()
+	stmt, err := DB.PrepareContext(ctx, query)
+	if err != nil {
+		log.Printf("Error %s when preparing SQL statement", err)
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.ExecContext(ctx, data.LinkId, data.Main, data.Companion, data.MessageHistory)
+	if err != nil {
+		log.Printf("Error %s when inserting row into RepostPost table", err)
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		log.Printf("Error %s when finding rows affected", err)
+		return err
+	}
+	log.Printf("%d post created ", rows)
+	return err
+}
