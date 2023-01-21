@@ -1094,3 +1094,27 @@ func InsertMessengeListbyUsers(data models.MessageList) error {
 	log.Printf("%d post created ", rows)
 	return err
 }
+
+func InsertDoubleMessengeListbyUsers(data models.MessageList) error {
+	query := `INSERT INTO "MessageList"("LinkId", "Main", "Companion", "MessageHistory") VALUES($1, $2, $3, $4)`
+	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelfunc()
+	stmt, err := DB.PrepareContext(ctx, query)
+	if err != nil {
+		log.Printf("Error %s when preparing SQL statement", err)
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.ExecContext(ctx, data.LinkId, data.Companion, data.Main, data.MessageHistory)
+	if err != nil {
+		log.Printf("Error %s when inserting row into RepostPost table", err)
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		log.Printf("Error %s when finding rows affected", err)
+		return err
+	}
+	log.Printf("%d post created ", rows)
+	return err
+}

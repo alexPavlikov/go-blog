@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
@@ -32,6 +33,7 @@ var inputComment string
 var guestLogin string
 var Path string
 var Communication []models.Message
+var check models.MessageList
 
 func init() {
 	setting.Config()
@@ -323,20 +325,12 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 		guestId = r.FormValue("Id")
 		fmt.Println("GET", guestId)
-		check, err := database.SelectMessengeListbyUsers(userAuth.Login, guestId)
+		check, err = database.SelectMessengeListbyUsers(userAuth.Login, guestId)
 		if err != nil {
 			fmt.Println("Error - friendsHandler() SelectMessengeListbyUsers()")
 		}
-		if check.MessageHistory == "" {
-			value := models.MessageList{
-				LinkId:         rand.Uint32() / 10000,
-				Main:           userAuth.Login,
-				Companion:      guestId,
-				MessageHistory: userAuth.Login + "&" + guestId + ".json",
-			}
-			database.InsertMessengeListbyUsers(value)
-		}
 	}
+
 	friends := database.SelectAllFriendsUser(userAuth.Login)
 	data := map[string]interface{}{"User": userAuth, "Friends": friends}
 	title := map[string]string{"Title": models.Cfg.FriendsTitile}
@@ -529,38 +523,53 @@ func guestHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "guest", sendUser)
 }
 
-func messageHandler(w http.ResponseWriter, r *http.Request) {
-	var usrMesg string
-	var f *os.File
-	var err error
-	var OK bool
-	var companion []models.Companions
-	//var jsn []byte
+var usrMesg string
+var f *os.File
+var Link string
+var companion []models.Companions
+var UsersLink models.MessageList
+var activeChatUser models.Users
+var OK bool
+var Messenger models.Messenger
 
+func messageHandler(w http.ResponseWriter, r *http.Request) {
+	OK = true
 	tmpl, err := template.ParseFiles("html/message.html", "html/header.html", "html/footer.html")
 	if err != nil {
 		http.NotFound(w, r)
 	}
+
+	//createFile(check)
 	companion = database.SelectCompanionsByLogin(userAuth.Login)
-	if r.Method == "POST" {
+	fmt.Println("UsersLink1111", UsersLink)
+	Link = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
+
+	if r.Method == "GET" {
 		r.ParseForm()
 		usrMesg = r.FormValue("user_id")
 		fmt.Println(usrMesg)
-		OK = true
-		UsersLink, err := database.SelectMessengeListbyUsers(userAuth.Login, usrMesg)
+		UsersLink, err = database.SelectMessengeListbyUsers(userAuth.Login, usrMesg)
 		if err != nil {
 			fmt.Println("Error - messageHandler() SelectMessengeListbyUsers()", err)
 		}
-		Path = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
-		fmt.Println("messageHandler", Path)
+		activeChatUser, err = database.SelectUserByColumn("Login", usrMesg)
+		if err != nil {
+			fmt.Println("Error - messageHandler() SelectUserByColumn()", err)
+		}
+		OK = true
 	}
-	if r.Method == "GET" {
+	fmt.Println("UsersLink2222", UsersLink)
+	//Link = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
+	if r.Method == "POST" {
+
 		r.ParseForm()
+
 		message := r.FormValue("commentsInput")
-
 		if message != "" {
-
-			f, err = os.OpenFile(Path, os.O_WRONLY|os.O_APPEND, 0755)
+			//Link = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
+			Link = "C:/Users/admin/go/src/go-blog/data/files/message/test.json"
+			fmt.Println("Link------------------", Link)
+			f, err = os.OpenFile(Link, os.O_WRONLY|os.O_APPEND, 0755)
 			if err != nil {
 				fmt.Println("Error - messageHandler() os.OpenFile()")
 			}
@@ -569,23 +578,23 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 			msg := models.Message{
 				User:    userAuth.Login,
 				Message: message,
+				Data:    time.Now().Format("2006-01-02 15:04"),
+				Photo:   userAuth.Photo,
 			}
-			data := JSON(msg)
-			fmt.Println(data)
+			Messenger = JSON(msg, Link)
+			fmt.Println(Messenger)
 		}
 	}
-
-	// defer f.Write(jsn)
 
 	title := map[string]string{"Title": models.Cfg.MessageTitle}
 	tmpl.ExecuteTemplate(w, "header", title)
 	fmt.Println(OK)
-	data := map[string]interface{}{"User": userAuth, "Done": OK, "OK": OK, "Companions": companion}
+	data := map[string]interface{}{"User": userAuth, "Done": OK, "OK": OK, "Companions": companion, "ChatUser": activeChatUser, "Chat": Messenger.Messenge}
 	tmpl.ExecuteTemplate(w, "message", data)
 }
 
-func JSON(msg models.Message) models.Messenger {
-
+func JSON(msg models.Message, Path string) models.Messenger {
+	fmt.Println("JSON", Path)
 	rawDataIn, err := ioutil.ReadFile(Path)
 	fmt.Println(Path)
 	if err != nil {
@@ -601,16 +610,25 @@ func JSON(msg models.Message) models.Messenger {
 	newClient := models.Message{
 		User:    msg.User,
 		Message: msg.Message,
+		Data:    msg.Data,
+		Photo:   msg.Photo,
 	}
 
 	settings.Messenge = append(settings.Messenge, newClient)
+	for i := range settings.Messenge {
+		if settings.Messenge[i].User == userAuth.Login {
+			settings.Messenge[i].Access = 2
+		} else {
+			settings.Messenge[i].Access = 1
+		}
+	}
 
 	rawDataOut, err := json.MarshalIndent(&settings, "", "  ")
 	if err != nil {
 		log.Fatal("JSON marshaling failed:", err)
 	}
 
-	err = ioutil.WriteFile("C:/Users/admin/go/src/go-blog/data/files/message/test.json", rawDataOut, 0)
+	err = ioutil.WriteFile(Path, rawDataOut, 0)
 	if err != nil {
 		log.Fatal("Cannot write updated settings file:", err)
 	}
@@ -641,5 +659,32 @@ func recordingSessions(session string) {
 	_, err = file.Write(data)
 	if err != nil {
 		fmt.Println(err)
+	}
+}
+
+func createFile(check models.MessageList) {
+	Path := "C:/Users/admin/go/src/go-blog/data/files/message/"
+	fmt.Println("start", check.MessageHistory)
+	if check.LinkId > 0 {
+		fmt.Println(check.MessageHistory)
+	} else {
+		value := models.MessageList{
+			LinkId:         rand.Uint32() / 10000,
+			Main:           userAuth.Login,
+			Companion:      guestId,
+			MessageHistory: strconv.Itoa(int(math.Abs(float64(rand.Int31())))) + ".json",
+		}
+		database.InsertMessengeListbyUsers(value)
+		value.LinkId += 1
+		err := database.InsertDoubleMessengeListbyUsers(value)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		_, err = os.Create(Path + value.MessageHistory)
+		if err != nil {
+			fmt.Println("Error - friendsHandler() Create file")
+		}
+		fmt.Println("Create file - ", Path+value.MessageHistory)
+		check = models.MessageList{}
 	}
 }

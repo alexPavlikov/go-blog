@@ -108,6 +108,9 @@ type Subscribers struct {
 type Message struct {
 	User    string `json:"User"`
 	Message string `json:"Message"`
+	Data    string `json:"Data"`
+	Photo   string `json:"Photo"`
+	Access  int    `json:"Access"`
 }
 
 type Messenger struct {
