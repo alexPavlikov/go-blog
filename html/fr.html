@@ -1,4 +1,4 @@
-{{ define "communities" }}
+{{ define "fr" }}
 
 {{ template "header" }}
 
@@ -37,40 +37,30 @@
     </aside>
     
     {{ if .Done }}
-    <main>
-        {{ $length := len .Communities }} 
-        {{ $user :=  .User.Login }}
+    <main> 
         <div class="friends">
             <div class="tabs">
                 <input type="radio" name="tab-btn" id="tab-btn-1" value="" checked>
-                <label for="tab-btn-1">Подписки ({{$length}})</label>
+                <label for="tab-btn-1">Друзья</label>
                 <input type="radio" name="tab-btn" id="tab-btn-2" value="">
                 <label for="tab-btn-2">Рекомендации</label>
             
                 <div id="content-1">
-                        {{ range $_, $c := .Communities }}     
-                            
+                        {{ range $_, $c := .Communities }}         
                         <div class="friend">
                             <div class="info">
                                 <div class="img"><img src="{{ $c.Photo }}" alt=""></div>
                                 <div class="name"><a style="color: black; text-decoration: none;" class="communa" id="{{$c.Communities}}" href="/community">{{ $c.Communities }}</a> <br><span>{{ $c.Category }}</span></div>
                             </div>
-                            {{ if eq $c.Author $c.User }}
-                            <div class="menu com">
-                                <div></div>
-                                <form action="" method="get"><input style="display: none;" name="{{ $c.Communities }}" id="communities" class="coms" type="submit" value="Отписаться"></form>        
-                            </div>
-                            {{ else }}
                             <div class="menu com">
                                 <div></div>
                                 <form action="" method="get"><input name="{{ $c.Communities }}" id="communities" class="coms" type="submit" value="Отписаться"></form>        
                             </div>
-                            {{ end }}
                         </div>
                         {{ end }}
                 </div>
                 <div id="content-2">
-                        {{ range $_, $rc := .RecCom }}         
+                        {{ range $_, $rc := .RecCommunities }}         
                         <div class="friend">
                             <div class="info">
                                 <div class="img"><img src="{{ $rc.Photo }}" alt=""></div>

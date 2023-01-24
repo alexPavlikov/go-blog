@@ -56,7 +56,7 @@
             <section class="chat">
                 
                 <div class="head-chat">
-                    <div class="setacc">
+                    <div class="setacc" style="position: fixed; width: 45%; top:85px">
                         <div class="avatar"><img src="{{ .ChatUser.Photo }}" alt=""></div>
                         <div class="info">
                         <div class="name">{{ .ChatUser.Name }}</div>
@@ -157,6 +157,14 @@
                });
        });
    });
+
+
+    $(document).ready(function(){
+        $('.chat').click(function(e) {
+            $(window).scrollTop($(document).height());
+        });
+    });
+
 </script>
 
 {{ template "footer" }}

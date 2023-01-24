@@ -46,13 +46,12 @@ type JoinComments struct { // structure of the Comments table
 }
 
 type Users struct { // structure of the Users table
-	Login       string
-	Password    string
-	Name        string
-	Access      string
-	Communities string
-	Photo       string
-	Birthdate   string
+	Login     string
+	Password  string
+	Name      string
+	Access    string
+	Photo     string
+	Birthdate string
 }
 
 type JoinUser struct {

@@ -101,11 +101,14 @@ main .msg-list {
 }
 
 main .chat {
+    margin-top: 90px;
   width: 65%;
   border-radius: 15px;
   background-color: #fff;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
+  overflow: auto;
+  height: 82%;
 }
 
 .chat .comments2 {
@@ -119,7 +122,9 @@ main .chat {
 .chat .comments2 form {
     display: flex;
     flex-direction: row;
-    width: 100%;
+    width: 45%;
+    position: fixed;
+    bottom: 20px;
 }
 
 .chat .comments2 form input {

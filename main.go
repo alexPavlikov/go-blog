@@ -67,14 +67,60 @@ func handleRequest() {
 	http.HandleFunc("/setting", settingHandler)
 	http.HandleFunc("/setting/refresh", refreshSettingHandler)
 	http.HandleFunc("/friends", friendsHandler)
+	http.HandleFunc("/friends/add", addFriendsHandler)
+	http.HandleFunc("/friends/rec", recFriendsHandler)
 	http.HandleFunc("/communities", communitiesHandler)
 	http.HandleFunc("/comments", commentsHandler)
 	http.HandleFunc("/community", communityHandler)
+	http.HandleFunc("/community/del", communityDelHandler)
 	http.HandleFunc("/guest", guestHandler)
 	http.HandleFunc("/guest/friends", guestFriendsHandler)
 	http.HandleFunc("/guest/communities", guestCommunitiesHandler)
 	http.HandleFunc("/message", messageHandler)
+
+	//http.HandleFunc("/fr", frHandler)
 }
+
+// func frHandler(w http.ResponseWriter, r *http.Request) {
+// 	tmpl, err := template.ParseFiles("html/fr.html", "html/header.html", "html/footer.html")
+// 	if err != nil {
+// 		http.NotFound(w, r)
+// 	}
+
+// 	if r.Method == "GET" {
+// 		r.ParseForm()
+// 		data := r.FormValue("name_com")
+// 		fmt.Println("GET Отписка от сообщества", data, userAuth.Login)
+// 		if data != "" {
+// 			err := database.DeleteSubOnCommunities(data, userAuth.Login)
+// 			if err != nil {
+// 				fmt.Println("Error - communitiesHandler() DeleteCommunitiesByName()")
+// 			}
+// 		}
+// 	}
+// 	if r.Method == "POST" {
+// 		r.ParseForm()
+// 		subCom := r.FormValue("communityRec")
+// 		fmt.Println(subCom)
+// 		if subCom != "" {
+// 			err := database.InsertSubscribersToUser(userAuth.Login, subCom)
+// 			if err != nil {
+// 				fmt.Println("Error - communitiesHandler() InsertSubscribersToUser()", err.Error())
+// 			}
+// 		}
+// 		communitiesName = r.FormValue("community_id")
+// 		fmt.Println("POST", communitiesName)
+// 		communities := database.SelectCommunitiesByColumn("Name", communitiesName)
+// 		communitiesPhoto = communities.Photo
+// 	}
+// 	done := true
+// 	comWithOutSub := database.SelectCommunitiesWithOutSub(userAuth.Login)
+// 	communities := database.SelectAllCommunitiesUser("User", userAuth.Login)
+// 	data := map[string]interface{}{"User": userAuth, "Communities": communities, "RecCommunities": comWithOutSub, "Done": done}
+// 	title := map[string]string{"Title": models.Cfg.CommunitiesTitile}
+// 	tmpl.ExecuteTemplate(w, "header", title)
+// 	tmpl.ExecuteTemplate(w, "fr", data)
+// }
 
 func logFormHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles("html/login.html")
@@ -283,7 +329,7 @@ func commentsHandler(w http.ResponseWriter, r *http.Request) {
 		inputComment = r.FormValue("commentsInput")
 		var comment models.Comments
 		if inputComment != "" {
-			comment.Posts, _ = strconv.Atoi(postId)
+			comment.Posts, _ = strconv.Atoi(postId) // err
 			comment.Author = userAuth.Login
 			comment.Like = 1
 			comment.Text = inputComment
@@ -316,9 +362,13 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		id = r.FormValue("friend_id")
 		fmt.Println(id)
-		err := database.DeleteFriendsById(id)
+		idN, err := database.DeleteFriendByLogin(userAuth.Login, id)
 		if err != nil {
-			fmt.Println("Error - friendsDelHandler() DeleteFriendsById()")
+			fmt.Println("Error - friendsDelHandler()1 DeleteFriendByLogin()")
+		}
+		err = database.InsertUserSub(userAuth.Login, idN)
+		if err != nil {
+			fmt.Println("Error - InsertUserSub() DeleteFriendsById()", err)
 		}
 	}
 	if r.Method == "GET" {
@@ -331,11 +381,59 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	rec := database.SelectRecomendationFriends(userAuth.Login)
+	subs := database.SelectUserSub(userAuth.Login)
 	friends := database.SelectAllFriendsUser(userAuth.Login)
-	data := map[string]interface{}{"User": userAuth, "Friends": friends}
+
+	data := map[string]interface{}{"User": userAuth, "Friends": friends, "Subs": subs, "Rec": rec, "Done": true}
 	title := map[string]string{"Title": models.Cfg.FriendsTitile}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "friends", data)
+}
+
+func addFriendsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+		sub := r.FormValue("friend_id")
+		frd := database.CheckFriends(userAuth.Login, sub)
+		if frd.Login == "" {
+			var friend = models.Friends{
+				Login:  userAuth.Login,
+				Status: "Friend",
+				Friend: sub,
+			}
+			var friend1 = models.Friends{
+				Login:  sub,
+				Status: "Friend",
+				Friend: userAuth.Login,
+			}
+			_, err := database.InsertFriends(friend)
+			if err != nil {
+				fmt.Println("Error - addFriendsHandler() InsertFriends1()", err)
+			}
+			_, err = database.InsertFriends(friend1)
+			if err != nil {
+				fmt.Println("Error - addFriendsHandler() InsertFriends2()", err)
+			}
+			err = database.DeleteUserSub(userAuth.Login, sub)
+			if err != nil {
+				fmt.Println("Error - addFriendsHandler() DeleteUserSub()", err)
+			}
+			http.Redirect(w, r, "/friends", http.StatusSeeOther)
+		}
+	}
+}
+
+func recFriendsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+		sub := r.FormValue("friend_id")
+		err := database.InsertUserSub(sub, userAuth.Login)
+		if err != nil {
+			fmt.Println("Error - recFriendsHandler() InsertUserSub()", err)
+		}
+		http.Redirect(w, r, "/friends", http.StatusSeeOther)
+	}
 }
 
 func guestFriendsHandler(w http.ResponseWriter, r *http.Request) {
@@ -355,7 +453,10 @@ func guestFriendsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	gst, _ := database.SelectUserByColumn("Login", guestId)
 	friends := database.SelectAllFriendsUser(guestLogin)
-	data := map[string]interface{}{"User": userAuth, "Friends": friends, "Guest": gst}
+	rec := database.SelectRecomendationFriends(guestLogin)
+	subs := database.SelectUserSub(guestLogin)
+
+	data := map[string]interface{}{"User": userAuth, "Friends": friends, "Guest": gst, "Subs": subs, "Rec": rec, "Done": false}
 	title := map[string]string{"Title": models.Cfg.FriendsTitile}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "friends", data)
@@ -394,9 +495,10 @@ func communitiesHandler(w http.ResponseWriter, r *http.Request) {
 		communitiesPhoto = communities.Photo
 	}
 	done := true
-	comWithOutSub := database.SelectCommunitiesWithOutSub(userAuth.Login)
+	//	comWithOutSub := database.SelectCommunitiesWithOutSub(userAuth.Login)
 	communities := database.SelectAllCommunitiesUser("User", userAuth.Login)
-	data := map[string]interface{}{"User": userAuth, "Communities": communities, "RecCommunities": comWithOutSub, "Done": done}
+	recCommunities := database.SelectRecCommunities(userAuth.Login)
+	data := map[string]interface{}{"User": userAuth, "Communities": communities, "Done": done, "RecCom": recCommunities}
 	title := map[string]string{"Title": models.Cfg.CommunitiesTitile}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "communities", data)
@@ -476,6 +578,15 @@ func communityHandler(w http.ResponseWriter, r *http.Request) {
 	blog := map[string]interface{}{"Post": posts, "User": userAuth, "Subs": subs, "Author": author, "Names": names, "Communities": Foo}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "community", blog)
+}
+
+func communityDelHandler(w http.ResponseWriter, r *http.Request) { // сделать удаление сначала всех подписок с такой группой, а потом саму группу
+	if r.Method == "POST" {
+		r.ParseForm()
+		value := r.FormValue("inputName")
+		fmt.Println(value)
+		http.Redirect(w, r, "/communities", http.StatusSeeOther)
+	}
 }
 
 func guestHandler(w http.ResponseWriter, r *http.Request) {
@@ -566,8 +677,8 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 
 		message := r.FormValue("commentsInput")
 		if message != "" {
-			//Link = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
-			Link = "C:/Users/admin/go/src/go-blog/data/files/message/test.json"
+			Link = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
+			//Link = "C:/Users/admin/go/src/go-blog/data/files/message/test.json"
 			fmt.Println("Link------------------", Link)
 			f, err = os.OpenFile(Link, os.O_WRONLY|os.O_APPEND, 0755)
 			if err != nil {

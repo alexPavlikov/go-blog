@@ -51,6 +51,21 @@
         </section>
 
         <div class="news">
+
+            {{ if eq .User.Login .Author}}
+                <div class="menu">
+                    <h4>Управление сообществом</h4>
+                    <button class="add"><i class="fa-solid fa-plus"></i>Новый пост</button>
+                    <button class="add"><i class="fa-regular fa-trash-can"></i>Удалить пост</button>
+                    <button class="add"><i class="fa-solid fa-right-left"></i>Отдать командывание</button>
+                    <form action="community/del" method="post">
+                        <input id="inputName" name="inputName" type="text" style="display: none;" value="{{.Communities.Name}}">
+                        <button type="submit" class="add del">Удалить сообщество<i class="fa-solid fa-delete-left"></i></button>
+                    </form>
+                </div>
+            {{ end }}
+
+
             {{ range $_, $p := .Post }}
             <div class="post" id="{{ $p.Id }}">
                 <div class="communities">

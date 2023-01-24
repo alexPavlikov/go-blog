@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/alexPavlikov/go-blog/models"
@@ -222,7 +223,7 @@ func SelectUsers() []models.Users {
 	var user models.Users
 	var users []models.Users
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Communities, &user.Photo, &user.Birthdate)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate)
 		if err != nil {
 			fmt.Println("Error - SelectUser() rows.Next()", err.Error())
 		}
@@ -243,7 +244,7 @@ func SelectUserByLogPass(log string, pass string) (user models.Users, err error)
 		return user, err
 	}
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Communities, &user.Photo, &user.Birthdate)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate)
 		if err != nil {
 			fmt.Println("Error - SelectUserByLogPass() rows.Next()", err)
 		}
@@ -265,7 +266,7 @@ func SelectUsersByColumn(column string, value string) ([]models.Users, error) {
 	}
 
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Communities, &user.Photo, &user.Birthdate)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate)
 		if err != nil {
 			fmt.Println("Error - SelectUsersByColumn() rows.Next()", err.Error())
 			return users, err
@@ -284,7 +285,7 @@ func SelectUserByColumn(column string, value string) (models.Users, error) {
 	}
 
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Communities, &user.Photo, &user.Birthdate)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate)
 		if err != nil {
 			fmt.Println("Error - SelectUserByColumn() rows.Next()", err.Error())
 			return user, err
@@ -339,7 +340,7 @@ func InsertUser(user models.Users) (models.Users, error) {
 Функция обновления пользователя из таблицы Users по введенным Login и Password
 */
 func UpdateUserByLogPass(login string, password string, user models.Users) error {
-	query := fmt.Sprintf(`UPDATE "Users" SET "Login" = %s, "Password" = %s, "Name" = %s, "Access" = %s, "Communities" = %s, "Photo" = %s "Birthdate" = %s WHERE "Login" = %s AND "Password" =  %s`, user.Login, user.Password, user.Name, user.Access, user.Communities, user.Photo, user.Birthdate, login, password)
+	query := fmt.Sprintf(`UPDATE "Users" SET "Login" = %s, "Password" = %s, "Name" = %s, "Access" = %s, "Photo" = %s "Birthdate" = %s WHERE "Login" = %s AND "Password" =  %s`, user.Login, user.Password, user.Name, user.Access, user.Photo, user.Birthdate, login, password)
 	_, err := DB.Query(query)
 	if err != nil {
 		fmt.Println(err)
@@ -709,21 +710,59 @@ func InsertComment(comment models.Comments) (models.Comments, error) {
 /*
 Функция выборки друзей из таблицы Friends
 */
-func SelectFriends() []models.Friends {
-	var friend models.Friends
-	var friends []models.Friends
-	rows, err := DB.Query(`SELECT * FROM "Friends"`)
+func SelectFriends() []models.JoinUser {
+	var friend models.JoinUser
+	var friends []models.JoinUser
+	rows, err := DB.Query(`
+	SELECT "Friends"."Login", "Friends"."Friend", "Friends"."Status",
+	"Users"."Name", "Users"."Photo", "Users"."Birthdate"
+	FROM "Friends"
+	JOIN "Users" ON "Users"."Login" = "Friends"."Friend"
+`)
 	if err != nil {
-		fmt.Println("Error - SelectFriends()", err.Error())
+		fmt.Println("Error - SelectFriendsByColumn()", err.Error())
 	}
 	for rows.Next() {
-		err = rows.Scan(&friend.Id, &friend.Login, &friend.Status, &friend.Friend)
+		err = rows.Scan(&friend.Login, &friend.Friend, &friend.Status, &friend.Name, &friend.Photo, &friend.Birthdate)
 		if err != nil {
-			fmt.Println("Error - SelectFriends() rows.Next()", err.Error())
+			fmt.Println("Error - SelectFriendsByColumn() rows.Next()", err.Error())
 		}
 		friends = append(friends, friend)
 	}
 	return friends
+}
+
+func CheckFriends(user string, frd string) models.JoinUser {
+	var friend models.JoinUser
+	rows, err := DB.Query(fmt.Sprintf(`
+	SELECT "Friends"."Login", "Friends"."Friend", "Friends"."Status",
+	"Users"."Name", "Users"."Photo", "Users"."Birthdate"
+	FROM "Friends"
+	JOIN "Users" ON "Users"."Login" = "Friends"."Friend"
+	WHERE "Friends"."Login" = '%s' AND "Friends"."Friend" = '%s';
+`, user, frd))
+	if err != nil {
+		fmt.Println("Error - SelectFriendsByColumn()", err.Error())
+	}
+	for rows.Next() {
+		err = rows.Scan(&friend.Login, &friend.Friend, &friend.Status, &friend.Name, &friend.Photo, &friend.Birthdate)
+		if err != nil {
+			fmt.Println("Error - SelectFriendsByColumn() rows.Next()", err.Error())
+		}
+	}
+	return friend
+}
+
+func DeleteFriendByLogin(user string, sub string) (string, error) {
+	res, err := DB.Exec(`DELETE FROM "Friends" WHERE "Login" IN ($1, $2) AND "Friend" IN ($3, $4)`, user, sub, user, sub)
+	if err == nil {
+		count, err := res.RowsAffected()
+		if err == nil {
+			fmt.Println(count)
+		}
+		return sub, nil
+	}
+	return sub, err
 }
 
 /*
@@ -1117,4 +1156,115 @@ func InsertDoubleMessengeListbyUsers(data models.MessageList) error {
 	}
 	log.Printf("%d post created ", rows)
 	return err
+}
+
+// --------------------Query from Friends table--------------------
+
+func SelectUserSub(user string) []models.Users {
+	var sub models.Users
+	var subs []models.Users
+	query := fmt.Sprintf(`
+	SELECT "Users".* FROM "UserSubs"
+	JOIN "Users" ON "Users"."Login" = "UserSubs"."Sub"
+	WHERE "UserSubs"."User" = '%s';`, user)
+	rows, err := DB.Query(query)
+	if err != nil {
+		fmt.Println("Error - SelectUserSub()")
+	}
+	for rows.Next() {
+		err = rows.Scan(&sub.Login, &sub.Password, &sub.Name, &sub.Access, &sub.Photo, &sub.Birthdate)
+		if err != nil {
+			fmt.Println("Error - SelectUserSub() rows.Next()", err)
+		}
+		subs = append(subs, sub)
+	}
+	return subs
+}
+
+func InsertUserSub(user string, sub string) error {
+	query := `INSERT INTO "UserSubs"("Id", "User", "Sub") VALUES($1, $2, $3)`
+	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelfunc()
+	stmt, err := DB.PrepareContext(ctx, query)
+	if err != nil {
+		log.Printf("Error %s when preparing SQL statement", err)
+		return err
+	}
+	defer stmt.Close()
+	id := rand.Uint32() / 10000
+	fmt.Println(id, user, sub)
+	res, err := stmt.ExecContext(ctx, id, user, sub)
+	if err != nil {
+		log.Printf("Error %s when inserting row into RepostPost table", err)
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		log.Printf("Error %s when finding rows affected", err)
+		return err
+	}
+	log.Printf("%d post created ", rows)
+	return err
+}
+
+func DeleteUserSub(user string, sub string) error {
+	res, err := DB.Exec(`DELETE FROM "UserSubs" WHERE "User" = ($1) AND "Sub" = ($2)`, user, sub)
+	if err == nil {
+		count, err := res.RowsAffected()
+		if err == nil {
+			fmt.Println(count)
+		}
+		return nil
+	}
+	return err
+}
+
+//--
+
+func SelectRecomendationFriends(user string) []models.Users {
+	var sub models.Users
+	var subs []models.Users
+	query := fmt.Sprintf(`
+	SELECT "Users".* FROM "Users"
+	WHERE "Users"."Login" NOT IN 
+	(SELECT "Friends"."Login" FROM "Friends" WHERE "Friends"."Login" != '%s' OR "Friends"."Friend" != '%s')
+	AND "Users"."Login" NOT IN 
+	(SELECT "Friends"."Friend" FROM "Friends" WHERE "Friends"."Login" != '%s' OR "Friends"."Friend" != '%s')
+	AND "Users"."Login" NOT IN 
+	(SELECT "UserSubs"."User" FROM "UserSubs" WHERE  "UserSubs"."User" != '%s' OR "UserSubs"."Sub" != '%s');`, user, user, user, user, user, user)
+	rows, err := DB.Query(query)
+	if err != nil {
+		fmt.Println("Error - SelectRecomendationFriends()")
+	}
+	for rows.Next() {
+		err = rows.Scan(&sub.Login, &sub.Password, &sub.Name, &sub.Access, &sub.Photo, &sub.Birthdate)
+		if err != nil {
+			fmt.Println("Error - SelectRecomendationFriends() rows.Next()", err)
+		}
+		subs = append(subs, sub)
+	}
+	return subs
+}
+
+func SelectRecCommunities(user string) []models.Communities {
+	var communities models.Communities
+	var communitiesArr []models.Communities
+	query := fmt.Sprintf(`
+	SELECT * FROM "Communities" WHERE "Communities"."Category" IN 
+	(SELECT "Communities"."Category" FROM "Subscribers" JOIN "Communities" ON "Communities"."Name" = "Subscribers"."Communities" WHERE "Subscribers"."User" = 's')
+	OR "Communities"."Name" NOT IN
+	(SELECT "Communities" FROM "Subscribers" WHERE "User" = '%s');
+	`, user)
+	rows, err := DB.Query(query)
+	if err != nil {
+		fmt.Println("Error - SelectRecCommunities()", err.Error())
+	}
+	for rows.Next() {
+		err = rows.Scan(&communities.Name, &communities.Author, &communities.Photo, &communities.Category)
+		if err != nil {
+			fmt.Println("Error - SelectRecCommunities() rows.Next()", err.Error())
+		}
+		communitiesArr = append(communitiesArr, communities)
+	}
+	return communitiesArr
 }
