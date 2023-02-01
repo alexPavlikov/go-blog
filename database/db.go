@@ -2,10 +2,10 @@ package database
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
 	"fmt"
 	"log"
-	"math/rand"
 	"time"
 
 	"github.com/alexPavlikov/go-blog/models"
@@ -33,7 +33,7 @@ func SelectPosts() []models.Posts {
 	rows, err := DB.Query(`SELECT "Posts".*, "Communities"."Photo"
 	FROM "Posts" 
 	JOIN "Communities" ON "Posts"."Communities" = "Communities"."Name"
-	ORDER BY "View" DESC;`)
+	ORDER BY "Date" DESC;`)
 	if err != nil {
 		fmt.Println("Error - selectPosts()", err.Error())
 	}
@@ -46,6 +46,35 @@ func SelectPosts() []models.Posts {
 		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo, &post.Category, &post.CommunitiesPhot)
 		if err != nil {
 			fmt.Println("Error - selectPosts() / rows.Next()", err.Error())
+		}
+		posts = append(posts, post)
+	}
+	return posts
+}
+
+/*
+Функция выборки всех постов из таблицы Posts по подписке
+*/
+func SelectPostsByUserSubs(user string) []models.Posts {
+	query := fmt.Sprintf(`SELECT "Posts".*, "Communities"."Photo"
+	FROM "Posts" 
+	JOIN "Communities" ON "Posts"."Communities" = "Communities"."Name"
+	WHERE "Posts"."Communities" IN (SELECT "Subscribers"."Communities"
+	FROM "Subscribers"
+	WHERE "Subscribers"."User" = '%s');`, user)
+	rows, err := DB.Query(query)
+	if err != nil {
+		fmt.Println("Error - SelectPostsByUserSubs()", err.Error())
+	}
+
+	post := models.Posts{}
+	posts := []models.Posts{}
+
+	for rows.Next() {
+
+		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo, &post.Category, &post.CommunitiesPhot)
+		if err != nil {
+			fmt.Println("Error - SelectPostsByUserSubs() / rows.Next()", err.Error())
 		}
 		posts = append(posts, post)
 	}
@@ -82,7 +111,7 @@ func SelectPostByCommunities(communities string) []models.Posts {
 	var post models.Posts
 	query := fmt.Sprintf(`SELECT "Posts".*, "Communities"."Photo"
 	FROM "Posts" 
-	JOIN "Communities" ON "Posts"."Communities" = "Communities"."Name" WHERE "Communities" = '%s'`, communities)
+	JOIN "Communities" ON "Posts"."Communities" = "Communities"."Name" WHERE "Communities" = '%s' ORDER BY "Date" DESC`, communities)
 	rows, err := DB.Query(query)
 	if err != nil {
 		fmt.Println("Error - SelectPostByCommunities()", err.Error())
@@ -100,8 +129,8 @@ func SelectPostByCommunities(communities string) []models.Posts {
 /*
 Функция удаления определенного поста из таблицы Posts по Id
 */
-func DeletePostById(id string) error {
-	res, err := DB.Exec(`DELETE FROM "Posts" WHERE "Id" = ($1)`, id)
+func DeleteCommunitiesPostByTime(community string, time string) error {
+	res, err := DB.Exec(`DELETE FROM "Posts" WHERE "Communities" = ($1) AND "Date" = ($2)`, community, time)
 	if err == nil {
 		count, err := res.RowsAffected()
 		if err == nil {
@@ -131,7 +160,7 @@ func DeletePostByCommunities(communities string) error {
 Функция добавления поста в таблицу Posts
 */
 func InsertPost(post models.Posts) (models.Posts, error) {
-	query := `INSERT INTO "Posts"("Title", "Content", "Like", "View", "Date", "Communities") VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	query := `INSERT INTO "Posts"("Id","Title", "Content", "Like", "View", "Date", "Communities", "Photo", "Category") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
 	stmt, err := DB.PrepareContext(ctx, query)
@@ -140,7 +169,7 @@ func InsertPost(post models.Posts) (models.Posts, error) {
 		return post, err
 	}
 	defer stmt.Close()
-	res, err := stmt.ExecContext(ctx, post.Title, post.Content, post.Like, post.View, post.Date, post.Communities, post.Photo)
+	res, err := stmt.ExecContext(ctx, post.Id, post.Title, post.Content, post.Like, post.View, post.Date, post.Communities, post.Photo, post.Category)
 	if err != nil {
 		log.Printf("Error %s when inserting row into Posts table", err)
 		return post, err
@@ -187,6 +216,17 @@ func UpdateLikeInPost(id int) error {
 */
 func UpdateViewInPost() error {
 	query := `UPDATE "Posts" SET "View" = "View" + 1`
+	_, err := DB.Query(query)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println(query)
+	return nil
+}
+
+func UpdateViewInCommunityPost(name string) error {
+	query := fmt.Sprintf(`UPDATE "Posts" SET "View" = "View" + 1 WHERE "Communities" = '%s'`, name)
 	_, err := DB.Query(query)
 	if err != nil {
 		fmt.Println(err)
@@ -446,6 +486,17 @@ func SelectCommunitiesByColumn(column string, value string) models.Communities {
 	return communities
 }
 
+func UpdateCommunity(communities models.Communities, name string) error {
+	query := fmt.Sprintf(`UPDATE "Communities" SET "Name" = '%s', "Photo" = '%s', "Category" = '%s' WHERE "Name" = '%s'`, communities.Name, communities.Photo, communities.Category, name)
+	_, err := DB.Query(query)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println(query)
+	return nil
+}
+
 /*
 Функция выборки все сообщества из таблицы Communities определенного пользователя
 SELECT  "Subscribers"."Communities", "Subscribers"."User",
@@ -514,7 +565,7 @@ func DeleteCommunitiesByName(name string) error {
 Функция добавления сообщества в таблицу Communities
 */
 func InsertCommunities(com models.Communities) (models.Communities, error) {
-	query := `INSERT INTO "Communities"("Name", "Author") VALUES ($1, $2)`
+	query := `INSERT INTO "Communities"("Name", "Author", "Photo", "Category") VALUES ($1, $2, $3, $4)`
 	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
 	stmt, err := DB.PrepareContext(ctx, query)
@@ -523,7 +574,7 @@ func InsertCommunities(com models.Communities) (models.Communities, error) {
 		return com, err
 	}
 	defer stmt.Close()
-	res, err := stmt.ExecContext(ctx, com.Name, com.Author, com.Photo)
+	res, err := stmt.ExecContext(ctx, com.Name, com.Author, com.Photo, com.Category)
 	if err != nil {
 		log.Printf("Error %s when inserting row into Communities table", err)
 		return com, err
@@ -1191,7 +1242,8 @@ func InsertUserSub(user string, sub string) error {
 		return err
 	}
 	defer stmt.Close()
-	id := rand.Uint32() / 10000
+	RandomCrypto, _ := rand.Prime(rand.Reader, 32)
+	id := RandomCrypto.Int64() / 20000
 	fmt.Println(id, user, sub)
 	res, err := stmt.ExecContext(ctx, id, user, sub)
 	if err != nil {
@@ -1267,4 +1319,102 @@ func SelectRecCommunities(user string) []models.Communities {
 		communitiesArr = append(communitiesArr, communities)
 	}
 	return communitiesArr
+}
+
+// ---
+func SelectPostCategory() []string {
+	var category string
+	var categories []string
+	rows, err := DB.Query(`SELECT * FROM "PostCatogory"`)
+	if err != nil {
+		fmt.Println("Error - SelectPostCategory()")
+	}
+	for rows.Next() {
+		err = rows.Scan(&category)
+		if err != nil {
+			fmt.Println("Error - SelectPostCategory() rows.Next()")
+		}
+		categories = append(categories, category)
+	}
+	return categories
+}
+
+//---
+
+func SelectCommunitiesCategory() []string {
+	var category string
+	var categories []string
+	rows, err := DB.Query(`SELECT * FROM "CommunitiesCategory"`)
+	if err != nil {
+		fmt.Println("Error - SelectCommunitiesCategory()")
+	}
+	for rows.Next() {
+		err = rows.Scan(&category)
+		if err != nil {
+			fmt.Println("Error - SelectCommunitiesCategory() rows.Next()")
+		}
+		categories = append(categories, category)
+	}
+	return categories
+}
+
+//---
+
+func SelectOnlineFriends(user string) []models.JoinUser {
+	var friend models.JoinUser
+	var friends []models.JoinUser
+	query := fmt.Sprintf(`SELECT "Friends"."Login", "Friends"."Friend", "Friends"."Status",
+	"Users"."Name", "Users"."Photo", "Users"."Birthdate"
+	FROM "Friends"
+	JOIN "Users" ON "Users"."Login" = "Friends"."Friend"
+	WHERE "Friends"."Login" =  '%s' AND "Friend" IN 
+(SELECT * FROM "Online");`, user)
+	rows, err := DB.Query(query)
+	if err != nil {
+		fmt.Println("Error - SelectOnlineFriends()")
+	}
+	for rows.Next() {
+		err = rows.Scan(&friend.Login, &friend.Friend, &friend.Status, &friend.Name, &friend.Photo, &friend.Birthdate)
+		if err != nil {
+			fmt.Println("Error - SelectOnlineFriends() rows.Next()")
+		}
+		friends = append(friends, friend)
+	}
+	return friends
+}
+func InsertUserToOnline(user string) error {
+	query := `INSERT INTO "Online"("User") VALUES($1)`
+	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelfunc()
+	stmt, err := DB.PrepareContext(ctx, query)
+	if err != nil {
+		log.Printf("Error %s when preparing SQL statement", err)
+		return err
+	}
+	defer stmt.Close()
+	fmt.Println(user)
+	res, err := stmt.ExecContext(ctx, user)
+	if err != nil {
+		log.Printf("Error %s when inserting row into RepostPost table", err)
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		log.Printf("Error %s when finding rows affected", err)
+		return err
+	}
+	log.Printf("%d post created ", rows)
+	return err
+}
+
+func DeleteOnlineUser(user string) error {
+	res, err := DB.Exec(`DELETE FROM "Online" WHERE "User" = ($1)`, user)
+	if err == nil {
+		count, err := res.RowsAffected()
+		if err == nil {
+			fmt.Println(count)
+		}
+		return nil
+	}
+	return err
 }

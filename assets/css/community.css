@@ -47,14 +47,14 @@ section .com_stat .txt span {
     background-color: #fff;
     position: fixed;
     top: 300px;
-    right: 150px;
+    right: 120px;
     display: flex;
     flex-direction: column;
     padding: 10px;
 }
 
 .add {
-
+    text-align: center;
     background-color: rgb(2 185 255);
     padding: 5px;
     border-radius: 5px;

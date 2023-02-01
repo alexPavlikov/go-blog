@@ -39,13 +39,14 @@
     <main> 
         {{ $lengthF := len .Friends }} 
         {{ $lenghtS := len .Subs }}
+        {{ $lenghtO := len .Online }}
         <div class="friends">
             {{ if .Done }}
             <div class="tabs">
                 <input type="radio" name="tab-btn" id="tab-btn-1" value="" checked>
                 <label for="tab-btn-1">Друзья ({{$lengthF}})</label>
                 <input type="radio" name="tab-btn" id="tab-btn-2" value="">
-                <label for="tab-btn-2">Друзья онлайн</label>
+                <label for="tab-btn-2">Друзья онлайн ({{$lenghtO}})</label>
                 <input type="radio" name="tab-btn" id="tab-btn-3" value="">
                 <label for="tab-btn-3">Подписчики ({{$lenghtS}})</label>
                 <input type="radio" name="tab-btn" id="tab-btn-4" value="">
@@ -56,7 +57,7 @@
                         <div class="friend">
                             <div class="info">
                                 <div class="img"><img src="{{ $f.Photo }}" alt=""></div>
-                                <div class="name"><a style="color: black; text-decoration: none;" class="guestId" id="{{$f.Friend}}" href="/guest">{{ $f.Name }}</a> <br><span>{{ $f.Status }}</span></div>
+                                <div class="name"><a style="color: black; text-decoration: none;" class="guestId inputFriends" id="{{$f.Friend}}" href="/guest">{{ $f.Name }}</a> <br><span>{{ $f.Status }}</span></div>
                             </div>
                             <div class="menu">
                                 <form action="message#{{ $f.Name }}" method="get">
@@ -70,27 +71,27 @@
                     {{ end }}
                 </div>
                 <div id="content-2">
+                    {{ range $_, $f := .Online }}
                     <div class="friend">
                         <div class="info">
-                            <div class="img"><img src="/data/image/blog/ava.jpg" alt=""></div>
-                            <div class="name">Джон Стоун4 <br><span>статус</span></div>
+                            <div class="img"><img src="{{ $f.Photo }}" alt=""></div>
+                            <div class="name"><a style="color: black; text-decoration: none;" class="guestId inputFriends" id="{{$f.Friend}}" href="/guest">{{ $f.Name }}</a> <br><span>{{ $f.Status }}</span></div>
                         </div>
                         <div class="menu">
-                            <form action="" method="get">
-                                <input type="submit" value="Написть">
+                            <form class="online" action="message#{{ $f.Name }}" method="get">
+                                <input type="submit" id="{{$f.Friend}}" class="inputFriends" value="Написть">
                             </form>
-                            <form action="friends" method="post">
-                                <input class="input" id="2" type="submit" value="Удалить" onclick="ReadId(this)">
-                            </form>
+
                         </div>
-                    </div> 
+                    </div>
+                {{ end }}
                 </div>
                 <div id="content-3">
                     {{ range $_, $s := .Subs }}         
                     <div class="friend">
                         <div class="info">
                             <div class="img"><img src="{{ $s.Photo }}" alt=""></div>
-                            <div class="name"><a style="color: black; text-decoration: none;" class="guestId" id="{{$s.Login}}" href="/guest">{{ $s.Name }}</a> <br><span></span></div>
+                            <div class="name"><a style="color: black; text-decoration: none;" class="guestId inputFriends" id="{{$s.Login}}" href="/guest">{{ $s.Name }}</a> <br><span></span></div>
                         </div>
                         <div class="menu">
                             <form action="message#{{ $s.Name }}" method="get">
@@ -108,7 +109,7 @@
                         <div class="friend">
                             <div class="info">
                                 <div class="img"><img src="{{ $rf.Photo }}" alt=""></div>
-                                <div class="name"><a style="color: black; text-decoration: none;" class="guestId" id="{{$rf.Login}}" href="/guest">{{ $rf.Name }}</a> <br><span></span></div>
+                                <div class="name"><a style="color: black; text-decoration: none;" class="guestId inputFriends" id="{{$rf.Login}}" href="/guest">{{ $rf.Name }}</a> <br><span></span></div>
                             </div>
                             <div class="menu">
                                 <form action="message#{{ $rf.Name }}" method="get">
@@ -137,16 +138,16 @@
                         <div class="friend">
                             <div class="info">
                                 <div class="img"><img src="{{ $f.Photo }}" alt=""></div>
-                                <div class="name"><a style="color: black; text-decoration: none;" class="guestId" id="{{$f.Friend}}" href="/guest">{{ $f.Name }}</a> <br><span>{{ $f.Status }}</span></div>
+                                <div class="name"><a style="color: black; text-decoration: none;" class="guestId inputFriends" id="{{$f.Friend}}" href="/guest">{{ $f.Name }}</a> <br><span>{{ $f.Status }}</span></div>
                             </div>
-                            <div class="menu">
+                            <!-- <div class="menu">
                                 <form action="message#{{ $f.Name }}" method="get">
                                     <input type="submit" id="{{$f.Friend}}" class="inputFriends" value="Написть">
                                 </form>
                                 <form action="friends" method="post">
                                     <input class="input" id="{{$f.Friend}}" type="submit" value="Удалить" onclick="ReadId(this)">
                                 </form>
-                            </div>
+                            </div> -->
                         </div>
                     {{ end }}
                 </div>
@@ -156,14 +157,14 @@
                             <div class="img"><img src="/data/image/blog/ava.jpg" alt=""></div>
                             <div class="name">Джон Стоун4 <br><span>статус</span></div>
                         </div>
-                        <div class="menu">
+                        <!-- <div class="menu">
                             <form action="" method="get">
                                 <input type="submit" value="Написть">
                             </form>
                             <form action="friends" method="post">
                                 <input class="input" id="2" type="submit" value="Удалить" onclick="ReadId(this)">
                             </form>
-                        </div>
+                        </div> -->
                     </div> 
                 </div>
                 <div id="content-3">
@@ -171,16 +172,16 @@
                     <div class="friend">
                         <div class="info">
                             <div class="img"><img src="{{ $s.Photo }}" alt=""></div>
-                            <div class="name"><a style="color: black; text-decoration: none;" class="guestId" id="{{$s.Login}}" href="/guest">{{ $s.Name }}</a> <br><span></span></div>
+                            <div class="name"><a style="color: black; text-decoration: none;" class="guestId inputFriends" id="{{$s.Login}}" href="/guest">{{ $s.Name }}</a> <br><span></span></div>
                         </div>
-                        <div class="menu">
+                        <!-- <div class="menu">
                             <form action="message#{{ $s.Name }}" method="get">
                                 <input type="submit" id="{{$s.Login}}" class="inputFriends" value="Написть">
                             </form>
                             <form action="friends/add" method="post">
                                 <input class="inputAdd" id="{{$s.Login}}" type="submit" value="Добавить" onclick="ReadId(this)">
                             </form>
-                        </div>
+                        </div> -->
                     </div>
                     {{ end }} 
                 </div>
@@ -208,6 +209,37 @@
 <script src="/assets/js/style.js"></script>
 
 <script>
+
+    $(document).ready(function(){
+       $('.inputFriends').click(function(e) {
+           clickId = $(this).attr('id');
+               $.ajax({
+                   url: '/friends',
+                   type: 'GET',
+                   dataType: 'html',
+                   data : { Id: clickId},
+                   success : function(data) {
+                   $('#result').html(data);
+                   },
+               });
+       });
+    });
+
+    $(document).ready(function(){
+       $('.inputFriends').click(function(e) {
+           clickId = $(this).attr('id');
+               $.ajax({
+                   url: '/guest/friends',
+                   type: 'GET',
+                   dataType: 'html',
+                   data : { Id2: clickId},
+                   success : function(data) {
+                   $('#result').html(data);
+                   },
+               });
+       });
+    });
+
     $(document).ready(function(){
        $('.input').click(function(e) {
            clickId = $(this).attr('id');
@@ -269,19 +301,21 @@
    });
 
    $(document).ready(function(){
-       $('.inputFriends').click(function(e) {
-           clickId = $(this).attr('id');
-               $.ajax({
-                   url: '/friends',
-                   type: 'GET',
-                   dataType: 'html',
-                   data : { Id: clickId},
-                   success : function(data) {
-                   $('#result').html(data);
-                   },
-               });
-       });
-   });
+            $('.guestId').click(function(e) {
+                clickId = $(this).attr('id');
+                    $.ajax({
+                        url: '/guest',
+                        type: 'GET',
+                        dataType: 'html',
+                        data : { guestLogin: clickId},
+                        success : function(data) {
+                        $('#result').html(data);
+                        },
+                    });
+                alert(guestLogin);
+            });
+        });
+
 
 </script>
 

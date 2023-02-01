@@ -1,0 +1,25 @@
+{
+  "Messenge": [
+    {
+      "User": "r.dinno@gmail.com",
+      "Message": "hello",
+      "Data": "2023-01-30 21:58",
+      "Photo": "/data/image/blog/standart_avatar.png",
+      "Access": 2
+    },
+    {
+      "User": "r.dinno@gmail.com",
+      "Message": "Нормально",
+      "Data": "2023-01-30 22:02",
+      "Photo": "/data/image/blog/standart_avatar.png",
+      "Access": 2
+    },
+    {
+      "User": "r.dinno@gmail.com",
+      "Message": "Работает?",
+      "Data": "2023-01-30 22:02",
+      "Photo": "/data/image/blog/standart_avatar.png",
+      "Access": 2
+    }
+  ]
+}

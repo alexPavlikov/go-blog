@@ -1,15 +1,16 @@
 package main
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
-	"math"
-	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
 	"os"
+	"path/filepath"
 	"strconv"
 	"text/template"
 	"time"
@@ -70,9 +71,12 @@ func handleRequest() {
 	http.HandleFunc("/friends/add", addFriendsHandler)
 	http.HandleFunc("/friends/rec", recFriendsHandler)
 	http.HandleFunc("/communities", communitiesHandler)
+	http.HandleFunc("/communities/add", communitiesAddHandler)
 	http.HandleFunc("/comments", commentsHandler)
 	http.HandleFunc("/community", communityHandler)
 	http.HandleFunc("/community/del", communityDelHandler)
+	http.HandleFunc("/community/post", communityPostHandler)
+	http.HandleFunc("/community/edit", communityEditHandler)
 	http.HandleFunc("/guest", guestHandler)
 	http.HandleFunc("/guest/friends", guestFriendsHandler)
 	http.HandleFunc("/guest/communities", guestCommunitiesHandler)
@@ -156,6 +160,12 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			http.NotFound(w, r)
 			http.Redirect(w, r, "/", http.StatusBadRequest)
+		}
+
+		err = database.InsertUserToOnline(userAuth.Login)
+		if err != nil {
+			fmt.Println("Error - authHandler() InsertUserToOnline()", err)
+			// http.NotFound(w, r)
 		}
 
 		recordingSessions(fmt.Sprintf("Пользователь, %s (логин - %s, пароль - %s) зашел в аккаунт в %s.\n", userAuth.Name, userAuth.Login, userAuth.Password, time.Now().Format("2006-01-02 15:04")))
@@ -247,7 +257,7 @@ func blogHandler(w http.ResponseWriter, r *http.Request) {
 	communitiesName = ""
 	communitiesPhoto = ""
 
-	posts := database.SelectPosts()
+	posts := database.SelectPostsByUserSubs(userAuth.Login)
 
 	if r.Method == "GET" {
 		val, _ := strconv.Atoi(postId)
@@ -282,7 +292,8 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("page", postId)
 	var rep models.Repost
-	rep.Id = rand.Uint32() / 10000
+	RandomCrypto, _ := rand.Prime(rand.Reader, 32)
+	rep.Id = uint32(RandomCrypto.Int64() / 20000)
 	rep.Post, _ = strconv.Atoi(postId)
 	rep.User = userAuth.Login
 	frd := database.SelectAllFriendsUser(userAuth.Login)
@@ -372,9 +383,9 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if r.Method == "GET" {
-		r.ParseForm()
+		//r.ParseForm()
 		guestId = r.FormValue("Id")
-		fmt.Println("GET", guestId)
+		fmt.Println("GET friendsHandler()", guestId)
 		check, err = database.SelectMessengeListbyUsers(userAuth.Login, guestId)
 		if err != nil {
 			fmt.Println("Error - friendsHandler() SelectMessengeListbyUsers()")
@@ -384,8 +395,9 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) {
 	rec := database.SelectRecomendationFriends(userAuth.Login)
 	subs := database.SelectUserSub(userAuth.Login)
 	friends := database.SelectAllFriendsUser(userAuth.Login)
+	online := database.SelectOnlineFriends(userAuth.Login)
 
-	data := map[string]interface{}{"User": userAuth, "Friends": friends, "Subs": subs, "Rec": rec, "Done": true}
+	data := map[string]interface{}{"User": userAuth, "Friends": friends, "Subs": subs, "Rec": rec, "Online": online, "Done": true}
 	title := map[string]string{"Title": models.Cfg.FriendsTitile}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "friends", data)
@@ -419,6 +431,14 @@ func addFriendsHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				fmt.Println("Error - addFriendsHandler() DeleteUserSub()", err)
 			}
+			var val models.MessageList
+			arr := database.SelectMessengeListbyLogin(userAuth.Login, sub)
+			if arr == nil {
+				createFile(val, sub)
+			} else {
+				fmt.Println(arr)
+			}
+
 			http.Redirect(w, r, "/friends", http.StatusSeeOther)
 		}
 	}
@@ -448,7 +468,7 @@ func guestFriendsHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(id)
 	}
 	if r.Method == "GET" {
-		guestId = r.FormValue("guestId")
+		guestId = r.FormValue("Id2")
 		fmt.Println("GET", guestId)
 	}
 	gst, _ := database.SelectUserByColumn("Login", guestId)
@@ -456,7 +476,7 @@ func guestFriendsHandler(w http.ResponseWriter, r *http.Request) {
 	rec := database.SelectRecomendationFriends(guestLogin)
 	subs := database.SelectUserSub(guestLogin)
 
-	data := map[string]interface{}{"User": userAuth, "Friends": friends, "Guest": gst, "Subs": subs, "Rec": rec, "Done": false}
+	data := map[string]interface{}{"User": userAuth, "Friends": friends, "Guest": gst, "Subs": subs, "Rec": rec, "Done": false, "Online": friends}
 	title := map[string]string{"Title": models.Cfg.FriendsTitile}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "friends", data)
@@ -496,12 +516,62 @@ func communitiesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	done := true
 	//	comWithOutSub := database.SelectCommunitiesWithOutSub(userAuth.Login)
+	catComm := database.SelectCommunitiesCategory()
 	communities := database.SelectAllCommunitiesUser("User", userAuth.Login)
 	recCommunities := database.SelectRecCommunities(userAuth.Login)
-	data := map[string]interface{}{"User": userAuth, "Communities": communities, "Done": done, "RecCom": recCommunities}
+	data := map[string]interface{}{"User": userAuth, "Communities": communities, "Done": done, "RecCom": recCommunities, "CommCat": catComm}
 	title := map[string]string{"Title": models.Cfg.CommunitiesTitile}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "communities", data)
+}
+
+func communitiesAddHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+
+		file, fileHeader, err := r.FormFile("photo")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		defer file.Close()
+		imgPath = fmt.Sprintf("./data/image/blog/%d%s", time.Now().UnixNano(), filepath.Ext(fileHeader.Filename))
+		dst, err := os.Create(imgPath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		defer dst.Close()
+
+		_, err = io.Copy(dst, file)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		r.ParseForm()
+		var communities models.Communities
+		communities.Author = userAuth.Login
+		communities.Category = r.FormValue("selectuser")
+		communities.Name = r.FormValue("title")
+		communities.Photo = imgPath
+		fmt.Println(communities)
+
+		communitiesName = communities.Name
+
+		_, err = database.InsertCommunities(communities)
+		if err != nil {
+			fmt.Println("Error - communitiesAddHandler() InsertCommunities()", err)
+			http.NotFound(w, r)
+		}
+		err = database.InsertSubscribersToUser(userAuth.Login, communitiesName)
+		if err != nil {
+			fmt.Println("Error - communitiesAddHandler() InsertSubscribersToUser()", err)
+		}
+		http.Redirect(w, r, "/community", http.StatusSeeOther)
+	}
 }
 
 func guestCommunitiesHandler(w http.ResponseWriter, r *http.Request) {
@@ -548,34 +618,44 @@ func communityHandler(w http.ResponseWriter, r *http.Request) {
 	Foo.Name = post.Communities
 	Foo.Photo = post.CommunitiesPhot
 
+	catComm := database.SelectCommunitiesCategory()
 	posts = database.SelectPostByCommunities(post.Communities)
 	subs := database.SelectSubscribersBtCommunities(post.Communities)
 	author, names := database.SelectCommunitiesAuthorByName(post.Communities)
+	category := database.SelectPostCategory()
+	comm := database.SelectCommunitiesByColumn("Name", post.Communities)
+	fmt.Println("SelectCommunitiesByColumn", comm.Name)
 
 	if r.Method == "GET" {
+		fmt.Println("GET")
+		r.ParseForm()
+		postId = r.FormValue("postId")
 		val, _ := strconv.Atoi(postId)
 		err := database.UpdateLikeInPost(val)
 		if err != nil {
 			fmt.Println("Error - communityHandler() UpdateLikeInPost()")
 		}
 		postId = ""
-		r.ParseForm()
-		guestId = r.FormValue("guestId")
-		fmt.Println("Get", guestId)
+
 	}
 
 	if r.Method == "POST" {
+		fmt.Println("POST")
 		r.ParseForm()
+
+		guestId = r.FormValue("guestId")
+		fmt.Println("guestId", guestId)
+
 		postId = r.FormValue("postId")
-		fmt.Println("blog", postId)
-		// err = database.UpdateViewInPost()
-		// if err != nil {
-		// 	fmt.Println("Error - communityHandler() UpdateViewInPost()")
-		// }
+		fmt.Println("POST", postId)
+		err = database.UpdateViewInCommunityPost(communitiesName)
+		if err != nil {
+			fmt.Println("Error - communityHandler() UpdateViewInPost()")
+		}
 	}
 
 	title := map[string]string{"Title": Foo.Name}
-	blog := map[string]interface{}{"Post": posts, "User": userAuth, "Subs": subs, "Author": author, "Names": names, "Communities": Foo}
+	blog := map[string]interface{}{"Post": posts, "User": userAuth, "Subs": subs, "Author": author, "Names": names, "Communities": Foo, "PostCat": category, "CommCat": catComm, "SetCom": comm}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "community", blog)
 }
@@ -586,6 +666,121 @@ func communityDelHandler(w http.ResponseWriter, r *http.Request) { // сдела
 		value := r.FormValue("inputName")
 		fmt.Println(value)
 		http.Redirect(w, r, "/communities", http.StatusSeeOther)
+	}
+}
+
+var imgPath, title, content string
+
+func communityPostHandler(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method == "POST" {
+		r.ParseForm()
+
+		file, fileHeader, err := r.FormFile("photo")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		defer file.Close()
+		imgPath = fmt.Sprintf("./data/image/blog/%d%s", time.Now().UnixNano(), filepath.Ext(fileHeader.Filename))
+		dst, err := os.Create(imgPath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		defer dst.Close()
+
+		_, err = io.Copy(dst, file)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		r.ParseForm()
+		title = r.FormValue("title")
+		content = r.FormValue("content")
+		var post models.Posts
+		RandomCrypto, _ := rand.Prime(rand.Reader, 32)
+		post.Id = fmt.Sprint(RandomCrypto.Int64() / 20000)
+		post.Title = title
+		post.Content = content
+		post.Like = 0
+		post.View = 1
+		post.Date = time.Now().Format("2006-01-02 15:04")
+		post.Communities = communitiesName
+		post.Photo = imgPath
+		post.Category = r.FormValue("selectuser")
+		fmt.Println(post)
+
+		_, err = database.InsertPost(post)
+		if err != nil {
+			fmt.Println("Error - communityPostHandler() InsertPost()", err)
+			http.NotFound(w, r)
+		}
+		http.Redirect(w, r, "/community", http.StatusSeeOther)
+	}
+
+	if r.Method == "GET" {
+		r.ParseForm()
+		time := r.FormValue("time")
+		fmt.Println(time)
+		err := database.DeleteCommunitiesPostByTime(communitiesName, time)
+		if err != nil {
+			fmt.Println("Error - communityPostHandler() DeleteCommunitiesPostByTime()", err)
+			http.NotFound(w, r)
+		}
+		http.Redirect(w, r, "/community", http.StatusSeeOther)
+	}
+}
+
+func communityEditHandler(w http.ResponseWriter, r *http.Request) {
+
+	if r.Method == "POST" {
+		r.ParseForm()
+		group := database.SelectCommunitiesByColumn("Name", communitiesName)
+		file, fileHeader, err := r.FormFile("photo")
+		if err != nil {
+			// http.Error(w, err.Error(), http.StatusBadRequest)
+			// return
+			imgPath = group.Photo
+		} else {
+			defer file.Close()
+			imgPath = fmt.Sprintf("./data/image/blog/%d%s", time.Now().UnixNano(), filepath.Ext(fileHeader.Filename))
+			dst, err := os.Create(imgPath)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			defer dst.Close()
+
+			_, err = io.Copy(dst, file)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		r.ParseForm()
+		var communities models.Communities
+		communities.Author = userAuth.Login
+		communities.Category = r.FormValue("selectuser")
+		communities.Name = r.FormValue("title")
+		communities.Photo = imgPath
+		fmt.Println("New Communities", communities)
+
+		communitiesName = communities.Name
+
+		err = database.UpdateCommunity(communities, group.Name)
+		if err != nil {
+			fmt.Println("Error - communityEditHandler() UpdateCommunity()", err)
+			http.NotFound(w, r)
+		}
+
+		http.Redirect(w, r, "/community", http.StatusSeeOther)
+
 	}
 }
 
@@ -773,29 +968,43 @@ func recordingSessions(session string) {
 	}
 }
 
-func createFile(check models.MessageList) {
+func createFile(check models.MessageList, guestId string) {
 	Path := "C:/Users/admin/go/src/go-blog/data/files/message/"
 	fmt.Println("start", check.MessageHistory)
-	if check.LinkId > 0 {
-		fmt.Println(check.MessageHistory)
+	if check.MessageHistory != "" {
+		fmt.Println("createFile!!!!", check.MessageHistory)
 	} else {
+		RandomCrypto, _ := rand.Prime(rand.Reader, 32)
 		value := models.MessageList{
-			LinkId:         rand.Uint32() / 10000,
+			LinkId:         uint32(RandomCrypto.Int64() / 20000),
 			Main:           userAuth.Login,
 			Companion:      guestId,
-			MessageHistory: strconv.Itoa(int(math.Abs(float64(rand.Int31())))) + ".json",
+			MessageHistory: time.Now().Format("20060102150405") + ".json",
 		}
-		database.InsertMessengeListbyUsers(value)
-		value.LinkId += 1
-		err := database.InsertDoubleMessengeListbyUsers(value)
+		fmt.Println(value)
+		err := database.InsertMessengeListbyUsers(value)
 		if err != nil {
 			fmt.Println(err.Error())
 		}
-		_, err = os.Create(Path + value.MessageHistory)
+		value.LinkId += 1
+		err = database.InsertDoubleMessengeListbyUsers(value)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		new, err := os.Create(Path + value.MessageHistory)
 		if err != nil {
 			fmt.Println("Error - friendsHandler() Create file")
 		}
 		fmt.Println("Create file - ", Path+value.MessageHistory)
 		check = models.MessageList{}
+		// Copy standart json format
+		take, err := os.Open(Path + "take.json")
+		if err != nil {
+			fmt.Println(`Error - os.Open()`, err)
+		}
+		_, err = io.Copy(new, take)
+		if err != nil {
+			fmt.Println("Error - createFile() io.Copy()")
+		}
 	}
 }

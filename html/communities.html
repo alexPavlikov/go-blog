@@ -6,6 +6,7 @@
 <link rel="stylesheet" href="/assets/css/style.css">
 <link rel="stylesheet" href="/assets/css/blog.css">
 <link rel="stylesheet" href="/assets/css/friends.css">
+<link rel="stylesheet" href="/assets/css/modal.css">
 
 <script src='//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js'></script>
 
@@ -36,17 +37,41 @@
         <a href="#">Далее</a>
     </aside>
     
+        <!-- Модальное окно -->    
+        <input type="checkbox" id="css-modal-checkbox" />    
+        <div class="cmc">
+            <div class="cmt">
+                <form action="communities/add" id="form2" name="formImg" method="post" enctype="multipart/form-data">
+                    <input type="file" name="photo" id="photo" placeholder="Загрузите фотографию">
+                    <select name="selectuser" id="selectuser" >
+                        <option value="" disabled selected>Выберите категорию сообщества</option> 
+                        {{range $_, $e := .CommCat }}
+                        <option >{{ $e }}</option>
+                        {{ end }}                                                    
+                    </select>
+                    <input name="title" id="title" type="text" placeholder="Укажите название сообщества">
+                    <button class="goBTN" type="submit">GO</button>
+                </form>
+            </div>
+            <label for="css-modal-checkbox" class="css-modal-close"></label>
+        </div>
+
     {{ if .Done }}
     <main>
         {{ $length := len .Communities }} 
         {{ $user :=  .User.Login }}
+
+        <div class="add">
+            <label for="css-modal-checkbox" class="add add-com"><i class="fa-solid fa-circle-plus"></i> Создать сообщество</label>
+        </div>
+
         <div class="friends">
             <div class="tabs">
                 <input type="radio" name="tab-btn" id="tab-btn-1" value="" checked>
                 <label for="tab-btn-1">Подписки ({{$length}})</label>
                 <input type="radio" name="tab-btn" id="tab-btn-2" value="">
-                <label for="tab-btn-2">Рекомендации</label>
-            
+                <label for="tab-btn-2">Рекомендации</label> 
+
                 <div id="content-1">
                         {{ range $_, $c := .Communities }}     
                             
@@ -91,7 +116,7 @@
         <div class="friends">
             <div class="tabs">
                 <input type="radio" name="tab-btn" id="tab-btn-1" value="" checked>
-                <label for="tab-btn-1">Друзья</label>
+                <label for="tab-btn-1">Подписки</label>
                 <input type="radio" name="tab-btn" id="tab-btn-2" value="">
                 <label for="tab-btn-2">Рекомендации</label>
             
@@ -127,7 +152,7 @@
                     <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
                     <a id="exit" href="/"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
                 </div>
-            </aside>                         
+            </aside>
 </body>
 
 <script src="/assets/js/style.js"></script>

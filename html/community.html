@@ -6,6 +6,7 @@
 <link rel="stylesheet" href="/assets/css/blog.css">
 <link rel="stylesheet" href="/assets/css/style.css">
 <link rel="stylesheet" href="/assets/css/community.css">
+<link rel="stylesheet" href="/assets/css/modal.css">
 <header>
     <div class="brand">
         <div class="logos">
@@ -36,6 +37,58 @@
     </aside>
     <main>
 
+        <!-- Модальное окно -->    
+<input type="checkbox" id="css-modal-checkbox" />    
+<div class="cmc">
+    <div class="cmt">
+        <form action="community/post" id="form2" name="formImg" method="post" enctype="multipart/form-data">
+            <input type="file" name="photo" id="photo" placeholder="Загрузите фотографию">
+            <select name="selectuser" id="selectuser">
+                {{range $_, $e := .PostCat }} 
+                <option >{{ $e }}</option>
+                {{ end }}                                                    
+            </select>
+            <input name="title" id="title" type="text" placeholder="Укажите заголовок поста">
+            <textarea name="content" id="content" cols="70" rows="10" placeholder="Укажите контент поста"></textarea>
+            <!-- <input type="submit" value="GO"> -->
+            <button class="goBTN" type="submit">GO</button>
+        </form>
+    </div>
+    <label for="css-modal-checkbox" class="css-modal-close"></label>
+</div>
+
+<input type="checkbox" id="css-modal-checkbox2" /> 
+<div class="cmc">
+    <div class="cmt">
+        <form action="community/post" id="form2" name="formImg" method="get">
+            <h3 style="text-align: center;">Укажите время публикации поста</h3>
+            <input name="time" id="time" type="text" placeholder="2023-01-28 20:06">
+
+            <button  class="goBTN" type="submit">DELETE</button>
+        </form>
+    </div>
+    <label for="css-modal-checkbox2" class="css-modal-close"></label>
+</div>
+
+<input type="checkbox" id="css-modal-checkbox3" />    
+<div class="cmc">
+    <div class="cmt">
+        <form action="community/edit" id="form3" name="formImg" method="post" enctype="multipart/form-data">
+            <input type="file" name="photo" id="photo" value="{{ .SetCom.Photo }}">
+            <select name="selectuser" id="selectuser" >
+                <option selected>{{ .SetCom.Category}}</option> 
+                {{range $_, $e := .CommCat }}
+                <option >{{ $e }}</option>
+                {{ end }}                                                    
+            </select>
+            <input name="title" id="title" type="text"  value="{{ .SetCom.Name }}">
+            <button class="goBTN" type="submit">GO</button>
+        </form>
+    </div>
+    <label for="css-modal-checkbox3" class="css-modal-close"></label>
+</div>
+
+
         <section>
             <div class="photo">
                 <img src="{{.Communities.Photo}}" alt="">
@@ -54,9 +107,17 @@
 
             {{ if eq .User.Login .Author}}
                 <div class="menu">
-                    <h4>Управление сообществом</h4>
-                    <button class="add"><i class="fa-solid fa-plus"></i>Новый пост</button>
-                    <button class="add"><i class="fa-regular fa-trash-can"></i>Удалить пост</button>
+                    <h4 style="text-align: center;">Управление сообществом</h4>
+                    <!-- <button class="add"><i class="fa-regular fa-trash-can"></i>Новый пост</button> -->
+                    <div class="add">
+                        <label for="css-modal-checkbox" class="add"><i class="fa-solid fa-circle-plus"></i> Новый пост</label>
+                    </div>
+                    <div class="add">
+                        <label for="css-modal-checkbox2" class="add"><i class="fa-regular fa-trash-can"></i> Удалить пост</label>
+                    </div>
+                    <div class="add">
+                        <label for="css-modal-checkbox3" class="add"><i class="fa-regular fa-trash-can"></i> Изменить сообщество</label>
+                    </div>
                     <button class="add"><i class="fa-solid fa-right-left"></i>Отдать командывание</button>
                     <form action="community/del" method="post">
                         <input id="inputName" name="inputName" type="text" style="display: none;" value="{{.Communities.Name}}">
@@ -79,7 +140,7 @@
                 <div class="image"><img src="{{ $p.Photo }}" alt=""></div>
                 <div class="statistics">
                     <div>
-                        <a href="blog" id="{{ $p.Id }}"  class="spans span spany" style="color: #fff; text-decoration: none;"><i style="margin-right: 5px;" class="fa-regular fa-heart"></i>{{ $p.Like }}</a>
+                        <a href="community" id="{{ $p.Id }}"  class="spans span spany" style="color: #fff; text-decoration: none;"><i style="margin-right: 5px;" class="fa-regular fa-heart"></i>{{ $p.Like }}</a>
                         <a href="comments"  id="{{ $p.Id }}" class="spans span spany" type="submit"><i class="fa-regular fa-message"></i></a>     
                         <a href="page" id="{{ $p.Id }}" class="spans span" type="submit"><i class="fa-regular fa-paper-plane"></i></a> 
                     </div>
@@ -129,10 +190,15 @@
         <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
         <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
         <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
-        <a id="exit" href="/"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
+        <a id="exit" href="/ggfg"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
     </div>
 </aside>
+
 </body>
+
+<script src="/assets/js/style.js"></script>
+
+
 
 <script>
 
@@ -141,7 +207,7 @@
            clickId = $(this).attr('id');
                $.ajax({
                    url: '/community',
-                   type: 'GET',
+                   type: 'POST',
                    dataType: 'html',
                    data : { guestId: clickId},
                    success : function(data) {
@@ -156,7 +222,7 @@
            clickId = $(this).attr('id');
                $.ajax({
                    url: '/community',
-                   type: 'POST',
+                   type: 'GET',
                    dataType: 'html',
                    data : { postId: clickId},
                    success : function(data) {
@@ -165,6 +231,23 @@
                });
        });
    });
+
+   $(document).ready(function(){
+       $('.spany').click(function(e) {
+           clickId = $(this).attr('id');
+               $.ajax({
+                   url: '/community',
+                   type: 'GET',
+                   dataType: 'html',
+                   data : { postId: clickId},
+                   success : function(data) {
+                   $('#result').html(data);
+                   },
+               });
+       });
+   });
+
+
 
 </script>
 
