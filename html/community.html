@@ -81,7 +81,7 @@
                 <option >{{ $e }}</option>
                 {{ end }}                                                    
             </select>
-            <input name="title" id="title" type="text"  value="{{ .SetCom.Name }}">
+            <input name="title" id="title" type="text"  value="{{ .SetCom.Name }}" readonly disabled>
             <button class="goBTN" type="submit">GO</button>
         </form>
     </div>
@@ -93,6 +93,9 @@
             <div class="photo">
                 <img src="{{.Communities.Photo}}" alt="">
                 <div class="name">{{.Communities.Name}}</div>
+                {{ if .OK }}
+                <div id="{{ .Communities.Name }}" class="go-friend">Подписаться</div>
+                {{ end }}
             </div>
             <div class="com_stat">
                 {{ $lengthPost := len .Post }}
@@ -190,7 +193,7 @@
         <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
         <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
         <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
-        <a id="exit" href="/ggfg"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
+        <a id="exit" href="/exit"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
     </div>
 </aside>
 
@@ -247,7 +250,22 @@
        });
    });
 
-
+   $(document).ready(function(){
+            $('.go-friend').click(function(e) {
+                var button = $(this);
+                clickId = $(this).attr('id');
+                    $.ajax({
+                        url: '/communities',
+                        type: 'POST',
+                        dataType: 'html',
+                        data : { communityRec: clickId},
+                        success : function(data) {
+                        $('#result').html(data);
+                        },
+                    });
+                    button.addClass('check');
+            });
+        });
 
 </script>
 

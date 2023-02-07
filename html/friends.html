@@ -129,7 +129,7 @@
                 <input type="radio" name="tab-btn" id="tab-btn-1" value="" checked>
                 <label for="tab-btn-1">Друзья ({{$lengthF}})</label>
                 <input type="radio" name="tab-btn" id="tab-btn-2" value="">
-                <label for="tab-btn-2">Друзья онлайн</label>
+                <label for="tab-btn-2">Друзья онлайн ({{$lenghtO}})</label>
                 <input type="radio" name="tab-btn" id="tab-btn-3" value="">
                 <label for="tab-btn-3">Подписчики ({{$lenghtS}})</label>
             
@@ -152,20 +152,19 @@
                     {{ end }}
                 </div>
                 <div id="content-2">
+                    {{ range $_, $of := .Online }}
                     <div class="friend">
                         <div class="info">
-                            <div class="img"><img src="/data/image/blog/ava.jpg" alt=""></div>
-                            <div class="name">Джон Стоун4 <br><span>статус</span></div>
+                            <div class="img"><img src="{{ $of.Photo }}" alt=""></div>
+                            <div class="name"><a style="color: black; text-decoration: none;" class="guestId inputFriends" id="{{$of.Friend}}" href="/guest">{{ $of.Name }}</a> <br><span>{{ $of.Status }}</span></div>
                         </div>
-                        <!-- <div class="menu">
-                            <form action="" method="get">
-                                <input type="submit" value="Написть">
-                            </form>
-                            <form action="friends" method="post">
-                                <input class="input" id="2" type="submit" value="Удалить" onclick="ReadId(this)">
-                            </form>
-                        </div> -->
-                    </div> 
+                        <div class="menu">
+                            <!-- <form class="online" action="message#{{ $of.Name }}" method="get">
+                                <input type="submit" id="{{$of.Friend}}" class="inputFriends" value="Написть">
+                            </form> -->
+                        </div>
+                    </div>
+                    {{ end }}
                 </div>
                 <div id="content-3">
                     {{ range $_, $s := .Subs }}         
@@ -201,7 +200,7 @@
                     <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
                     <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
                     <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
-                    <a id="exit" href="/"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
+                    <a id="exit" href="/exit"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
                 </div>
             </aside>                         
 </body>

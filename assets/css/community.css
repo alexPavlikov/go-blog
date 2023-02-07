@@ -81,3 +81,29 @@ section .com_stat .txt span {
     color: #ffffff;
     padding: 3px;
 }
+
+.go-friend {
+    color: rgb(2 185 255);
+    border: 1px solid rgb(2 185 255);
+    border-radius: 15px;
+    font-size: 16px;
+    width: 200px;
+    padding: 5px;
+    text-align: center;
+
+    transition: all .6s ease;
+}
+
+.go-friend:hover {
+    background-color: rgb(2 185 255);
+    cursor: pointer;
+    color: #fff;
+}
+
+.go-friend:active {
+    opacity: .7;
+}
+
+.check {
+    display: none;
+}

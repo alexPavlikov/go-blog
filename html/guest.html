@@ -39,6 +39,9 @@
             <div class="photo">
                 <img src="{{ .Guest.Photo }}" alt="">
                 <div class="name">{{ .Guest.Name }}</div>
+                {{ if .OK }}
+                <div id="{{ .Guest.Login }}" class="go-friend">Отправить заявку в друзья</div>
+                {{ end }}
             </div>
             <div class="com_stat">               
                 <div class="txt">Дата рождения: <span>{{ .Statistics.HappyBithday }}</span></div>
@@ -88,7 +91,7 @@
             <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
             <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
             <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
-            <a id="exit" href="/"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
+            <a id="exit" href="/exit"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
         </div>
     </aside>
 </body>
@@ -107,6 +110,23 @@
                         },
                     });
                 alert(guestLogin);
+            });
+        });
+
+        $(document).ready(function(){
+            $('.go-friend').click(function(e) {
+                var button = $(this);
+                clickId = $(this).attr('id');
+                    $.ajax({
+                        url: '/friends/rec',
+                        type: 'POST',
+                        dataType: 'html',
+                        data : { friend_id: clickId},
+                        success : function(data) {
+                        $('#result').html(data);
+                        },
+                    });
+                    button.addClass('check');
             });
         });
 </script>

@@ -409,6 +409,28 @@ func UpdateUserByColumn(column string, value string, login string, pass string) 
 
 // --------------------Query from Communities table--------------------
 
+func CheckCommunity(user, community string) (models.Communities, bool) {
+	var communities models.Communities
+	ok := false
+	rows, err := DB.Query(fmt.Sprintf(`SELECT "Communities".* FROM "Communities","Subscribers"
+	WHERE "Communities"."Name" = '%s'
+	AND "Subscribers"."User" IN (SELECT "User" FROM "Subscribers" WHERE "User" = '%s')
+	AND "Subscribers"."Communities" = '%s';`, community, user, community))
+	if err != nil {
+		fmt.Println("Error - CheckCommunity()", err.Error())
+	}
+	for rows.Next() {
+		err = rows.Scan(&communities.Name, &communities.Author, &communities.Photo, &communities.Category)
+		if err != nil {
+			fmt.Println("Error - CheckCommunity() rows.Next()", err.Error())
+		}
+	}
+	if communities.Name == "" || communities.Author == "" {
+		ok = true
+	}
+	return communities, ok
+}
+
 /*
 Функция выборки всех сообществ из таблицы Communities
 */
@@ -783,8 +805,8 @@ func SelectFriends() []models.JoinUser {
 	return friends
 }
 
-func CheckFriends(user string, frd string) models.JoinUser {
-	var friend models.JoinUser
+func CheckFriends(user string, frd string) (friend models.JoinUser, ok bool) {
+
 	rows, err := DB.Query(fmt.Sprintf(`
 	SELECT "Friends"."Login", "Friends"."Friend", "Friends"."Status",
 	"Users"."Name", "Users"."Photo", "Users"."Birthdate"
@@ -801,7 +823,14 @@ func CheckFriends(user string, frd string) models.JoinUser {
 			fmt.Println("Error - SelectFriendsByColumn() rows.Next()", err.Error())
 		}
 	}
-	return friend
+	fmt.Println(friend)
+	if friend.Login == "" || friend.Friend == "" {
+		ok = true
+	} else {
+		ok = false
+	}
+	fmt.Println(ok)
+	return friend, ok
 }
 
 func DeleteFriendByLogin(user string, sub string) (string, error) {
@@ -1013,7 +1042,7 @@ func SelectRepoPostByUser(user string) []models.RepostPost {
 }
 
 func InsertRepoPost(reppost models.Repost) (models.Repost, error) {
-	query := `INSERT INTO "RepostPost"("Id", "Post", "User") VALUES ($1, $2, $3)`
+	query := `INSERT INTO "RepostPost"( "Post", "User") VALUES ($1, $2)`
 	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
 	stmt, err := DB.PrepareContext(ctx, query)
@@ -1022,7 +1051,7 @@ func InsertRepoPost(reppost models.Repost) (models.Repost, error) {
 		return reppost, err
 	}
 	defer stmt.Close()
-	res, err := stmt.ExecContext(ctx, reppost.Id, reppost.Post, reppost.User)
+	res, err := stmt.ExecContext(ctx, reppost.Post, reppost.User)
 	if err != nil {
 		log.Printf("Error %s when inserting row into RepostPost table", err)
 		return reppost, err
@@ -1061,6 +1090,18 @@ func SelectSubscribersBtCommunities(communities string) []models.Subscribers {
 */
 func DeleteSubOnCommunities(communities string, user string) error {
 	res, err := DB.Exec(`DELETE FROM "Subscribers" WHERE "Communities" = ($1) AND "User" = ($2)`, communities, user)
+	if err == nil {
+		count, err := res.RowsAffected()
+		if err == nil {
+			fmt.Println(count)
+		}
+		return nil
+	}
+	return err
+}
+
+func DeleteSubAllOnCommunity(communities string) error {
+	res, err := DB.Exec(`DELETE FROM "Subscribers" WHERE "Communities" = ($1)`, communities)
 	if err == nil {
 		count, err := res.RowsAffected()
 		if err == nil {

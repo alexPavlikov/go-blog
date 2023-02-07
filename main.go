@@ -81,6 +81,7 @@ func handleRequest() {
 	http.HandleFunc("/guest/friends", guestFriendsHandler)
 	http.HandleFunc("/guest/communities", guestCommunitiesHandler)
 	http.HandleFunc("/message", messageHandler)
+	http.HandleFunc("/exit", exitHandler)
 
 	//http.HandleFunc("/fr", frHandler)
 }
@@ -292,8 +293,8 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("page", postId)
 	var rep models.Repost
-	RandomCrypto, _ := rand.Prime(rand.Reader, 32)
-	rep.Id = uint32(RandomCrypto.Int64() / 20000)
+	// RandomCrypto, _ := rand.Prime(rand.Reader, 32)
+	// rep.Id = uint32(RandomCrypto.Int64() / 20000)
 	rep.Post, _ = strconv.Atoi(postId)
 	rep.User = userAuth.Login
 	frd := database.SelectAllFriendsUser(userAuth.Login)
@@ -407,7 +408,7 @@ func addFriendsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		r.ParseForm()
 		sub := r.FormValue("friend_id")
-		frd := database.CheckFriends(userAuth.Login, sub)
+		frd, _ := database.CheckFriends(userAuth.Login, sub)
 		if frd.Login == "" {
 			var friend = models.Friends{
 				Login:  userAuth.Login,
@@ -475,8 +476,9 @@ func guestFriendsHandler(w http.ResponseWriter, r *http.Request) {
 	friends := database.SelectAllFriendsUser(guestLogin)
 	rec := database.SelectRecomendationFriends(guestLogin)
 	subs := database.SelectUserSub(guestLogin)
+	online := database.SelectOnlineFriends(guestLogin)
 
-	data := map[string]interface{}{"User": userAuth, "Friends": friends, "Guest": gst, "Subs": subs, "Rec": rec, "Done": false, "Online": friends}
+	data := map[string]interface{}{"User": userAuth, "Friends": friends, "Guest": gst, "Subs": subs, "Rec": rec, "Done": false, "Online": online}
 	title := map[string]string{"Title": models.Cfg.FriendsTitile}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "friends", data)
@@ -654,8 +656,10 @@ func communityHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	_, ok := database.CheckCommunity(userAuth.Login, communitiesName)
+
 	title := map[string]string{"Title": Foo.Name}
-	blog := map[string]interface{}{"Post": posts, "User": userAuth, "Subs": subs, "Author": author, "Names": names, "Communities": Foo, "PostCat": category, "CommCat": catComm, "SetCom": comm}
+	blog := map[string]interface{}{"Post": posts, "User": userAuth, "Subs": subs, "Author": author, "Names": names, "Communities": Foo, "PostCat": category, "CommCat": catComm, "SetCom": comm, "OK": ok}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "community", blog)
 }
@@ -664,7 +668,15 @@ func communityDelHandler(w http.ResponseWriter, r *http.Request) { // сдела
 	if r.Method == "POST" {
 		r.ParseForm()
 		value := r.FormValue("inputName")
-		fmt.Println(value)
+		fmt.Println("communityDelHandler() ", value)
+		err := database.DeleteSubAllOnCommunity(value)
+		if err != nil {
+			fmt.Println("Error - communityDelHandler() DeleteSubAllOnCommunity()", err)
+		}
+		err = database.DeleteCommunitiesByName(value)
+		if err != nil {
+			fmt.Println("Error - communityDelHandler() DeleteCommunitiesByName()", err)
+		}
 		http.Redirect(w, r, "/communities", http.StatusSeeOther)
 	}
 }
@@ -796,6 +808,8 @@ func guestHandler(w http.ResponseWriter, r *http.Request) {
 		guestLogin = r.FormValue("guestLogin")
 	}
 
+	_, ok := database.CheckFriends(userAuth.Login, guestId)
+
 	userGuest, err := database.SelectUserByColumn("Login", guestId)
 	if err != nil {
 		fmt.Println("Error - guestHandler() SelectUsersByColumn()")
@@ -824,7 +838,7 @@ func guestHandler(w http.ResponseWriter, r *http.Request) {
 	title := map[string]string{"Title": userGuest.Name}
 	tmpl.ExecuteTemplate(w, "header", title)
 
-	sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Guest": userGuest, "Statistics": stat, "Done": Done}
+	sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Guest": userGuest, "Statistics": stat, "Done": Done, "OK": ok}
 
 	tmpl.ExecuteTemplate(w, "guest", sendUser)
 }
@@ -993,7 +1007,7 @@ func createFile(check models.MessageList, guestId string) {
 		}
 		new, err := os.Create(Path + value.MessageHistory)
 		if err != nil {
-			fmt.Println("Error - friendsHandler() Create file")
+			fmt.Println("Error - createFile() Create file")
 		}
 		fmt.Println("Create file - ", Path+value.MessageHistory)
 		check = models.MessageList{}
@@ -1007,4 +1021,12 @@ func createFile(check models.MessageList, guestId string) {
 			fmt.Println("Error - createFile() io.Copy()")
 		}
 	}
+}
+
+func exitHandler(w http.ResponseWriter, r *http.Request) {
+	err := database.DeleteOnlineUser(userAuth.Login)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+	}
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
