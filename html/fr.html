@@ -1,180 +1,38 @@
-{{ define "fr" }}
-
-{{ template "header" }}
-
-<link rel="stylesheet" href="/assets/css/friends.css">
-<link rel="stylesheet" href="/assets/css/style.css">
-<link rel="stylesheet" href="/assets/css/blog.css">
-<link rel="stylesheet" href="/assets/css/friends.css">
-
-<script src='//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js'></script>
-
-<header>
-    <div class="brand">
-        <div class="logos">
-            <img src="/data/image/brand.png" alt="">
-            <span>GOLANG</span>
-        </div>
-        <div class="find"><input type="text" placeholder="Найти"></div>
-    </div>
-    <div class="account">
-        <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
-        <i class="fa-solid fa-chevron-down" onclick="Check()"></i>
-    </div>
-</header>
-
-<body>
-    <aside class="right">
-        <a href="/page#"><i class="fa-regular fa-circle-user"></i><span> Моя страница</span></a>
-        <a href="/blog"><i class="fa-regular fa-newspaper"></i><span> Новости</span></a>
-        <a href="/message"><i class="fa-regular fa-comment"></i><span> Сообщения</span></a>
-        <a href="/friends"><i class="fa-solid fa-user-group"></i><span> Друзья</span></a>
-        <a href="/communities"><i class="fa-solid fa-users"></i><span> Сообщества</span></a>
-        <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
-        <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
-        <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
-        <a href="#">Далее</a>
-    </aside>
+<div class="season_tabs">
     
-    {{ if .Done }}
-    <main> 
-        <div class="friends">
-            <div class="tabs">
-                <input type="radio" name="tab-btn" id="tab-btn-1" value="" checked>
-                <label for="tab-btn-1">Друзья</label>
-                <input type="radio" name="tab-btn" id="tab-btn-2" value="">
-                <label for="tab-btn-2">Рекомендации</label>
-            
-                <div id="content-1">
-                        {{ range $_, $c := .Communities }}         
-                        <div class="friend">
-                            <div class="info">
-                                <div class="img"><img src="{{ $c.Photo }}" alt=""></div>
-                                <div class="name"><a style="color: black; text-decoration: none;" class="communa" id="{{$c.Communities}}" href="/community">{{ $c.Communities }}</a> <br><span>{{ $c.Category }}</span></div>
-                            </div>
-                            <div class="menu com">
-                                <div></div>
-                                <form action="" method="get"><input name="{{ $c.Communities }}" id="communities" class="coms" type="submit" value="Отписаться"></form>        
-                            </div>
-                        </div>
-                        {{ end }}
-                </div>
-                <div id="content-2">
-                        {{ range $_, $rc := .RecCommunities }}         
-                        <div class="friend">
-                            <div class="info">
-                                <div class="img"><img src="{{ $rc.Photo }}" alt=""></div>
-                                <div class="name"><a style="color: black; text-decoration: none;" class="communa" id="{{$rc.Name}}" href="/community">{{ $rc.Name }}</a> <br><span>{{ $rc.Category }}</span></div>
-                            </div>
-                            <div class="menu com">
-                                <div></div>
-                                <form action="" method="post"><input name="{{ $rc.Name }}" class="communaRec communitiesSub" id="{{$rc.Name}}" class="coms" type="submit" value="Подписаться"></form>        
-                            </div>
-                        </div>
-                        {{ end }}
-                </div>
-            </div>
-        </div>
-    </main>
-    {{else}}
-    <main> 
-        <div class="friends">
-            <div class="tabs">
-                <input type="radio" name="tab-btn" id="tab-btn-1" value="" checked>
-                <label for="tab-btn-1">Друзья</label>
-                <input type="radio" name="tab-btn" id="tab-btn-2" value="">
-                <label for="tab-btn-2">Рекомендации</label>
-            
-                <div id="content-1">
-                        {{ range $_, $c := .Communities }}         
-                        <div class="friend">
-                            <div class="info">
-                                <div class="img"><img src="{{ $c.Photo }}" alt=""></div>
-                                <div class="name"><a style="color: black; text-decoration: none;" class="communa" id="{{$c.Communities}}" href="/community">{{ $c.Communities }}</a> <br><span>{{ $c.Category }}</span></div>
-                            </div>
-                            <div class="menu com">
-                                <div></div>
-                                      
-                            </div>
-                        </div>
-                        {{ end }}
-                </div>
-            </div>
-        </div>
-    </main>
-    {{ end }}
-            <aside id="left" class="left">
-                <div class="setacc">
-                    <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
-                    <div class="info">
-                        <div class="name">{{ .User.Name }}</div>
-                        <div class="login">{{ .User.Login }}</div>
-                    </div>
-                </div>
-                <div class="settings">
-                    <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
-                    <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
-                    <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
-                    <a id="exit" href="/exit"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
-                </div>
-            </aside>                         
-</body>
-
-<script src="/assets/js/style.js"></script>
-
-<script>
-    $(document).ready(function(){
-        $('.coms').click(function(e) {
-            clickId = $(this).attr('name');
-                $.ajax({
-                    url: '/communities',
-                    type: 'GET',
-                    dataType: 'html',
-                    data : { name_com: clickId},
-                    success : function(data) {
-                    $('#result').html(data);
-                    },
-                });
-                
-            alert(name_com);
-        });
-    });
-
-    $(document).ready(function(){
-        $('.communa').click(function(e) {
-            clickId = $(this).attr('id');
-            // alert('fa'+clickId);
-                $.ajax({
-                    url: '/communities',
-                    type: 'POST',
-                    dataType: 'html',
-                    data : { community_id: clickId},
-                    success : function(data) {
-                    $('#result').html(data);
-                    },
-                });
-        });
-    });
-
-    $(document).ready(function(){
-        $('.communaRec').click(function(e) {
-            clickId = $(this).attr('id');
-            // alert('fa'+clickId);
-                $.ajax({
-                    url: '/communities',
-                    type: 'POST',
-                    dataType: 'html',
-                    data : { communityRec: clickId},
-                    success : function(data) {
-                    $('#result').html(data);
-                    },
-                });
-        });
-    });
-
-</script>
-
-
-{{ template "footer" }}
-
-{{ end }}
+    <div class="season_tab">
+        <input type="radio" id="tab-1" name="tab-group-1" checked>
+        <label for="tab-1">Осень</label>
+        
+        <div class="season_content">
+            <span>tabik 1</span>
+        </div> 
+    </div>
+     
+    <div class="season_tab">
+        <input type="radio" id="tab-2" name="tab-group-1">
+        <label for="tab-2">Зима</label>
+        
+        <div class="season_content">
+            <span>tabik 2</span>
+        </div> 
+    </div>
+     
+     <div class="season_tab">
+        <input type="radio" id="tab-3" name="tab-group-1">
+        <label for="tab-3">Весна</label>
+      
+        <div class="season_content">
+            <span>tabik 3</span>
+        </div> 
+    </div>
+       <div class="season_tab">
+        <input type="radio" id="tab-4" name="tab-group-1">
+        <label for="tab-4">Лето</label>
+      
+        <div class="season_content">
+            <span>tabik 4</span>
+        </div> 
+    </div>
+     
+ </div>

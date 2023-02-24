@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/alexPavlikov/go-blog/models"
@@ -1458,4 +1459,63 @@ func DeleteOnlineUser(user string) error {
 		return nil
 	}
 	return err
+}
+
+// --------------------Query from CustomPosts table--------------------
+
+func SelectGopherByOwner(user string) []models.JoinGopher {
+	var gopher models.JoinGopher
+	var gophers []models.JoinGopher
+	rows, err := DB.Query(fmt.Sprintf(`SELECT "CustomPosts".*, "Users"."Photo", "Users"."Name" FROM "CustomPosts"
+	JOIN "Users" ON "Users"."Login" = "CustomPosts"."Creator"
+	WHERE "CustomPosts"."Owner" = '%s'`, user))
+	if err != nil {
+		fmt.Println("Error - SelectByOwner()")
+	}
+	for rows.Next() {
+		err = rows.Scan(&gopher.Id, &gopher.Creator, &gopher.Owner, &gopher.Title, &gopher.Content, &gopher.Like, &gopher.View, &gopher.Date, &gopher.CreatorPhoto, &gopher.CreatorName)
+		if err != nil {
+			fmt.Println("Error - SelectByOwner() rows.Next()")
+		}
+		gophers = append(gophers, gopher)
+	}
+	return gophers
+}
+
+func InsertGopher(gof models.Gopher) error {
+	query := `INSERT INTO "CustomPosts"("Creator", "Owner", "Title", "Content", "Like", "View", "Date") VALUES($1, $2, $3, $4, $5, $6, $7)`
+	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelfunc()
+	stmt, err := DB.PrepareContext(ctx, query)
+	if err != nil {
+		log.Printf("Error %s when preparing SQL statement", err)
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.ExecContext(ctx, gof.Creator, gof.Owner, gof.Title, gof.Content, gof.Like, gof.View, gof.Date)
+	if err != nil {
+		log.Printf("Error %s when inserting row into RepostPost table", err)
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		log.Printf("Error %s when finding rows affected", err)
+		return err
+	}
+	log.Printf("%d post created ", rows)
+	return err
+}
+
+func InsertLikeToGopher(id string) error {
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	query := fmt.Sprintf(`UPDATE "CustomPosts" SET "Like" = "Like" + 1 WHERE "Id" = '%d'`, idInt)
+	_, err = DB.Query(query)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
 }

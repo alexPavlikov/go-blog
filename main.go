@@ -65,6 +65,7 @@ func handleRequest() {
 	http.HandleFunc("/registration", regHandler)
 	http.HandleFunc("/blog", blogHandler)
 	http.HandleFunc("/page", pageHandler)
+	http.HandleFunc("/page/post", pagePostHandler)
 	http.HandleFunc("/setting", settingHandler)
 	http.HandleFunc("/setting/refresh", refreshSettingHandler)
 	http.HandleFunc("/friends", friendsHandler)
@@ -81,6 +82,9 @@ func handleRequest() {
 	http.HandleFunc("/guest/friends", guestFriendsHandler)
 	http.HandleFunc("/guest/communities", guestCommunitiesHandler)
 	http.HandleFunc("/message", messageHandler)
+	http.HandleFunc("/store", storeHandler)
+	http.HandleFunc("/store/card", storeCardHandler)
+	http.HandleFunc("/store/buy", storeBuyHandler)
 	http.HandleFunc("/exit", exitHandler)
 
 	//http.HandleFunc("/fr", frHandler)
@@ -293,12 +297,17 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("page", postId)
 	var rep models.Repost
-	// RandomCrypto, _ := rand.Prime(rand.Reader, 32)
-	// rep.Id = uint32(RandomCrypto.Int64() / 20000)
+	var DoneGopher bool
 	rep.Post, _ = strconv.Atoi(postId)
 	rep.User = userAuth.Login
 	frd := database.SelectAllFriendsUser(userAuth.Login)
 	comnt := database.SelectAllCommunitiesUser("User", userAuth.Login)
+	gopher := database.SelectGopherByOwner(userAuth.Login)
+	if gopher != nil {
+		DoneGopher = true
+	} else {
+		DoneGopher = false
+	}
 
 	type statistics struct {
 		FrinedsLen     int
@@ -311,21 +320,72 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 	stat.FrinedsLen = len(frd)
 	stat.HappyBithday = userAuth.Birthdate
 
-	result, err := database.InsertRepoPost(rep)
-	if err != nil {
-		fmt.Println("Error - pageHandler() InsertRepoPost()")
+	if r.Method == "POST" {
+		r.ParseForm()
+		GofId := r.FormValue("goLike")
+		fmt.Println(GofId)
+		if GofId != "" {
+			err = database.InsertLikeToGopher(GofId)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+		}
 	}
-	fmt.Println(result)
-	Done := true
+
+	if rep.Post > 0 && rep.User != "" {
+		result, err := database.InsertRepoPost(rep)
+		if err != nil {
+			fmt.Println("Error - pageHandler() InsertRepoPost()")
+		}
+		fmt.Println(result)
+	}
+	DonePost := true
 	data := database.SelectRepoPostByUser(userAuth.Login)
 	if len(data) == 0 {
-		Done = false
+		DonePost = false
 	}
 	title := map[string]string{"Title": userAuth.Name}
 	tmpl.ExecuteTemplate(w, "header", title)
 
-	sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Statistics": stat, "Done": Done}
+	sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Statistics": stat, "Done": DonePost, "DoneGopher": DoneGopher, "Gopher": gopher}
 	tmpl.ExecuteTemplate(w, "page", sendUser)
+}
+
+func pagePostHandler(w http.ResponseWriter, r *http.Request) {
+	var gopher models.Gopher
+	if r.Method == "GET" {
+		r.ParseForm()
+		gopher.Title = r.FormValue("title")
+		gopher.Content = r.FormValue("content")
+		gopher.Creator = userAuth.Login
+		gopher.Date = time.Now().Format("2006-01-02 15:04")
+		gopher.Like = 0
+		gopher.View = 1
+		gopher.Owner = userAuth.Login
+		// gopher.Owner = r.FormValue()
+		fmt.Println("My", gopher)
+		err := database.InsertGopher(gopher)
+		if err != nil {
+			fmt.Println("Error - pagePostHandler() InsertGopher() r.Method == GET")
+		}
+		http.Redirect(w, r, "/page", http.StatusSeeOther)
+	}
+	if r.Method == "POST" {
+		r.ParseForm()
+		gopher.Title = r.FormValue("title")
+		gopher.Content = r.FormValue("content")
+		gopher.Creator = userAuth.Login
+		gopher.Date = time.Now().Format("2006-01-02 15:04")
+		gopher.Like = 0
+		gopher.View = 1
+		gopher.Owner = guestId
+		fmt.Println("Guest", gopher)
+		err := database.InsertGopher(gopher)
+		if err != nil {
+			fmt.Println("Error - pagePostHandler() InsertGopher() r.Method == POST")
+		}
+		http.Redirect(w, r, "/guest", http.StatusSeeOther)
+	}
 }
 
 func commentsHandler(w http.ResponseWriter, r *http.Request) {
@@ -612,6 +672,10 @@ func communityHandler(w http.ResponseWriter, r *http.Request) {
 		Name  string
 		Photo string
 	}
+	if communitiesName == "" && r.Method == "POST" {
+		r.ParseForm()
+		communitiesName = r.FormValue("community_id")
+	}
 	if communitiesName != "" {
 		post.Communities = communitiesName
 		post.CommunitiesPhot = communitiesPhoto
@@ -807,6 +871,16 @@ func guestHandler(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 		guestLogin = r.FormValue("guestLogin")
 	}
+	if r.Method == "POST" {
+		GofId := r.FormValue("goLike")
+		fmt.Println(GofId)
+		if GofId != "" {
+			err = database.InsertLikeToGopher(GofId)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+		}
+	}
 
 	_, ok := database.CheckFriends(userAuth.Login, guestId)
 
@@ -835,10 +909,21 @@ func guestHandler(w http.ResponseWriter, r *http.Request) {
 	if len(data) == 0 {
 		Done = false
 	}
+	var DoneGopher bool
+	gopher := database.SelectGopherByOwner(userGuest.Login)
+	if gopher != nil {
+		DoneGopher = true
+	} else {
+		DoneGopher = false
+	}
+
+	var Friend bool
+	_, Friend = database.CheckFriends(userAuth.Login, userGuest.Login)
+
 	title := map[string]string{"Title": userGuest.Name}
 	tmpl.ExecuteTemplate(w, "header", title)
 
-	sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Guest": userGuest, "Statistics": stat, "Done": Done, "OK": ok}
+	sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Guest": userGuest, "Statistics": stat, "Done": Done, "OK": ok, "Gopher": gopher, "DoneGopher": DoneGopher, "Friend": Friend}
 
 	tmpl.ExecuteTemplate(w, "guest", sendUser)
 }
@@ -955,6 +1040,64 @@ func JSON(msg models.Message, Path string) models.Messenger {
 	return settings
 }
 
+func storeHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/store.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+	title := map[string]string{"Title": models.Cfg.StoreTitle}
+	tmpl.ExecuteTemplate(w, "header", title)
+	data := map[string]interface{}{"User": userAuth}
+	tmpl.ExecuteTemplate(w, "store", data)
+}
+
+var itemId string
+
+func storeCardHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/card.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+
+	if r.Method == "GET" {
+		r.ParseForm()
+		itemId = r.FormValue("store_id")
+	}
+	title := map[string]string{"Title": itemId} // запрос в БД по id выбрать название товара и вставить в шапку
+	tmpl.ExecuteTemplate(w, "header", title)
+	data := map[string]interface{}{"User": userAuth}
+	tmpl.ExecuteTemplate(w, "card", data)
+}
+
+func storeBuyHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(itemId)
+	if r.Method == "POST" {
+		r.ParseForm()
+		paypal := r.FormValue("paypal")
+		card := r.FormValue("card")
+		cardholder := r.FormValue("cardholder")
+		cardnumber := r.FormValue("cardnumber")
+		date := r.FormValue("date")
+		CVC := r.FormValue("CVC")
+		money := r.FormValue("money")
+		fmt.Println(paypal, card, cardholder, cardnumber, date, CVC, money)
+		http.Redirect(w, r, "/store/card", http.StatusSeeOther)
+	}
+	if r.Method == "GET" {
+		fmt.Printf("Вы купили - %s", itemId)
+		http.Redirect(w, r, "/store", http.StatusSeeOther)
+	}
+
+}
+
+func exitHandler(w http.ResponseWriter, r *http.Request) {
+	err := database.DeleteOnlineUser(userAuth.Login)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+	}
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
 func Cookies() { // доделать/сделать
 	fmt.Println(client)
 	jar, err := cookiejar.New(nil)
@@ -1021,12 +1164,4 @@ func createFile(check models.MessageList, guestId string) {
 			fmt.Println("Error - createFile() io.Copy()")
 		}
 	}
-}
-
-func exitHandler(w http.ResponseWriter, r *http.Request) {
-	err := database.DeleteOnlineUser(userAuth.Login)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

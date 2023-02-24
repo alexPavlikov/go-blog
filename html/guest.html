@@ -1,11 +1,13 @@
 {{ define "guest" }}
 
 {{ template "header" }}
-
-<link rel="stylesheet" href="/assets/css/page.css">
 <link rel="stylesheet" href="/assets/css/blog.css">
 <link rel="stylesheet" href="/assets/css/style.css">
 <link rel="stylesheet" href="/assets/css/community.css">
+<link rel="stylesheet" href="/assets/css/friends.css">
+<link rel="stylesheet" href="/assets/css/modal.css">
+<link rel="stylesheet" href="/assets/css/page.css">
+
 <header>
     <div class="brand">
         <div class="logos">
@@ -22,6 +24,7 @@
 
 <script src='//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js'></script>
 
+
 <body>
     <aside class="right">
         <a href="/page#"><i class="fa-regular fa-circle-user"></i><span> Моя страница</span></a>
@@ -32,10 +35,30 @@
         <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
         <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
         <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
-        <a href="#">Далее</a>
+        <a href="/store"><i class="fa-brands fa-golang"></i><span> Go-Store</span></a>
     </aside>
+
+        <!-- Модальное окно -->    
+        <input type="checkbox" id="css-modal-checkbox" />    
+        <div class="cmc">
+            <div class="cmt-gopher cmt cmt-gopher" style="background: url(/data/image/brand.png);background-size: no-repeat;
+            background-position: center;
+            background-size: 50%;
+            background-size: cover;">
+                <form action="page/post" id="form2" name="formImg" method="post">
+
+                    <input name="title" id="title" type="text" placeholder="Заголовок гофера">
+                    <textarea name="content" id="content" cols="30" rows="10" placeholder="Содержание гофера"></textarea>
+                    <button id="{{ .Guest.Login }}" class="goBTN" type="submit">GO</button>
+                </form>
+            </div>
+            <label for="css-modal-checkbox" class="css-modal-close"></label>
+        </div>
+
     <main>
+
         <section>
+
             <div class="photo">
                 <img src="{{ .Guest.Photo }}" alt="">
                 <div class="name">{{ .Guest.Name }}</div>
@@ -45,37 +68,86 @@
             </div>
             <div class="com_stat">               
                 <div class="txt">Дата рождения: <span>{{ .Statistics.HappyBithday }}</span></div>
-                <div class="txt">Сообществ <a id="{{ .Guest.Login }}" class="guestId" href="/guest/communities">{{ .Statistics.CommunitiesLen }}</a></div>
-                <div class="txt">Друзей <a id="{{ .Guest.Login }}" class="guestId" href="/guest/friends">{{ .Statistics.FrinedsLen }}</a></div>
+                <div class="txt">Сообществ <a class="guestId" href="/communities">{{ .Statistics.CommunitiesLen }}</a></div>
+                <div class="txt">Друзей <a class="guestId" href="/friends">{{ .Statistics.FrinedsLen }}</a></div>
             </div>
+
         </section>
-        <div class="news">
-            {{ if .Done }}
-                {{ range $_, $r := .Repo }}
-                <div class="post" id="{{$r.Post}}">
-                    <div class="communities">
-                        <div class="avatar"><img src="{{ $r.CommunitiesPhoto }}" alt=""></div>
-                        <div class="name">
-                            <div>{{ $r.Communities }} <span><a style="text-decoration: none; color: black;" href="/blog#{{$r.Post}}">{{ $r.Title }}</a></span></div>
-                            <label>{{ $r.Date }}</label>
-                        </div>
-                    </div>
-                    <div class="title">{{ $r.Content }}</div>
-                    <div class="image"><img src="{{ $r.PostPhoto }}" alt=""></div>
-                    <div class="statistics">
-                        <div>
-                            <a href="blog" id="{{$r.Post}}"  class="spans span spany" style="color: #fff; text-decoration: none;"><i style="margin-right: 5px;" class="fa-regular fa-heart"></i>{{$r.Like}}</a>
-                            <a href="comments"  id="{{$r.Post}}" class="spans span spany" type="submit"><i class="fa-regular fa-message"></i></a>     
-                            <a href="page" id="{{$r.Post}}" class="spans span" type="submit"><i class="fa-regular fa-paper-plane"></i></a> 
-                        </div>
-                        
-                        <i class="fa-solid fa-eye">{{$r.View}}</i>
+
+        {{ if .Friend }}
+       
+        {{ else }}
+            <div class="adds">
+                <label for="css-modal-checkbox" class="add-rev add add-com"><i class="fa-solid fa-circle-plus"></i> Написть гофер</label>
+            </div>
+        {{ end }}
+
+        <div class="friends">
+            <div class="tabs">
+                <input type="radio" name="tab-btn" id="tab-btn-1" value="" checked>
+                <label for="tab-btn-1">Гоферы</label>
+                <input type="radio" name="tab-btn" id="tab-btn-2" value="">
+                <label for="tab-btn-2">Репосты</label> 
+
+                <div id="content-1">
+                    <div class="news">
+                        {{ if .DoneGopher }}
+                            {{ range $_, $g := .Gopher }}
+                            <div class="post gopher" id="{{$g.Id}}">
+                                <div class="communities communities-gopher">
+                                    <div class="avatar"><img src="{{ $g.CreatorPhoto }}" alt=""></div>
+                                    <div class="name">
+                                        <div>{{ $g.CreatorName }} <span><a style="text-decoration: none; color: black;" href="/blog#{{$g.Id}}">{{ $g.Title }}</a></span></div>
+                                        <label>{{ $g.Date }}</label>
+                                    </div>
+                                </div>
+                                <div class="title gopher-content">{{ $g.Content }}</div>
+                                <div class="statistics gopher-stat">
+                                    <div>
+                                        <a href="guest" id="{{$g.Id}}"  class="spans goLike" style="color: #fff; text-decoration: none;"><i style="margin-right: 5px;" class="fa-regular fa-heart"></i>{{$g.Like}}</a>     
+                                        <a href="guest" id="{{$g.Id}}" class="spans span" type="submit"><i class="fa-regular fa-paper-plane"></i></a> 
+                                    </div>
+                                    
+                                    <i class="fa-solid fa-eye">{{$g.View}}</i>
+                                </div>
+                            </div>
+                            {{ end }}
+                        {{else}}
+                            <h2 class="subtitles" style="width: 100%; color: rgba(60, 161, 255);">На стене пока нет ни одного гофера</h2>
+                        {{ end }}
                     </div>
                 </div>
-                {{ end }}
-            {{else}}
-                <h2 class="subtitles">На стене пока нет ни одной записи</h2>
-            {{ end }}
+                <div id="content-2">
+                    <div class="news">
+                        {{ if .Done }}
+                            {{ range $_, $r := .Repo }}
+                            <div class="post" id="{{$r.Post}}">
+                                <div class="communities">
+                                    <div class="avatar"><img src="{{ $r.CommunitiesPhoto }}" alt=""></div>
+                                    <div class="name">
+                                        <div>{{ $r.Communities }} <span><a style="text-decoration: none; color: black;" href="/blog#{{$r.Post}}">{{ $r.Title }}3232</a></span></div>
+                                        <label>{{ $r.Date }}</label>
+                                    </div>
+                                </div>
+                                <div class="title">{{ $r.Content }}</div>
+                                <div class="image"><img src="{{ $r.PostPhoto }}" alt=""></div>
+                                <div class="statistics">
+                                    <div>
+                                        <a href="blog" id="{{$r.Post}}"  class="spans span spany" style="color: #fff; text-decoration: none;"><i style="margin-right: 5px;" class="fa-regular fa-heart"></i>{{$r.Like}}</a>
+                                        <a href="comments"  id="{{$r.Post}}" class="spans span spany" type="submit"><i class="fa-regular fa-message"></i></a>     
+                                        <a href="page" id="{{$r.Post}}" class="spans span" type="submit"><i class="fa-regular fa-paper-plane"></i></a> 
+                                    </div>
+                                    
+                                    <i class="fa-solid fa-eye">{{$r.View}}</i>
+                                </div>
+                            </div>
+                            {{ end }}
+                        {{else}}
+                            <h2 style="width: 100%; color: rgba(60, 161, 255);" class="subtitles">На стене пока нет ни одной записи</h2>
+                        {{ end }}
+                    </div>
+                </div>
+            </div>
         </div>
 
     </main>
@@ -97,6 +169,22 @@
 </body>
 
 <script>
+
+        $(document).ready(function(){
+                    $('.goLike').click(function(e) {
+                        clickId = $(this).attr('id');
+                            $.ajax({
+                                url: '/page',
+                                type: 'POST',
+                                dataType: 'html',
+                                data : { goLike: clickId},
+                                success : function(data) {
+                                $('#result').html(data);
+                                },
+                            });
+            });
+        });
+
       $(document).ready(function(){
             $('.guestId').click(function(e) {
                 clickId = $(this).attr('id');

@@ -33,7 +33,7 @@
         <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
         <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
         <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
-        <a href="#">Далее</a>
+        <a href="/store"><i class="fa-brands fa-golang"></i><span> Go-Store</span></a>
     </aside>
     <main>
 
@@ -119,12 +119,12 @@
                         <label for="css-modal-checkbox2" class="add"><i class="fa-regular fa-trash-can"></i> Удалить пост</label>
                     </div>
                     <div class="add">
-                        <label for="css-modal-checkbox3" class="add"><i class="fa-regular fa-trash-can"></i> Изменить сообщество</label>
+                        <label for="css-modal-checkbox3" class="add"><i class="fa-solid fa-pen-to-square"></i> Изменить сообщество</label>
                     </div>
                     <button class="add"><i class="fa-solid fa-right-left"></i>Отдать командывание</button>
                     <form action="community/del" method="post">
                         <input id="inputName" name="inputName" type="text" style="display: none;" value="{{.Communities.Name}}">
-                        <button type="submit" class="add del">Удалить сообщество<i class="fa-solid fa-delete-left"></i></button>
+                        <button style="width: 100%;" type="submit" class="add del">Удалить сообщество<i class="fa-solid fa-delete-left"></i></button>
                     </form>
                 </div>
             {{ end }}
@@ -205,6 +205,23 @@
 
 <script>
 
+$(document).ready(function(){
+            $('.span').click(function(e) {
+                clickId = $(this).attr('id');
+                // alert('fa'+clickId);
+                    $.ajax({
+                        url: '/blog',
+                        type: 'POST',
+                        dataType: 'html',
+                        data : { post_id: clickId},
+                        success : function(data) {
+                        $('#result').html(data);
+                        },
+                    });
+                alert(post_id);
+            });
+        });
+
    $(document).ready(function(){
        $('.guestId').click(function(e) {
            clickId = $(this).attr('id');
@@ -249,6 +266,22 @@
                });
        });
    });
+
+   $(document).ready(function(){
+        $('.communa').click(function(e) {
+            clickId = $(this).attr('id');
+            // alert('fa'+clickId);
+                $.ajax({
+                    url: '/community',
+                    type: 'POST',
+                    dataType: 'html',
+                    data : { community_id: clickId},
+                    success : function(data) {
+                    $('#result').html(data);
+                    },
+                });
+        });
+    });
 
    $(document).ready(function(){
             $('.go-friend').click(function(e) {

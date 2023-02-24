@@ -4,37 +4,77 @@
 
 <link rel="stylesheet" href="/assets/css/setting.css">
 <link rel="stylesheet" href="/assets/css/style.css">
-
-<h1 class="title">Настройка страницы</h1>
-<menu style="margin-top: 20vh;">
-    <div class="avatar">
-        <div class="img"><img src="{{ .User.Photo }}" alt=""></div>
-        <div class="name">{{ .User.Name }} <br><span id="login">{{ .User.Login }}</span></div>
+<a class="back" href="/page"><i class="fa-solid fa-delete-left"></i></a>
+<div class="season_tabs">
+    
+    <div class="season_tab">
+        <input type="radio" id="tab-1" name="tab-group-1" checked>
+        <label for="tab-1">Настройка страницы</label>
+        
+        <div class="season_content">
+            <menu style="margin-top: 20vh; border: 1px solid #777;">
+                <div class="avatar">
+                    <div class="img"><img src="{{ .User.Photo }}" alt=""></div>
+                    <div class="name">{{ .User.Name }} <br><span id="login">{{ .User.Login }}</span></div>
+                </div>
+                <div class="data">
+                    <form method="get" action="setting/refresh">
+                        <div>
+                                <input name="oldPass"  type="password" placeholder="Введите старый пароль">
+                                <input name="newName" type="text" placeholder="Введите новое имя">           
+                        </div>
+                        <div>
+                                <input name="newPass" type="password" placeholder="Введите новый пароль">
+                                <input name="newHB" type="date" placeholder="Выберите новую дату рождения">
+                        </div>
+                        
+                        <button type="submit" class="custom-btn btn-3"><span>Сохранить изменения</span></button>
+                    </form>
+                </div>
+            </menu>
+        </div> 
     </div>
-    <div class="data">
-        <form method="get" action="setting/refresh">
-            <div>
-                    <input name="oldPass"  type="password" placeholder="Введите старый пароль">
-                    <input name="newName" type="text" placeholder="Введите новое имя">           
-            </div>
-            <div>
-                    <input name="newPass" type="password" placeholder="Введите новый пароль">
-                    <input name="newHB" type="date" placeholder="Выберите новую дату рождения">
-            </div>
-            
-            <button type="submit" class="custom-btn btn-3"><span>Сохранить изменения</span></button>
-        </form>
+     
+    <div class="season_tab">
+        <input type="radio" id="tab-2" name="tab-group-1">
+        <label for="tab-2">Привязка карты</label>
+        
+        <div class="season_content">
+            <menu>
+                
+            </menu>
+        </div> 
     </div>
-    <a class="back" href="/page"><i class="fa-solid fa-delete-left"></i></a>
-</menu>
+     
+     <div class="season_tab">
+        <input type="radio" id="tab-3" name="tab-group-1">
+        <label for="tab-3">Весна</label>
+      
+        <div class="season_content">
+            <span>tabik 3</span>
+        </div> 
+    </div>
+       <div class="season_tab">
+        <input type="radio" id="tab-4" name="tab-group-1">
+        <label for="tab-4">Лето</label>
+      
+        <div class="season_content">
+            <span>tabik 4</span>
+        </div> 
+    </div>
+     
+ </div>
 
-<div class="goffer">
+
+
+
+<!-- <div class="goffer">
     <img src="/data/image/another/goffer1.png" alt="">
 </div>
 
 <div id="g2">
     <img src="/data/image/another/goffer2.png" alt="">
-</div>
+</div> -->
 
 <script src="/assets/js/style.js"></script>
 

@@ -131,3 +131,27 @@ type Companions struct {
 	Name           string
 	Photo          string
 }
+
+type Gopher struct {
+	Id      uint
+	Creator string
+	Owner   string
+	Title   string
+	Content string
+	Like    uint
+	View    uint
+	Date    string
+}
+
+type JoinGopher struct {
+	Id           uint
+	Creator      string
+	CreatorPhoto string
+	CreatorName  string
+	Owner        string
+	Title        string
+	Content      string
+	Like         uint
+	View         uint
+	Date         string
+}

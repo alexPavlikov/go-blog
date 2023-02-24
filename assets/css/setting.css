@@ -203,12 +203,63 @@ menu .data input {
 
 .back {
     position: absolute;
-    top: 10px;
+    top: 40px;
     right: 10px;
     font-size: 24px;
     color: red;
+    z-index: 100;
 }
 
 .hidden {
     visibility:visible;
 }
+
+/*  */
+.season_tabs {
+    position: relative;   
+    min-height: 95vh; /* This part sucks */
+    clear: both;
+    margin: 10px 0;
+  }
+  .season_tab {
+    float: left;  
+    clear: both;
+    width: 286px;
+  }
+  .season_tab label {
+      background: #eee;
+      padding: 10px;
+      border: 1px solid #ccc;
+      margin-left: -1px;
+      font-size: 21px;
+      vertical-align: middle;
+      position: relative;
+      left: 1px;
+      width: 264px;
+      height: 68px;
+      display: table-cell;
+  }
+  .season_tab [type=radio] {
+    display: none;   
+  }
+  .season_content {
+    position: absolute;
+    top: 0;
+    left: 286px;
+    background: white;
+    right: 0;
+    bottom: 0;
+    padding: 20px;
+    border: 1px solid #ccc;
+   }
+  .season_content span {
+    animation: 0.5s ease-out 0s 1 slideInFromTop; 
+  }
+  [type=radio]:checked ~ label {
+    background: white;
+    border-bottom: 2px solid #8bc34a;
+    z-index: 2;
+  }
+  [type=radio]:checked ~ label ~ .season_content {
+    z-index: 1;
+  }

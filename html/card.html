@@ -1,0 +1,179 @@
+{{ define "card" }}
+
+{{ template "header" }}
+
+<link rel="stylesheet" href="/assets/css/blog.css">
+<link rel="stylesheet" href="/assets/css/style.css">
+<link rel="stylesheet" href="/assets/css/store.css">
+<link rel="stylesheet" href="/assets/css/modal.css">
+<link rel="stylesheet" href="/assets/css/card.css">
+
+
+<header>
+    <div class="brand">
+        <div class="logos">
+            <img src="/data/image/brand.png" alt="">
+            <span>GOLANG</span>
+        </div>
+        <div class="find"><input type="text" placeholder="Найти"></div>
+    </div>
+    <div class="account">
+        <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
+        <i class="fa-solid fa-chevron-down" onclick="Check()"></i>
+    </div>
+</header>
+
+<script src='//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js'></script>
+
+<body>
+    <aside class="right">
+        <a href="/page#"><i class="fa-regular fa-circle-user"></i><span> Моя страница</span></a>
+        <a href="/blog"><i class="fa-regular fa-newspaper"></i><span> Новости</span></a>
+        <a href="/message"><i class="fa-regular fa-comment"></i><span> Сообщения</span></a>
+        <a href="/friends"><i class="fa-solid fa-user-group"></i><span> Друзья</span></a>
+        <a href="/communities"><i class="fa-solid fa-users"></i><span> Сообщества</span></a>
+        <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+        <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
+        <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
+        <a href="/store"><i class="fa-brands fa-golang"></i><span> Go-Store</span></a>
+    </aside>
+
+        <!-- Модальное окно -->    
+        <input type="checkbox" id="css-modal-checkbox" />    
+        <div class="cmc">
+            <!-- <div class="cmt" style="max-width: 1000px;"> -->
+                <form action="buy" method="post">
+                    <!-- <input type="number">
+                    <button class="goBTN" type="submit">GO</button> -->
+                    <div id="wrapper" style="max-width: 1000px;">
+                        <div class="row">
+                          <div class="col-xs-5">
+                            <div id="cards">
+                              <img src="http://icons.iconarchive.com/icons/designbolts/credit-card-payment/256/Visa-icon.png">
+                              <img src="http://icons.iconarchive.com/icons/designbolts/credit-card-payment/256/Master-Card-icon.png">
+                            </div><!--#cards end-->
+                            <div class="form-check">
+                        <label class="form-check-label" for='card'>
+                          <input id="card" name="card" class="form-check-input" type="checkbox" value="card">
+                          Pay $150.00 with credit card
+                        </label>
+                      </div>
+                          </div><!--col-xs-5 end-->
+                          <div class="col-xs-5">
+                            <div id="cards">
+                              <img src="http://icons.iconarchive.com/icons/designbolts/credit-card-payment/256/Paypal-icon.png">
+                            </div><!--#cards end-->
+                            <div class="form-check">
+                        <label class="form-check-label" for='paypal'>
+                          <input id="paypal" name="paypal" class="form-check-input" type="checkbox" value="paypal">
+                          Pay $150.00 with PayPal
+                        </label>
+                      </div>
+                          </div><!--col-xs-5 end-->
+                        </div><!--row end-->
+                        <div class="row">
+                          <div class="col-xs-5">
+                            <i class="fa fa fa-user"></i>
+                            <label for="cardholder">Cardholder's Name</label>
+                            <input type="text" id="cardholder" name="cardholder">
+                          </div><!--col-xs-5-->
+                          <div class="col-xs-5">
+                            <i class="fa fa-credit-card-alt"></i>
+                            <label for="cardnumber">Card Number</label>
+                            <input type="text" id="cardnumber" name="cardnumber">
+                          </div><!--col-xs-5-->
+                        </div><!--row end-->
+                        <div class="row row-three">
+                          <div class="col-xs-2">
+                            <i class="fa fa-calendar"></i>
+                            <label for="date">Valid thru</label>
+                            <input type="text" placeholder="MM/YY" id="date" name="date">
+                          </div><!--col-xs-3-->
+                          <div class="col-xs-2">
+                            <i class="fa fa-lock"></i>
+                            <label for="date">CVV / CVC *</label>
+                            <input type="text" id="CVC" name="CVC">
+                          </div><!--col-xs-3-->
+                          <!-- <div class="col-xs-5">
+                            <span class="small">* CVV or CVC is the card security code, unique three digits number on the back of your card seperate from its number.</span>
+                          </div>col-xs-6 end -->
+                          <div class="col-xs-2">
+                            <i class="fa fa-lock"></i>
+                            <label for="date">Money</label>
+                            <input type="text" id="money" name="money">
+                          </div><!--col-xs-3-->
+                        </div><!--row end-->
+                        <footer>
+                          <!-- <button class="btn">Back</button> -->
+                          <button class="btn">Отправить</buton>
+                        </footer>
+                      </div><!--wrapper end-->
+                </form>
+            <!-- </div> -->
+            <label for="css-modal-checkbox" class="css-modal-close"></label>
+        </div>
+
+    <main style="width: 55%;">
+        
+        <div class="product-card">
+            <div class="badge">Hot</div>
+            <div class="product-tumb">
+              <img src="https://i.imgur.com/xdbHo4E.png" alt="">
+            </div>
+            <div class="product-details">
+              <span class="product-catagory">Women,bag</span>
+              <h4>Women leather bag</h4>
+              <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Vero, possimus nostrum!</p>
+              <div class="product-bottom-details">
+                <div class="product-price">
+                    <form action="buy" method="get">
+                        <button><small>$96.00</small>$230.99</button>
+                    </form>
+                </div>
+                <div class="product-links">
+                  <div><i class="fa fa-heart favourites"></i></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+    </main>
+
+    <div class="wallet">
+        <h4>Ваш баланс: <strong>1200 P</strong></h4>
+        <div class="add">
+            <label for="css-modal-checkbox" class="add"><i class="fa-solid fa-circle-plus"></i></label>
+        </div>    
+    </div>
+
+    <aside id="left" class="left">
+        
+        <div class="setacc">
+            <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
+            <div class="info">
+                <div class="name">{{ .User.Name }}</div>
+                <div class="login">{{ .User.Login }}</div>
+            </div>
+        </div>
+        <div class="settings">
+            <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+            <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
+            <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
+            <a id="exit" href="/exit"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
+        </div>
+    </aside>
+</body>
+
+<script>
+    $(".favourites").on('click', function(){
+        $(this).toggleClass('focus').siblings().removeClass('focus');
+    })
+</script>
+
+<script src="/assets/js/card.js"></script>
+
+
+
+{{ template "footer" }}
+
+{{ end }}

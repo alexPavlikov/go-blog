@@ -1,0 +1,151 @@
+
+  .store {
+    padding: 20px 5%;
+    width: 80%;
+    display: grid;
+    /*
+     * auto-fit - create columns only if there's content for them
+     * auto-fill - create columns even if they will be empty
+     */
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-auto-rows: 20rem;
+    grid-gap: 1rem;
+  }
+  /* 
+  div class="photo"><img src="/data/image/blog/1675360567854383100.jpeg" alt=""></div>
+<div class="description">Брендовая футболка</div>
+                <div class="btn">
+                    <form action="" method="get">
+                        <button>Купить</button>
+                    </form>
+                </div>
+*/
+  article {
+    background-color: #fff;
+    padding: 5px;
+    padding: 1rem;
+    border: 1px solid rgb(3, 3, 3);
+  }
+  article .photo {
+    height: 60%;
+    position: relative;
+  }
+ .mySlides img {
+
+    width: 75%;
+    height: 75%;
+    object-fit: contain;
+  }
+  article .description {
+    height: 20%;
+    text-align: center;
+    padding: 10px 0;
+  }
+  article .btn {
+    height: 10%;
+    text-align: center;
+
+  }
+
+  article .btn button {
+    font-size: 18px;
+    font-weight: 700;
+    background-color: rgba(85, 187, 255, 0.8);;
+    color: #000000;
+    padding: 5px 20px;
+    border: 1px solid #777;
+  }
+
+  article .btn button:hover {
+    cursor: pointer;
+  }
+
+/*  */
+
+
+/* Slideshow container */
+.slideshow-container {
+  /* max-width: 1000px; */
+  position: relative;
+  margin: auto;
+}
+
+/* Hide the images by default */
+.mySlides {
+    text-align: center;
+  display: none;
+}
+
+/* Next & previous buttons */
+.prev, .next {
+  cursor: pointer;
+  position: absolute;
+  top: 50%;
+  width: auto;
+  margin-top: -22px;
+  padding: 16px;
+  color: rgb(99, 99, 99);
+  font-weight: bold;
+  font-size: 18px;
+  transition: 0.6s ease;
+  border-radius: 0 3px 3px 0;
+  user-select: none;
+}
+
+/* Position the "next button" to the right */
+.next {
+  right: 0;
+  border-radius: 3px 0 0 3px;
+}
+
+/* On hover, add a black background color with a little bit see-through */
+.prev:hover, .next:hover {
+  background-color: rgba(85, 187, 255, 0.8);
+}
+
+/* Caption text */
+.text {
+  color: #f2f2f2;
+  font-size: 15px;
+  padding: 8px 12px;
+  position: absolute;
+  bottom: 8px;
+  width: 100%;
+  text-align: center;
+}
+
+/* Number text (1/3 etc) */
+.numbertext {
+  color: #f2f2f2;
+  font-size: 12px;
+  padding: 8px 12px;
+  position: absolute;
+  top: 0;
+}
+
+/* The dots/bullets/indicators */
+.dot {
+  cursor: pointer;
+  height: 15px;
+  width: 15px;
+  margin: 0 2px;
+  background-color: #717171;
+  border-radius: 50%;
+  display: inline-block;
+  transition: background-color 0.6s ease;
+}
+
+.active, .dot:hover {
+  background-color: #ffffff;
+}
+
+/* Fading animation */
+.fade {
+  animation-name: fade;
+  animation-duration: 1.5s;
+}
+
+@keyframes fade {
+  from {opacity: .4}
+  to {opacity: 1}
+}
