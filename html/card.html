@@ -114,33 +114,39 @@
         </div>
 
     <main style="width: 55%;">
-        
-        <div class="product-card">
-            <div class="badge">Hot</div>
-            <div class="product-tumb">
-              <img src="https://i.imgur.com/xdbHo4E.png" alt="">
-            </div>
-            <div class="product-details">
-              <span class="product-catagory">Women,bag</span>
-              <h4>Women leather bag</h4>
-              <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Vero, possimus nostrum!</p>
-              <div class="product-bottom-details">
-                <div class="product-price">
-                    <form action="buy" method="get">
-                        <button><small>$96.00</small>$230.99</button>
-                    </form>
-                </div>
-                <div class="product-links">
-                  <div><i class="fa fa-heart favourites"></i></div>
+{{ range $_, $pr := .Market }}
+
+          <div class="product-card">
+              <!-- <div class="badge">Hot</div> -->
+              <div class="product-tumb">
+                <!-- Photo -->
+                <img src="{{ $pr.Photo }}" alt=""> 
+              </div>
+              <div class="product-details">
+                <span class="product-catagory">{{ $pr.Sex }},{{ $pr.Category }}</span>
+                <h4>{{ $pr.Name }}</h4>
+                <p>{{ $pr.Description }}</p>
+                <div class="product-bottom-details">
+                  <div class="product-price">
+                      <form action="buy" method="get">
+                          <button><small>{{ $pr.Price }}G</small>{{ $pr.NewPrice }}G</button>
+                      </form>
+                  </div>
+                  <div class="product-links">
+                    {{ if $pr.Status }}
+                    <div><i class="fa fa-heart favourites focus"></i></div>
+                    {{ else }}
+                    <div><i class="fa fa-heart favourites"></i></div>
+                    {{ end }}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-
+{{ end }}
     </main>
 
     <div class="wallet">
-        <h4>Ваш баланс: <strong>1200 P</strong></h4>
+        <h4>Ваш баланс: <strong>{{ .Wallet }} P</strong></h4>
         <div class="add">
             <label for="css-modal-checkbox" class="add"><i class="fa-solid fa-circle-plus"></i></label>
         </div>    
@@ -157,6 +163,7 @@
         </div>
         <div class="settings">
             <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+            <a href="/favourites"><i class="fa-solid fa-bookmark"></i> <span> Избранное</span></a>
             <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
             <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
             <a id="exit" href="/exit"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
@@ -167,11 +174,32 @@
 <script>
     $(".favourites").on('click', function(){
         $(this).toggleClass('focus').siblings().removeClass('focus');
+      var ok = confirm('Добавить в избранное?');
+      if (ok == true) {
+        $.ajax({
+          url: '/store/favorites',
+          type: 'GET',
+          dataType: 'html',
+          data : { Ok: ok},
+          success : function(data) {
+          $('#result').html(data);
+          },
+        }); 
+      } else {
+        $.ajax({
+          url: '/store/favorites',
+          type: 'POST',
+          dataType: 'html',
+          data : { Ok: ok},
+          success : function(data) {
+          $('#result').html(data);
+          },
+        });
+      }
     })
 </script>
 
 <script src="/assets/js/card.js"></script>
-
 
 
 {{ template "footer" }}

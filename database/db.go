@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/alexPavlikov/go-blog/models"
+	"github.com/lib/pq"
 )
 
 var DB *sql.DB
@@ -264,7 +265,7 @@ func SelectUsers() []models.Users {
 	var user models.Users
 	var users []models.Users
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
 		if err != nil {
 			fmt.Println("Error - SelectUser() rows.Next()", err.Error())
 		}
@@ -285,7 +286,7 @@ func SelectUserByLogPass(log string, pass string) (user models.Users, err error)
 		return user, err
 	}
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
 		if err != nil {
 			fmt.Println("Error - SelectUserByLogPass() rows.Next()", err)
 		}
@@ -307,7 +308,7 @@ func SelectUsersByColumn(column string, value string) ([]models.Users, error) {
 	}
 
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
 		if err != nil {
 			fmt.Println("Error - SelectUsersByColumn() rows.Next()", err.Error())
 			return users, err
@@ -326,9 +327,26 @@ func SelectUserByColumn(column string, value string) (models.Users, error) {
 	}
 
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
 		if err != nil {
 			fmt.Println("Error - SelectUserByColumn() rows.Next()", err.Error())
+			return user, err
+		}
+	}
+	return user, nil
+}
+
+func SelectUserWallet(login string, password string) (models.Users, error) {
+	var user models.Users
+	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "Users" WHERE "Login" = '%s' AND "Password" = '%s'`, login, password))
+	if err != nil {
+		fmt.Println("Error - SelectUserWallet()", err)
+		return user, err
+	}
+	for rows.Next() {
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
+		if err != nil {
+			fmt.Println("Error - SelectUserWallet() rows.Next()", err.Error())
 			return user, err
 		}
 	}
@@ -354,7 +372,7 @@ func DeleteUserByLogin(login string) error {
 Функция добавления пользователя в таблицу Users по введенным значениям
 */
 func InsertUser(user models.Users) (models.Users, error) {
-	query := `INSERT INTO "Users"("Login", "Password", "Name", "Access") VALUES ($1, $2, $3, $4)`
+	query := `INSERT INTO "Users"("Login", "Password", "Name", "Access") VALUES ($1, $2, $3, $4, $5, $6, $7)`
 	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
 	stmt, err := DB.PrepareContext(ctx, query)
@@ -363,7 +381,7 @@ func InsertUser(user models.Users) (models.Users, error) {
 		return user, err
 	}
 	defer stmt.Close()
-	res, err := stmt.ExecContext(ctx, user.Login, user.Password, user.Name, user.Access)
+	res, err := stmt.ExecContext(ctx, user.Login, user.Password, user.Name, user.Access, user.Photo, user.Birthdate, user.Wallet)
 	if err != nil {
 		log.Printf("Error %s when inserting row into User table", err)
 		return user, err
@@ -381,13 +399,26 @@ func InsertUser(user models.Users) (models.Users, error) {
 Функция обновления пользователя из таблицы Users по введенным Login и Password
 */
 func UpdateUserByLogPass(login string, password string, user models.Users) error {
-	query := fmt.Sprintf(`UPDATE "Users" SET "Login" = %s, "Password" = %s, "Name" = %s, "Access" = %s, "Photo" = %s "Birthdate" = %s WHERE "Login" = %s AND "Password" =  %s`, user.Login, user.Password, user.Name, user.Access, user.Photo, user.Birthdate, login, password)
+	query := fmt.Sprintf(`UPDATE "Users" SET "Login" = '%s', "Password" = '%s', "Name" = '%s', "Access" = '%s', "Photo" = '%s' "Birthdate" = '%s' WHERE "Login" = '%s' AND "Password" =  '%s'`, user.Login, user.Password, user.Name, user.Access, user.Photo, user.Birthdate, login, password)
 	_, err := DB.Query(query)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 	fmt.Println(query)
+	return nil
+}
+
+/*
+Функция обновления кошелька пользователя из таблицы Users по введенным Login и Password
+*/
+func UpdateUserWalletByLogPass(login string, password string, money float64) error {
+	query := fmt.Sprintf(`UPDATE "Users" SET "Wallet" = "Wallet"+'%f' WHERE "Login" = '%s' AND "Password" =  '%s'`, money, login, password)
+	_, err := DB.Query(query)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
 	return nil
 }
 
@@ -1265,7 +1296,7 @@ func SelectUserSub(user string) []models.Users {
 		fmt.Println("Error - SelectUserSub()")
 	}
 	for rows.Next() {
-		err = rows.Scan(&sub.Login, &sub.Password, &sub.Name, &sub.Access, &sub.Photo, &sub.Birthdate)
+		err = rows.Scan(&sub.Login, &sub.Password, &sub.Name, &sub.Access, &sub.Photo, &sub.Birthdate, &sub.Wallet)
 		if err != nil {
 			fmt.Println("Error - SelectUserSub() rows.Next()", err)
 		}
@@ -1331,7 +1362,7 @@ func SelectRecomendationFriends(user string) []models.Users {
 		fmt.Println("Error - SelectRecomendationFriends()")
 	}
 	for rows.Next() {
-		err = rows.Scan(&sub.Login, &sub.Password, &sub.Name, &sub.Access, &sub.Photo, &sub.Birthdate)
+		err = rows.Scan(&sub.Login, &sub.Password, &sub.Name, &sub.Access, &sub.Photo, &sub.Birthdate, &sub.Wallet)
 		if err != nil {
 			fmt.Println("Error - SelectRecomendationFriends() rows.Next()", err)
 		}
@@ -1518,4 +1549,218 @@ func InsertLikeToGopher(id string) error {
 		return err
 	}
 	return nil
+}
+
+// store
+
+func SelectStoreItems() ([]models.Store, error) {
+	var product models.Store
+	var products []models.Store
+	rows, err := DB.Query(`SELECT * FROM "Store"`)
+	if err != nil {
+		fmt.Println("Error - SelectStoreItems()", err)
+		return products, err
+	}
+	for rows.Next() {
+		err = rows.Scan(&product.Id, &product.Name, &product.Photo, &product.Price, &product.NewPrice, &product.Description, &product.Category, &product.Sex, &product.Community)
+		if err != nil {
+			fmt.Println("Error - SelectStoreItems() rows.Next()", err.Error())
+			return products, err
+		}
+		products = append(products, product)
+	}
+	return products, nil
+}
+
+func SelectStoreItemsByCommunity(community string) ([]models.Store, error) {
+	var product models.Store
+	var products []models.Store
+	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "Store" WHERE "Community" = '%s'`, community))
+	if err != nil {
+		fmt.Println("Error - SelectStoreItemsByCommunity()", err)
+		return products, err
+	}
+	for rows.Next() {
+		err = rows.Scan(&product.Id, &product.Name, &product.Photo, &product.Price, &product.NewPrice, &product.Description, &product.Category, &product.Sex, &product.Community)
+		if err != nil {
+			fmt.Println("Error - SelectStoreItemsByCommunity() rows.Next()", err.Error())
+			return products, err
+		}
+		products = append(products, product)
+	}
+	return products, nil
+}
+
+func SelectStoreItemById(id int) (models.StorePlus, error) {
+	var product models.StorePlus
+	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "Store" WHERE "Id" = %d`, id))
+	if err != nil {
+		fmt.Println("Error - SelectStoreItemById()", err)
+		return product, err
+	}
+	for rows.Next() {
+		err = rows.Scan(&product.Id, &product.Name, &product.Photo, &product.Price, &product.NewPrice, &product.Description, &product.Category, &product.Sex, &product.Community)
+		if err != nil {
+			fmt.Println("Error - SelectStoreItemById() rows.Next()", err.Error())
+			return product, err
+		}
+	}
+	return product, nil
+}
+
+//favorites
+
+func SelectFavouritesByUser(login string) ([]models.Store, bool) {
+	var product models.Store
+	var products []models.Store
+	ok := false
+	rows, err := DB.Query(fmt.Sprintf(`SELECT "Store".* FROM "Favourites"
+	JOIN "Store" ON "Store"."Id" = ANY("Favourites"."Product")
+	WHERE "Favourites"."User" = '%s'`, login))
+	if err != nil {
+		fmt.Println("Error - SelectFavouritesByUser()", err)
+		return products, ok
+	}
+	for rows.Next() {
+		err = rows.Scan(&product.Id, &product.Name, &product.Photo, &product.Price, &product.NewPrice, &product.Description, &product.Category, &product.Sex, &product.Community)
+		if err != nil {
+			fmt.Println("Error - SelectFavouritesByUser() rows.Next()", err.Error())
+			return products, ok
+		}
+		products = append(products, product)
+	}
+	if products[0].Id > 0 && products[0].Name != "" {
+		ok = true
+	}
+	return products, ok
+}
+
+func SelectFavouritesByUserCheck(login string) ([]int64, bool) {
+	var fav models.Favorites
+	ok := false
+	sel := `SELECT "Product" FROM "Favourites" WHERE "User" = $1`
+
+	// wrap the output parameter in pq.Array for receiving into it
+	if err := DB.QueryRow(sel, login).Scan(pq.Array(&fav.Product)); err != nil {
+		log.Fatal(err, "SelectFavouritesByUser2")
+	}
+
+	if fav.Product == nil {
+		ok = true
+	}
+
+	return fav.Product, ok
+}
+
+func InsertFavoritesToUser(login string, product []int) error {
+	query := `INSERT INTO "Favourites"("User", "Product") VALUES($1, $2)`
+	_, err := DB.Exec(query, login, pq.Array(product))
+	if err != nil {
+		return err
+	} else {
+		fmt.Println("\nRow inserted successfully!")
+		return nil
+	}
+}
+
+func UpdateFavouritesToUser(user string, product uint) error {
+	query := fmt.Sprintf(`UPDATE "Favourites" SET "Product" = array_append("Product", %d) WHERE "User" = '%s';`, product, user)
+	_, err = DB.Query(query)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
+}
+
+func DeleteFavouritesUser(user string, product uint) error {
+	res, err := DB.Exec(fmt.Sprintf(`UPDATE "Favourites" SET "Product" = array_remove("Product", %d) WHERE "User" = '%s'`, product, user))
+	if err == nil {
+		count, err := res.RowsAffected()
+		if err == nil {
+			fmt.Println(count)
+		}
+		return nil
+	}
+	return err
+}
+
+// SALES
+
+func SelectSalesByUser(login string) ([]models.JoinStore, bool) {
+	var product models.JoinStore
+	var products []models.JoinStore
+	ok := false
+	rows, err := DB.Query(fmt.Sprintf(`SELECT "Store".*, "Sales"."Address", "Sales"."Date" FROM "Sales"
+	JOIN "Store" ON "Store"."Id" = "Sales"."Product"
+	WHERE "Sales"."User" =  '%s'`, login))
+	if err != nil {
+		fmt.Println("Error - SelectSalesByUser()", err)
+		return products, ok
+	}
+	for rows.Next() {
+		err = rows.Scan(&product.Id, &product.Name, &product.Photo, &product.Price, &product.NewPrice, &product.Description, &product.Category, &product.Sex, &product.Community, &product.Address, &product.Date)
+		if err != nil {
+			fmt.Println("Error - SelectSalesByUser() rows.Next()", err.Error())
+			return products, ok
+		}
+		products = append(products, product)
+	}
+	if products[0].Id > 0 && products[0].Name != "" {
+		ok = true
+	}
+	return products, ok
+}
+
+func InsertToSalesProduct(sale models.Sales) error {
+	query := `INSERT INTO "Sales"("Product", "User", "Address", "Date") VALUES($1, $2, $3, $4)`
+	_, err := DB.Exec(query, sale.Product, sale.User, sale.Address, sale.Date)
+	if err != nil {
+		return err
+	} else {
+		fmt.Println("\nRow inserted successfully!")
+		return nil
+	}
+}
+
+// sex
+
+func SelectSex() ([]string, error) {
+	var sx string
+	var sex []string
+	rows, err := DB.Query(`SELECT * FROM "Sex"`)
+	if err != nil {
+		fmt.Println("Error - SelectSex()", err)
+		return sex, err
+	}
+	for rows.Next() {
+		err = rows.Scan(&sx)
+		if err != nil {
+			fmt.Println("Error - SelectSex() rows.Next()", err.Error())
+			return sex, err
+		}
+		sex = append(sex, sx)
+	}
+	return sex, nil
+}
+
+//category store
+
+func SelectStoreCategory() ([]string, error) {
+	var ct string
+	var category []string
+	rows, err := DB.Query(`SELECT * FROM "StoreCategory"`)
+	if err != nil {
+		fmt.Println("Error - SelectStoreCategory()", err)
+		return category, err
+	}
+	for rows.Next() {
+		err = rows.Scan(&ct)
+		if err != nil {
+			fmt.Println("Error - SelectStoreCategory() rows.Next()", err.Error())
+			return category, err
+		}
+		category = append(category, ct)
+	}
+	return category, nil
 }

@@ -78,6 +78,8 @@ func handleRequest() {
 	http.HandleFunc("/community/del", communityDelHandler)
 	http.HandleFunc("/community/post", communityPostHandler)
 	http.HandleFunc("/community/edit", communityEditHandler)
+	http.HandleFunc("/community/market", communityMarketHandler)
+	http.HandleFunc("/community/market/add", communityMarketAddHandler)
 	http.HandleFunc("/guest", guestHandler)
 	http.HandleFunc("/guest/friends", guestFriendsHandler)
 	http.HandleFunc("/guest/communities", guestCommunitiesHandler)
@@ -85,6 +87,8 @@ func handleRequest() {
 	http.HandleFunc("/store", storeHandler)
 	http.HandleFunc("/store/card", storeCardHandler)
 	http.HandleFunc("/store/buy", storeBuyHandler)
+	http.HandleFunc("/store/favorites", storeFavoritesHandler)
+	http.HandleFunc("/favourites", favouritesPageHandler)
 	http.HandleFunc("/exit", exitHandler)
 
 	//http.HandleFunc("/fr", frHandler)
@@ -149,32 +153,30 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 	authLog = r.FormValue("email2")
 	authPass = r.FormValue("pswd2")
 	if r.Method == "GET" { //авторизация пользователя
-		if authLog != "" || authPass != "" {
-			fmt.Println("This is auth", authLog, authPass)
-			cookie := &http.Cookie{
-				Name:   "id",
-				Value:  "abcd",
-				MaxAge: 300,
-			}
-			Cookies()
-			http.SetCookie(w, cookie)
+		fmt.Println("This is auth", authLog, authPass)
+		cookie := &http.Cookie{
+			Name:   "id",
+			Value:  "abcd",
+			MaxAge: 300,
 		}
+		Cookies()
+		http.SetCookie(w, cookie)
+
 		//if true функция выдачи action для формы в слючие совпадения пароля и логина
 		var err error
-		userAuth, err = database.SelectUserByLogPass(authLog, authPass)
-		if err != nil {
+		userAuth, _ = database.SelectUserByLogPass(authLog, authPass)
+		if userAuth.Login == "" && userAuth.Password == "" {
 			http.NotFound(w, r)
 			http.Redirect(w, r, "/", http.StatusBadRequest)
+		} else {
+			err = database.InsertUserToOnline(userAuth.Login)
+			if err != nil {
+				fmt.Println("Error - authHandler() InsertUserToOnline()", err)
+				// http.NotFound(w, r)
+			}
+			recordingSessions(fmt.Sprintf("Пользователь, %s (логин - %s, пароль - %s) зашел в аккаунт в %s.\n", userAuth.Name, userAuth.Login, userAuth.Password, time.Now().Format("2006-01-02 15:04")))
+			http.Redirect(w, r, "/blog", http.StatusSeeOther)
 		}
-
-		err = database.InsertUserToOnline(userAuth.Login)
-		if err != nil {
-			fmt.Println("Error - authHandler() InsertUserToOnline()", err)
-			// http.NotFound(w, r)
-		}
-
-		recordingSessions(fmt.Sprintf("Пользователь, %s (логин - %s, пароль - %s) зашел в аккаунт в %s.\n", userAuth.Name, userAuth.Login, userAuth.Password, time.Now().Format("2006-01-02 15:04")))
-		http.Redirect(w, r, "/blog", http.StatusSeeOther)
 	}
 }
 
@@ -689,6 +691,10 @@ func communityHandler(w http.ResponseWriter, r *http.Request) {
 	subs := database.SelectSubscribersBtCommunities(post.Communities)
 	author, names := database.SelectCommunitiesAuthorByName(post.Communities)
 	category := database.SelectPostCategory()
+	store, err := database.SelectStoreItemsByCommunity(communitiesName)
+	if err != nil {
+		fmt.Println(err)
+	}
 	comm := database.SelectCommunitiesByColumn("Name", post.Communities)
 	fmt.Println("SelectCommunitiesByColumn", comm.Name)
 
@@ -723,7 +729,7 @@ func communityHandler(w http.ResponseWriter, r *http.Request) {
 	_, ok := database.CheckCommunity(userAuth.Login, communitiesName)
 
 	title := map[string]string{"Title": Foo.Name}
-	blog := map[string]interface{}{"Post": posts, "User": userAuth, "Subs": subs, "Author": author, "Names": names, "Communities": Foo, "PostCat": category, "CommCat": catComm, "SetCom": comm, "OK": ok}
+	blog := map[string]interface{}{"Post": posts, "User": userAuth, "Subs": subs, "Author": author, "Names": names, "Communities": Foo, "PostCat": category, "CommCat": catComm, "SetCom": comm, "OK": ok, "Store": store}
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "community", blog)
 }
@@ -858,6 +864,87 @@ func communityEditHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/community", http.StatusSeeOther)
 
 	}
+}
+
+func communityMarketHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/store.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+	var Ok bool
+	Access := false
+	Ok = true
+	store, err := database.SelectStoreItemsByCommunity(communitiesName)
+	if err != nil {
+		fmt.Println(err)
+	}
+	if store == nil {
+		Ok = false
+	}
+
+	grp := database.SelectCommunitiesByColumn("Name", communitiesName)
+	if grp.Author == userAuth.Login {
+		Access = true
+	}
+
+	sex, err := database.SelectSex()
+	if err != nil {
+		fmt.Println(err)
+	}
+	cat, err := database.SelectStoreCategory()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	user, _ := database.SelectUserWallet(userAuth.Login, userAuth.Password)
+	title := map[string]string{"Title": "Товары - " + communitiesName}
+	tmpl.ExecuteTemplate(w, "header", title)
+	data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Store": store, "OK": Ok, "Access": Access, "Sex": sex, "Category": cat}
+	tmpl.ExecuteTemplate(w, "store", data)
+}
+
+func communityMarketAddHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+		file, fileHeader, err := r.FormFile("photo")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		defer file.Close()
+		imgPath = fmt.Sprintf("./data/image/product/%d%s", time.Now().UnixNano(), filepath.Ext(fileHeader.Filename))
+		dst, err := os.Create(imgPath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		defer dst.Close()
+
+		_, err = io.Copy(dst, file)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		r.ParseForm()
+		var product models.Store
+		product.Category = r.FormValue("selectcat")
+		product.Community = communitiesName
+		product.Description = r.FormValue("content")
+		product.Name = r.FormValue("title")
+		fo1 := r.FormValue("price")
+		fo2, _ := strconv.Atoi(fo1)
+		product.Price = float32(fo2)
+		fo3 := r.FormValue("newprice")
+		fo4, _ := strconv.Atoi(fo3)
+		product.NewPrice = float32(fo4)
+		product.Sex = r.FormValue("selectsex")
+		product.Photo = imgPath
+		fmt.Println(product)
+	}
+	http.Redirect(w, r, "/community/market", http.StatusSeeOther)
 }
 
 func guestHandler(w http.ResponseWriter, r *http.Request) {
@@ -1045,32 +1132,65 @@ func storeHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.NotFound(w, r)
 	}
+	Access := false
+	Ok := true
+	store, err := database.SelectStoreItems()
+	if err != nil {
+		fmt.Println(err)
+	}
+	if store == nil {
+		Ok = false
+	}
+
+	user, _ := database.SelectUserWallet(userAuth.Login, userAuth.Password)
+
 	title := map[string]string{"Title": models.Cfg.StoreTitle}
 	tmpl.ExecuteTemplate(w, "header", title)
-	data := map[string]interface{}{"User": userAuth}
+	data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Store": store, "OK": Ok, "Access": Access}
 	tmpl.ExecuteTemplate(w, "store", data)
 }
 
 var itemId string
+var product models.StorePlus
 
 func storeCardHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles("html/card.html", "html/header.html", "html/footer.html")
 	if err != nil {
 		http.NotFound(w, r)
 	}
-
+	user, _ := database.SelectUserWallet(userAuth.Login, userAuth.Password)
 	if r.Method == "GET" {
 		r.ParseForm()
 		itemId = r.FormValue("store_id")
 	}
-	title := map[string]string{"Title": itemId} // запрос в БД по id выбрать название товара и вставить в шапку
+	Id, _ := strconv.Atoi(itemId)
+	product, err = database.SelectStoreItemById(Id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+	}
+
+	title := map[string]string{"Title": product.Name}
 	tmpl.ExecuteTemplate(w, "header", title)
-	data := map[string]interface{}{"User": userAuth}
+
+	var products []models.StorePlus
+	arr, _ := database.SelectFavouritesByUserCheck(userAuth.Login)
+	fmt.Println(arr)
+	for _, i := range arr {
+		if product.Id != uint(i) {
+			product.Status = true
+		} else {
+			product.Status = false
+		}
+	}
+	fmt.Println(product)
+	products = append(products, product)
+	data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Market": products}
 	tmpl.ExecuteTemplate(w, "card", data)
 }
 
 func storeBuyHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(itemId)
+
 	if r.Method == "POST" {
 		r.ParseForm()
 		paypal := r.FormValue("paypal")
@@ -1080,14 +1200,100 @@ func storeBuyHandler(w http.ResponseWriter, r *http.Request) {
 		date := r.FormValue("date")
 		CVC := r.FormValue("CVC")
 		money := r.FormValue("money")
+		floatMoney, _ := strconv.ParseFloat(money, 32)
 		fmt.Println(paypal, card, cardholder, cardnumber, date, CVC, money)
-		http.Redirect(w, r, "/store/card", http.StatusSeeOther)
+		err := database.UpdateUserWalletByLogPass(userAuth.Login, userAuth.Password, floatMoney)
+		if err != nil {
+			http.NotFound(w, r)
+		}
+		http.Redirect(w, r, "/store", http.StatusSeeOther)
 	}
 	if r.Method == "GET" {
-		fmt.Printf("Вы купили - %s", itemId)
+		// fmt.Printf("Вы купили - %s\n%f", itemId, float64(-product.NewPrice))
+		err := database.UpdateUserWalletByLogPass(userAuth.Login, userAuth.Password, float64(-product.NewPrice))
+		if err != nil {
+			fmt.Println(err)
+		}
+		com := database.SelectCommunitiesByColumn("Name", product.Community)
+		seller, err := database.SelectUserByColumn("Login", com.Author)
+		if err != nil {
+			fmt.Println("Error - storeBuyHandler() SelectUserByColumn", err)
+		}
+		err = database.UpdateUserWalletByLogPass(seller.Login, seller.Password, float64(product.NewPrice))
+		if err != nil {
+			fmt.Println(err)
+		}
+		var sale models.Sales
+		sale.Product = product.Id
+		sale.User = userAuth.Login
+		sale.Address = "address"
+		sale.Date = time.Now().Format("2006-01-02 15:04")
+		fmt.Println(sale)
+		err = database.InsertToSalesProduct(sale)
+		if err != nil {
+			fmt.Println(err)
+		}
 		http.Redirect(w, r, "/store", http.StatusSeeOther)
 	}
 
+}
+
+func storeFavoritesHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		r.ParseForm()
+		res := r.FormValue("Ok")
+		fmt.Println("storeFavoritesHandler - GET", res)
+		if res == "true" {
+			fav, ok := database.SelectFavouritesByUserCheck(userAuth.Login) //----------------
+			if ok {
+				var arr []int
+				arr = append(arr, int(product.Id))
+				err := database.InsertFavoritesToUser(userAuth.Login, arr)
+				if err != nil {
+					fmt.Println(err, "InsertFavoritesToUser")
+				}
+			}
+			res := checkArray(fav)
+			if res {
+				err := database.UpdateFavouritesToUser(userAuth.Login, product.Id)
+				if err != nil {
+					fmt.Println(err)
+				}
+			}
+		}
+		http.Redirect(w, r, "/store", http.StatusSeeOther)
+	}
+
+	if r.Method == "POST" {
+		r.ParseForm()
+		res := r.FormValue("Ok")
+		in := r.FormValue("input")
+		fmt.Println("storeFavoritesHandler - POST", res, in)
+		id, _ := strconv.Atoi(in)
+		if id > 0 {
+			err := database.DeleteFavouritesUser(userAuth.Login, uint(id))
+			if err != nil {
+				fmt.Println("Error - storeFavoritesHandler() POST DeleteFavouritesUser()", err)
+			}
+		}
+		http.Redirect(w, r, "/favourites", http.StatusSeeOther)
+	}
+
+}
+
+func favouritesPageHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/favourites.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+
+	fav, ok := database.SelectFavouritesByUser(userAuth.Login)
+	sales, done := database.SelectSalesByUser(userAuth.Login)
+
+	title := map[string]string{"Title": models.Cfg.FavTitle}
+	tmpl.ExecuteTemplate(w, "header", title)
+	data := map[string]interface{}{"User": userAuth, "Done": ok, "Fav": fav, "Ok": done, "Sales": sales}
+	tmpl.ExecuteTemplate(w, "favourites", data)
 }
 
 func exitHandler(w http.ResponseWriter, r *http.Request) {
@@ -1096,6 +1302,15 @@ func exitHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func checkArray(fav []int64) bool {
+	for _, i := range fav {
+		if i == int64(product.Id) {
+			return false
+		}
+	}
+	return true
 }
 
 func Cookies() { // доделать/сделать

@@ -19,6 +19,7 @@ type Setting struct {
 	CommentsTitle     string
 	MessageTitle      string
 	StoreTitle        string
+	FavTitle          string
 }
 
 var Cfg Setting

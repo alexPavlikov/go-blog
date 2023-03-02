@@ -1,0 +1,129 @@
+{{ define "favourites" }}
+
+{{ template "header" }}
+
+<link rel="stylesheet" href="/assets/css/friends.css">
+<link rel="stylesheet" href="/assets/css/style.css">
+<link rel="stylesheet" href="/assets/css/blog.css">
+<link rel="stylesheet" href="/assets/css/friends.css">
+
+<script src='//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js'></script>
+
+<header>
+    <div class="brand">
+        <div class="logos">
+            <img src="/data/image/brand.png" alt="">
+            <span>GOLANG</span>
+        </div>
+        <div class="find"><input type="text" placeholder="Найти"></div>
+    </div>
+    <div class="account">
+        <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
+        <i class="fa-solid fa-chevron-down" onclick="Check()"></i>
+    </div>
+</header>
+
+<body>
+    <aside class="right">
+        <a href="/page#"><i class="fa-regular fa-circle-user"></i><span> Моя страница</span></a>
+        <a href="/blog"><i class="fa-regular fa-newspaper"></i><span> Новости</span></a>
+        <a href="/message"><i class="fa-regular fa-comment"></i><span> Сообщения</span></a>
+        <a href="/friends"><i class="fa-solid fa-user-group"></i><span> Друзья</span></a>
+        <a href="/communities"><i class="fa-solid fa-users"></i><span> Сообщества</span></a>
+        <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+        <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
+        <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
+        <a href="/store"><i class="fa-brands fa-golang"></i><span> Go-Store</span></a>
+    </aside>
+      
+    <main> 
+        <div class="friends">
+            <div class="tabs">
+                <input type="radio" name="tab-btn" id="tab-btn-1" value="" checked>
+                <label for="tab-btn-1">Закладки</label>
+                <input type="radio" name="tab-btn" id="tab-btn-2" value="">
+                <label for="tab-btn-2">Корзина</label>
+            
+            {{ if .Done }}
+                <div id="content-1">
+                    {{ range $_, $f := .Fav }}
+                        <div class="friend">
+                            <div class="info">
+                                <div class="img"><img src="{{ $f.Photo }}" alt=""></div>
+                                <div class="name"><a style="color: black; text-decoration: none;" class="guestId inputFriends" id="{{$f.Id}}" href="/store/card?store_id={{$f.Id}}">{{ $f.Name }}</a> 
+                                    <br><span>{{ $f.Sex }}, {{ $f.Category }}</span>
+                                    {{ if ne $f.NewPrice $f.Price }}
+                                    <br><span><strike>{{ $f.Price }} G</strike>, {{ $f.NewPrice }} G</span>
+                                    {{ else }}
+                                    <br><span>{{ $f.Price }} G</span>
+                                    {{ end }}
+                                </div>
+                            </div>
+                            <div class="menu">
+                               <form style="height: 25%;" action=""></form>
+                                <!-- <a class="input" href="/store/card?store_id={{$f.Id}}">Цена - {{ $f.NewPrice }}</a> -->
+                                <form style="height: 25%;" action="store/favorites" method="post">
+                                    <input type="text" name="input" id="input" value="{{$f.Id}}" style="display: none;">
+                                    <input class="input" type="submit" value="Удалить">
+                                </form>
+                            </div>
+                        </div>
+                    {{ end }}
+                </div>
+            {{ else }}
+                <div id="content-1">
+                  <h1>У Вас еще нет закладок</h1>
+                </div>
+            {{ end }}
+
+            {{ if .Ok }}
+                <div id="content-2">
+                    {{ range $_, $s := .Sales }}
+                    <div class="friend">
+                        <div class="info">
+                            <div class="img"><img src="{{ $s.Photo }}" alt=""></div>
+                            <div class="name"><a style="color: black; text-decoration: none;" class="guestId inputFriends" id="{{$s.Id}}" href="/store/card?store_id={{$s.Id}}">{{ $s.Name }}</a> 
+                                <br><span>{{ $s.Sex }}, {{ $s.Category }}</span>
+                                <br><span>{{ $s.NewPrice }} G</span>
+                            </div>
+                        </div>
+                        <div class=" sale">
+                            <div>Дата покупки - {{ $s.Date }}</div>
+                            <div>Адрес доставик - Россия, Республика Татарстан, Город Казань, Улица Братьев Касимовых, дом 64</div>
+                        </div>
+                    </div>
+                {{ end }}
+                </div>
+            {{ else }}
+                <div id="content-2">
+                    <h1>У Вас еще нет покупок</h1>
+                </div>
+            {{ end }}    
+            </div>
+        </div>
+    </main>
+
+            <aside id="left" class="left">
+                <div class="setacc">
+                    <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
+                    <div class="info">
+                        <div class="name">{{ .User.Name }}</div>
+                        <div class="login">{{ .User.Login }}</div>
+                    </div>
+                </div>
+                <div class="settings">
+                    <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+                    <a href="/favourites"><i class="fa-solid fa-bookmark"></i> <span> Избранное</span></a>
+                    <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
+                    <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
+                    <a id="exit" href="/exit"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
+                </div>
+            </aside>                         
+</body>
+
+<script src="/assets/js/style.js"></script>
+
+
+{{ template "footer" }}
+
+{{ end }}

@@ -52,6 +52,7 @@ type Users struct { // structure of the Users table
 	Access    string
 	Photo     string
 	Birthdate string
+	Wallet    float64
 }
 
 type JoinUser struct {
@@ -61,6 +62,7 @@ type JoinUser struct {
 	Name      string
 	Photo     string
 	Birthdate string
+	Wallet    float64
 }
 
 type Friends struct { // structure of the Friends table
@@ -154,4 +156,63 @@ type JoinGopher struct {
 	Like         uint
 	View         uint
 	Date         string
+}
+
+type Store struct {
+	Id          uint
+	Name        string
+	Photo       string
+	Price       float32
+	NewPrice    float32
+	Description string
+	Category    string
+	Sex         string
+	Community   string
+}
+
+type JoinStore struct {
+	Id          uint
+	Name        string
+	Photo       string
+	Price       float32
+	NewPrice    float32
+	Description string
+	Category    string
+	Sex         string
+	Community   string
+	Address     string
+	Date        string
+}
+
+type StorePlus struct {
+	Id          uint
+	Name        string
+	Photo       string
+	Price       float32
+	NewPrice    float32
+	Description string
+	Category    string
+	Sex         string
+	Community   string
+	Status      bool
+}
+
+type Favorites struct {
+	Id      uint64
+	User    string
+	Product []int64
+}
+
+type Fav struct {
+	Id      uint64
+	User    string
+	Product []string
+}
+
+type Sales struct {
+	Id      uint64
+	Product uint
+	User    string
+	Address string
+	Date    string
 }

@@ -1,7 +1,7 @@
 
   .store {
     padding: 20px 5%;
-    width: 80%;
+    /* width: 80%; */
     display: grid;
     /*
      * auto-fit - create columns only if there's content for them
@@ -73,7 +73,7 @@
 /* Hide the images by default */
 .mySlides {
     text-align: center;
-  display: none;
+  /* display: none; */
 }
 
 /* Next & previous buttons */
@@ -148,4 +148,56 @@
 @keyframes fade {
   from {opacity: .4}
   to {opacity: 1}
+}
+
+
+.wallet {
+  width: 180px;
+  margin-top: 100px;
+  padding: 20px;
+  border-radius: 15px;
+  border: 1px solid #69b4f3;
+  height: 10%;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  color: #69b4f3;
+}
+
+.wallet span {
+  width: 100%;
+  text-align: center;
+}
+
+.wallet .add {
+  height: 100%;
+  margin: auto 5px;
+}
+
+.wallet .add:hover {
+  cursor: pointer;
+  opacity: .7;
+}
+
+.w2 {
+  margin-top: 5px;
+  padding: 5px;
+  width: 89%;
+  margin: 0 5%;
+  height: 10%;
+  position: relative;
+}
+
+.w2 .add {
+ margin: auto 0;
+ height: 100%;
+ width: 100%;
+ text-align: center;
+}
+
+.w2 .add h4 {
+  margin: 0;
+  padding: 0;
+  margin: 2% 0;
+  height: 100%;
 }
