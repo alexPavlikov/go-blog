@@ -64,7 +64,7 @@ a
 }
 
 .product-details h4 a:hover {
-    color: #fbb72c;
+    color: #69b4f3;
 }
 
 .product-details p {
@@ -87,13 +87,13 @@ a
 
 .product-price {
     font-size: 18px;
-    color: #fbb72c;
+    color: #69b4f3;
     font-weight: 600;
 }
 
 .product-price button {
-    color: #fbb72c;
-    border: 1px solid #fbb72c;
+    color: #69b4f3;
+    border: 1px solid #69b4f3;
     padding: 10px 15px;
     border-radius: 15px;
     transition: all .3s linear;
@@ -104,7 +104,7 @@ a
 .product-price button:hover {
     cursor: pointer;
     color: #ffffff;
-    background-color: #fbb72c;
+    background-color: #69b4f3;
 }
 
 .product-price small {
@@ -129,12 +129,12 @@ a
 }
 
 .product-links div i:hover {
-    color: #fbb72c;
+    color: #69b4f3;
     cursor: pointer;
 }
 
 .focus{
-    color: #fbb72c;
+    color: #69b4f3;
 }
 
 .wallet {

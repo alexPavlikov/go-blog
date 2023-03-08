@@ -143,14 +143,33 @@
                 <label for="css-modal-checkbox2" class="css-modal-close"></label>
             </div>
 
+            <input type="checkbox" id="css-modal-checkbox3" />    
+            <div class="cmc">
+                <div class="cmt">
+                    <form action="market/del" method="post">
+                        <select name="selectprod" id="selectprod" >
+                          <!-- <option selected></option>  -->
+                          {{range $_, $p := .Store }}
+                          <option >Id:{{ $p.Id }}; Название:{{ $p.Name }}; Цена:{{ $p.NewPrice }} G</option>
+                          {{ end }}                                                    
+                      </select>
+                        <button class="goBTN" type="submit">GO</button>
+                    </form>
+                </div>
+                <label for="css-modal-checkbox3" class="css-modal-close"></label>
+            </div>
+
     <main style="width: 60%;">
       {{ if .Access }}
        
     <div class="wallet w2">
 
-      <div class="add">
+      <div class="add" style="border-right: 1px solid #69b4f3;">
           <label for="css-modal-checkbox2" class="add"><h4>Добавить товар</h4></label>
       </div>
+      <div class="add" style="border-left: 1px solid #69b4f3;">
+        <label for="css-modal-checkbox3" class="add"><h4>Удалить товар</h4></label>
+    </div>
     </div>    
       {{ end }}
       {{ if .OK }}

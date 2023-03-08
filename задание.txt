@@ -11,7 +11,6 @@
 
 не добавляет просмотры на странице сообщество и лайки кидаю на новости !
 
-
 в таблице communities попробовать создать ключ Id---------
 
 везде сделать автоинкремент---------------------
@@ -22,141 +21,23 @@
 
 решать с адресом поссылки, сделать его динамическим или прикрепить его к аккаунту
 
-заносить новый товар в БД и добавить модальное окно для удаления товара
+При частом нажатии лайка в Новостях происходит дичь с запросом
 
-{{ define "guest" }}
 
-{{ template "header" }}
-
-<link rel="stylesheet" href="/assets/css/page.css">
-<link rel="stylesheet" href="/assets/css/blog.css">
-<link rel="stylesheet" href="/assets/css/style.css">
-<link rel="stylesheet" href="/assets/css/community.css">
-<header>
-    <div class="brand">
-        <div class="logos">
-            <img src="/data/image/brand.png" alt="">
-            <span>GOLANG</span>
-        </div>
-        <div class="find"><input type="text" placeholder="Найти"></div>
-    </div>
-    <div class="account">
-        <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
-        <i class="fa-solid fa-chevron-down" onclick="Check()"></i>
-    </div>
-</header>
-
-<script src='//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js'></script>
-
-<body>
-    <aside class="right">
-        <a href="/page#"><i class="fa-regular fa-circle-user"></i><span> Моя страница</span></a>
-        <a href="/blog"><i class="fa-regular fa-newspaper"></i><span> Новости</span></a>
-        <a href="/message"><i class="fa-regular fa-comment"></i><span> Сообщения</span></a>
-        <a href="/friends"><i class="fa-solid fa-user-group"></i><span> Друзья</span></a>
-        <a href="/communities"><i class="fa-solid fa-users"></i><span> Сообщества</span></a>
-        <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
-        <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
-        <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
-        <a href="#">Далее</a>
-    </aside>
-    <main>
-        <section>
-            <div class="photo">
-                <img src="{{ .Guest.Photo }}" alt="">
-                <div class="name">{{ .Guest.Name }}</div>
-                {{ if .OK }}
-                <div id="{{ .Guest.Login }}" class="go-friend">Отправить заявку в друзья</div>
-                {{ end }}
-            </div>
-            <div class="com_stat">               
-                <div class="txt">Дата рождения: <span>{{ .Statistics.HappyBithday }}</span></div>
-                <div class="txt">Сообществ <a id="{{ .Guest.Login }}" class="guestId" href="/guest/communities">{{ .Statistics.CommunitiesLen }}</a></div>
-                <div class="txt">Друзей <a id="{{ .Guest.Login }}" class="guestId" href="/guest/friends">{{ .Statistics.FrinedsLen }}</a></div>
-            </div>
-        </section>
-        <div class="news">
-            {{ if .Done }}
-                {{ range $_, $r := .Repo }}
-                <div class="post" id="{{$r.Post}}">
-                    <div class="communities">
-                        <div class="avatar"><img src="{{ $r.CommunitiesPhoto }}" alt=""></div>
-                        <div class="name">
-                            <div>{{ $r.Communities }} <span><a style="text-decoration: none; color: black;" href="/blog#{{$r.Post}}">{{ $r.Title }}</a></span></div>
-                            <label>{{ $r.Date }}</label>
-                        </div>
-                    </div>
-                    <div class="title">{{ $r.Content }}</div>
-                    <div class="image"><img src="{{ $r.PostPhoto }}" alt=""></div>
-                    <div class="statistics">
-                        <div>
-                            <a href="blog" id="{{$r.Post}}"  class="spans span spany" style="color: #fff; text-decoration: none;"><i style="margin-right: 5px;" class="fa-regular fa-heart"></i>{{$r.Like}}</a>
-                            <a href="comments"  id="{{$r.Post}}" class="spans span spany" type="submit"><i class="fa-regular fa-message"></i></a>     
-                            <a href="page" id="{{$r.Post}}" class="spans span" type="submit"><i class="fa-regular fa-paper-plane"></i></a> 
-                        </div>
-                        
-                        <i class="fa-solid fa-eye">{{$r.View}}</i>
-                    </div>
-                </div>
-                {{ end }}
-            {{else}}
-                <h2 class="subtitles">На стене пока нет ни одной записи</h2>
-            {{ end }}
-        </div>
-
-    </main>
-    <aside id="left" class="left">
-        <div class="setacc">
-            <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
-            <div class="info">
-                <div class="name">{{ .User.Name }}</div>
-                <div class="login">{{ .User.Login }}</div>
-            </div>
-        </div>
-        <div class="settings">
-            <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
-            <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
-            <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
-            <a id="exit" href="/exit"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span</a>
-        </div>
-    </aside>
-</body>
-
-<script>
-      $(document).ready(function(){
-            $('.guestId').click(function(e) {
-                clickId = $(this).attr('id');
-                    $.ajax({
-                        url: '/guest',
-                        type: 'GET',
-                        dataType: 'html',
-                        data : { guestLogin: clickId},
-                        success : function(data) {
-                        $('#result').html(data);
-                        },
-                    });
-                alert(guestLogin);
-            });
-        });
-
-        $(document).ready(function(){
-            $('.go-friend').click(function(e) {
-                var button = $(this);
-                clickId = $(this).attr('id');
-                    $.ajax({
-                        url: '/friends/rec',
-                        type: 'POST',
-                        dataType: 'html',
-                        data : { friend_id: clickId},
-                        success : function(data) {
-                        $('#result').html(data);
-                        },
-                    });
-                    button.addClass('check');
-            });
-        });
-</script>
-
-{{ template "footer" }}
-
-{{ end }}
+if newPass != "" {
+					_, err = database.UpdateUserByColumn("Password", newPass, login, oldPass)
+					if err != nil {
+						fmt.Println(err.Error())
+					}
+				} else if newName != "" {
+					_, err = database.UpdateUserByColumn("Name", newName, login, oldPass)
+					if err != nil {
+						fmt.Println(err.Error())
+					}
+				} else if date != "" {
+					_, err = database.UpdateUserByColumn("Birthdate", date, login, oldPass)
+					// сделать проверку чтобы нельзя вписать дату больше сегодняшней
+					if err != nil {
+						fmt.Println(err.Error())
+					}
+				}

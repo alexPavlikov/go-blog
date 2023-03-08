@@ -309,7 +309,8 @@ aside {
 .spans i {
     color: #fff;
     font-size: 18px;
-    margin: 1px 0px 1px 5px;
+    /* margin: 1px 0px 1px 5px; */
+    margin: 1px 0px 1px 8px;
 }
 
 .spans:hover {

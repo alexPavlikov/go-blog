@@ -5,6 +5,13 @@
       "Message": "hi",
       "Data": "2023-01-31 00:04",
       "Photo": "/data/image/blog/standart_avatar.png",
+      "Access": 1
+    },
+    {
+      "User": "a.pavlikov2002@gmail.com",
+      "Message": "Привет, Vaz!",
+      "Data": "2023-03-04 22:08",
+      "Photo": "/data/image/blog/standart_avatar.png",
       "Access": 2
     }
   ]

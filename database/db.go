@@ -427,7 +427,7 @@ func UpdateUserWalletByLogPass(login string, password string, money float64) err
 что позволяет не писать повторяющие запросы SELECT
 */
 func UpdateUserByColumn(column string, value string, login string, pass string) (user models.Users, err error) {
-	query := fmt.Sprintf(`UPDATE "Users" SET %s = %s WHERE "Login" = %s AND "Password" =  %s`, column, value, login, pass)
+	query := fmt.Sprintf(`UPDATE "Users" SET "%s" = '%s' WHERE "Login" = '%s' AND "Password" =  '%s'`, column, value, login, pass)
 	_, err = DB.Query(query)
 	if err != nil {
 		fmt.Println(err)
@@ -1097,6 +1097,18 @@ func InsertRepoPost(reppost models.Repost) (models.Repost, error) {
 	return reppost, err
 }
 
+func DeleteRepoPostByUser(id string, user string) error {
+	res, err := DB.Exec(`DELETE FROM "RepostPost" WHERE "Post" = ($1) AND "User" = ($2)`, id, user)
+	if err == nil {
+		count, err := res.RowsAffected()
+		if err == nil {
+			fmt.Println(count)
+		}
+		return nil
+	}
+	return err
+}
+
 // --------------------Query from Subscribers table--------------------
 
 func SelectSubscribersBtCommunities(communities string) []models.Subscribers {
@@ -1501,16 +1513,33 @@ func SelectGopherByOwner(user string) []models.JoinGopher {
 	JOIN "Users" ON "Users"."Login" = "CustomPosts"."Creator"
 	WHERE "CustomPosts"."Owner" = '%s'`, user))
 	if err != nil {
-		fmt.Println("Error - SelectByOwner()")
+		fmt.Println("Error - SelectGopherByOwner()")
 	}
 	for rows.Next() {
 		err = rows.Scan(&gopher.Id, &gopher.Creator, &gopher.Owner, &gopher.Title, &gopher.Content, &gopher.Like, &gopher.View, &gopher.Date, &gopher.CreatorPhoto, &gopher.CreatorName)
 		if err != nil {
-			fmt.Println("Error - SelectByOwner() rows.Next()")
+			fmt.Println("Error - SelectGopherByOwner() rows.Next()")
 		}
 		gophers = append(gophers, gopher)
 	}
 	return gophers
+}
+
+func SelectGopherById(id int) models.JoinGopher {
+	var gopher models.JoinGopher
+	rows, err := DB.Query(fmt.Sprintf(`SELECT "CustomPosts".*, "Users"."Photo", "Users"."Name" FROM "CustomPosts"
+	JOIN "Users" ON "Users"."Login" = "CustomPosts"."Creator"
+	WHERE "CustomPosts"."Id" = '%d'`, id))
+	if err != nil {
+		fmt.Println("Error - SelectGopherById()")
+	}
+	for rows.Next() {
+		err = rows.Scan(&gopher.Id, &gopher.Creator, &gopher.Owner, &gopher.Title, &gopher.Content, &gopher.Like, &gopher.View, &gopher.Date, &gopher.CreatorPhoto, &gopher.CreatorName)
+		if err != nil {
+			fmt.Println("Error - SelectGopherById() rows.Next()")
+		}
+	}
+	return gopher
 }
 
 func InsertGopher(gof models.Gopher) error {
@@ -1534,6 +1563,18 @@ func InsertGopher(gof models.Gopher) error {
 		return err
 	}
 	log.Printf("%d post created ", rows)
+	return err
+}
+
+func DeleteGopherByUser(user string, id int) error {
+	res, err := DB.Exec(`DELETE FROM "CustomPosts" WHERE "Owner" = ($1) AND "Id" = ($2)`, user, id)
+	if err == nil {
+		count, err := res.RowsAffected()
+		if err == nil {
+			fmt.Println(count)
+		}
+		return nil
+	}
 	return err
 }
 
@@ -1763,4 +1804,27 @@ func SelectStoreCategory() ([]string, error) {
 		category = append(category, ct)
 	}
 	return category, nil
+}
+
+func InsertToStoreProduct(prd models.Store) error {
+	query := `INSERT INTO "Store"("Name", "Photo", "Price", "NewPrice", "Description", "Category", "Sex", "Community") VALUES($1, $2, $3, $4, $5, $6, $7, $8)`
+	_, err := DB.Exec(query, prd.Name, prd.Photo, prd.Price, prd.NewPrice, prd.Description, prd.Category, prd.Sex, prd.Community)
+	if err != nil {
+		return err
+	} else {
+		fmt.Println("\nRow inserted successfully!")
+		return nil
+	}
+}
+
+func DeleteStore(id int) error {
+	res, err := DB.Exec(`DELETE FROM "Store" WHERE "Id" = ($1)`, id)
+	if err == nil {
+		count, err := res.RowsAffected()
+		if err == nil {
+			fmt.Println(count)
+		}
+		return nil
+	}
+	return err
 }

@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"text/template"
 	"time"
 
@@ -66,6 +67,8 @@ func handleRequest() {
 	http.HandleFunc("/blog", blogHandler)
 	http.HandleFunc("/page", pageHandler)
 	http.HandleFunc("/page/post", pagePostHandler)
+	http.HandleFunc("/page/del_gof", pageDelGofHandler)
+	http.HandleFunc("/page/rep_gof", pageRepGofHandler)
 	http.HandleFunc("/setting", settingHandler)
 	http.HandleFunc("/setting/refresh", refreshSettingHandler)
 	http.HandleFunc("/friends", friendsHandler)
@@ -80,6 +83,8 @@ func handleRequest() {
 	http.HandleFunc("/community/edit", communityEditHandler)
 	http.HandleFunc("/community/market", communityMarketHandler)
 	http.HandleFunc("/community/market/add", communityMarketAddHandler)
+	http.HandleFunc("/community/market/del", communityMarketDelHandler)
+	http.HandleFunc("/community/store/card", communityStoreCardHandler)
 	http.HandleFunc("/guest", guestHandler)
 	http.HandleFunc("/guest/friends", guestFriendsHandler)
 	http.HandleFunc("/guest/communities", guestCommunitiesHandler)
@@ -219,28 +224,29 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 func refreshSettingHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	if r.Method == "GET" {
-		login := r.FormValue("login")
+		login := userAuth.Login
 		newPass := r.FormValue("newPass")
 		oldPass := r.FormValue("oldPass")
 		newName := r.FormValue("newName")
 		date := r.FormValue("newHB")
 		fmt.Println(login, newPass, oldPass, newName, date)
 		if oldPass != "" {
-			_, err := database.SelectUsersByColumn("Password", oldPass)
+			_, err := database.SelectUserByLogPass(login, oldPass)
 			if err == nil {
-				if newPass != "" {
-					_, err = database.UpdateUserByColumn("Password", newPass, login, oldPass)
-					if err != nil {
-						fmt.Println(err.Error())
-					}
-				} else if newName != "" {
+				if newName != "" {
 					_, err = database.UpdateUserByColumn("Name", newName, login, oldPass)
 					if err != nil {
 						fmt.Println(err.Error())
 					}
-				} else if date != "" {
+				}
+				if date != "" {
 					_, err = database.UpdateUserByColumn("Birthdate", date, login, oldPass)
-					// сделать проверку чтобы нельзя вписать дату больше сегодняшней
+					if err != nil {
+						fmt.Println(err.Error())
+					}
+				}
+				if newPass != "" {
+					_, err = database.UpdateUserByColumn("Password", newPass, login, oldPass)
 					if err != nil {
 						fmt.Println(err.Error())
 					}
@@ -249,7 +255,7 @@ func refreshSettingHandler(w http.ResponseWriter, r *http.Request) {
 				http.NotFound(w, r)
 			}
 		}
-		http.Redirect(w, r, "/page", http.StatusSeeOther)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }
 
@@ -388,6 +394,80 @@ func pagePostHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, "/guest", http.StatusSeeOther)
 	}
+}
+
+func pageDelGofHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+		gof := r.FormValue("gof")
+		if gof != "" {
+			id, err := strconv.Atoi(gof)
+			if err != nil {
+				http.NotFound(w, r)
+			}
+			err = database.DeleteGopherByUser(userAuth.Login, id)
+			if err != nil {
+				fmt.Println("Error - pageDelGofHandler() DeleteGopherByUser()", err.Error())
+			}
+		}
+	}
+	if r.Method == "GET" {
+		r.ParseForm()
+		gof := r.FormValue("gof2")
+		if gof != "" {
+			err := database.DeleteRepoPostByUser(gof, userAuth.Login)
+			if err != nil {
+				fmt.Println("Error - pageDelGofHandler() DeleteRepoPostByUser()", err.Error())
+			}
+		}
+	}
+	http.Redirect(w, r, "/page#", http.StatusSeeOther)
+}
+
+func pageRepGofHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+		gof := r.FormValue("gof")
+		if gof != "" {
+			id, err := strconv.Atoi(gof)
+			if err != nil {
+				http.NotFound(w, r)
+			}
+			goph := database.SelectGopherById(id)
+			fmt.Println(goph)
+			var newGof models.Gopher
+			newGof.Creator = goph.Creator
+			newGof.Content = goph.Content
+			newGof.Date = goph.Date
+			newGof.Like = 0
+			newGof.Owner = userAuth.Login
+			newGof.Title = goph.Title
+			newGof.View = 1
+			err = database.InsertGopher(newGof)
+			if err != nil {
+				fmt.Println("Error - pageRepGofHandler() InsertGopher()", err.Error())
+			}
+		}
+	}
+	if r.Method == "GET" {
+		r.ParseForm()
+		gof := r.FormValue("gof2")
+		if gof != "" {
+			id, err := strconv.Atoi(gof)
+			if err != nil {
+				http.NotFound(w, r)
+			}
+			var post models.Repost
+			post.Post = id
+			post.User = userAuth.Login
+			_, err = database.InsertRepoPost(post)
+			if err != nil {
+				fmt.Println("Error - pageRepGofHandler() InsertRepoPost()", err.Error())
+			}
+
+		}
+	}
+	http.Redirect(w, r, "/page", http.StatusSeeOther)
 }
 
 func commentsHandler(w http.ResponseWriter, r *http.Request) {
@@ -531,14 +611,14 @@ func guestFriendsHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(id)
 	}
 	if r.Method == "GET" {
-		guestId = r.FormValue("Id2")
-		fmt.Println("GET", guestId)
+		// guestId = r.FormValue("Id2")
+		fmt.Println("GET - guestFriendsHandler", guestId)
 	}
 	gst, _ := database.SelectUserByColumn("Login", guestId)
-	friends := database.SelectAllFriendsUser(guestLogin)
-	rec := database.SelectRecomendationFriends(guestLogin)
-	subs := database.SelectUserSub(guestLogin)
-	online := database.SelectOnlineFriends(guestLogin)
+	friends := database.SelectAllFriendsUser(guestId)
+	rec := database.SelectRecomendationFriends(guestId)
+	subs := database.SelectUserSub(guestId)
+	online := database.SelectOnlineFriends(guestId)
 
 	data := map[string]interface{}{"User": userAuth, "Friends": friends, "Guest": gst, "Subs": subs, "Rec": rec, "Done": false, "Online": online}
 	title := map[string]string{"Title": models.Cfg.FriendsTitile}
@@ -938,13 +1018,52 @@ func communityMarketAddHandler(w http.ResponseWriter, r *http.Request) {
 		fo2, _ := strconv.Atoi(fo1)
 		product.Price = float32(fo2)
 		fo3 := r.FormValue("newprice")
-		fo4, _ := strconv.Atoi(fo3)
+		var fo4 int
+		if fo3 == "" {
+			fo4 = fo2
+		} else {
+			fo4, _ = strconv.Atoi(fo3)
+		}
 		product.NewPrice = float32(fo4)
 		product.Sex = r.FormValue("selectsex")
-		product.Photo = imgPath
+		product.Photo = trimLeftChar(imgPath)
 		fmt.Println(product)
+		err = database.InsertToStoreProduct(product)
+		if err != nil {
+			fmt.Println(err)
+			http.NotFound(w, r)
+		}
 	}
 	http.Redirect(w, r, "/community/market", http.StatusSeeOther)
+}
+
+func communityMarketDelHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+		data := r.FormValue("selectprod")
+		fmt.Println(data)
+		stringarr := strings.Split(data, ";")
+		// ip, port := s[0], s[1]
+		fmt.Println(stringarr[0])
+		id := strings.Split(stringarr[0], ":")
+		ID, _ := strconv.Atoi(id[1])
+		fmt.Println(stringarr[1])
+		fmt.Println(stringarr[2])
+		err := database.DeleteStore(ID)
+		if err != nil {
+			fmt.Println(err)
+		}
+		http.Redirect(w, r, "/community/market", http.StatusSeeOther)
+	}
+}
+
+func communityStoreCardHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		r.ParseForm()
+		itemId = r.FormValue("store_id")
+		url := fmt.Sprintf("/store/card?store_id=%s", itemId)
+		http.Redirect(w, r, url, http.StatusSeeOther)
+	}
 }
 
 func guestHandler(w http.ResponseWriter, r *http.Request) {
@@ -975,7 +1094,7 @@ func guestHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println("Error - guestHandler() SelectUsersByColumn()")
 	}
-	fmt.Println(userGuest)
+	// fmt.Println(userGuest)
 
 	frd := database.SelectAllFriendsUser(userGuest.Login)
 	comnt := database.SelectAllCommunitiesUser("User", userGuest.Login)
@@ -1176,7 +1295,7 @@ func storeCardHandler(w http.ResponseWriter, r *http.Request) {
 	arr, _ := database.SelectFavouritesByUserCheck(userAuth.Login)
 	fmt.Println(arr)
 	for _, i := range arr {
-		if product.Id != uint(i) {
+		if product.Id == uint(i) {
 			product.Status = true
 		} else {
 			product.Status = false
@@ -1379,4 +1498,13 @@ func createFile(check models.MessageList, guestId string) {
 			fmt.Println("Error - createFile() io.Copy()")
 		}
 	}
+}
+
+func trimLeftChar(s string) string {
+	for i := range s {
+		if i > 0 {
+			return s[i:]
+		}
+	}
+	return s[:0]
 }
