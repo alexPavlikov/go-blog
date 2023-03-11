@@ -2,8 +2,11 @@ package app
 
 import (
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"os"
 	"time"
 
@@ -11,7 +14,7 @@ import (
 	"github.com/alexPavlikov/go-blog/models"
 )
 
-func checkArray(fav []int64, id uint) bool {
+func CheckArray(fav []int64, id uint) bool {
 	for _, i := range fav {
 		if i == int64(id) {
 			return false
@@ -32,7 +35,7 @@ func checkArray(fav []int64, id uint) bool {
 // 	fmt.Println(client)
 // }
 
-func recordingSessions(session string) {
+func RecordingSessions(session string) {
 	fmt.Println(session)
 	file, err := os.OpenFile("C:/Users/admin/go/src/go-blog/data/files/listOfVisits.txt", os.O_WRONLY|os.O_APPEND, 0755)
 	if err != nil {
@@ -47,7 +50,7 @@ func recordingSessions(session string) {
 	}
 }
 
-func createFile(check models.MessageList, guestId string, userLogin string) {
+func CreateFile(check models.MessageList, guestId string, userLogin string) {
 	Path := "C:/Users/admin/go/src/go-blog/data/files/message/"
 	fmt.Println("start", check.MessageHistory)
 	if check.MessageHistory != "" {
@@ -88,11 +91,53 @@ func createFile(check models.MessageList, guestId string, userLogin string) {
 	}
 }
 
-func trimLeftChar(s string) string {
+func TrimLeftChar(s string) string {
 	for i := range s {
 		if i > 0 {
 			return s[i:]
 		}
 	}
 	return s[:0]
+}
+
+func JSON(msg models.Message, Path string, userLogin string) models.Messenger {
+	fmt.Println("JSON", Path)
+	rawDataIn, err := ioutil.ReadFile(Path)
+	fmt.Println(Path)
+	if err != nil {
+		log.Fatal("Cannot load settings:", err)
+	}
+
+	var settings models.Messenger
+	err = json.Unmarshal(rawDataIn, &settings)
+	if err != nil {
+		log.Fatal("Invalid settings format:", err)
+	}
+
+	newClient := models.Message{
+		User:    msg.User,
+		Message: msg.Message,
+		Data:    msg.Data,
+		Photo:   msg.Photo,
+	}
+
+	settings.Messenge = append(settings.Messenge, newClient)
+	for i := range settings.Messenge {
+		if settings.Messenge[i].User == userLogin {
+			settings.Messenge[i].Access = 2
+		} else {
+			settings.Messenge[i].Access = 1
+		}
+	}
+
+	rawDataOut, err := json.MarshalIndent(&settings, "", "  ")
+	if err != nil {
+		log.Fatal("JSON marshaling failed:", err)
+	}
+
+	err = ioutil.WriteFile(Path, rawDataOut, 0)
+	if err != nil {
+		log.Fatal("Cannot write updated settings file:", err)
+	}
+	return settings
 }
