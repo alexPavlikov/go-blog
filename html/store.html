@@ -158,7 +158,23 @@
                 </div>
                 <label for="css-modal-checkbox3" class="css-modal-close"></label>
             </div>
-
+            {{ if .Access }}
+            <div class="menu">
+              <h4 style="text-align: center;">Меню магазина сообщества</h4>
+              <form action="market/sale_list" method="get">
+                <input name="community" id="community" type="text" value="{{.Community}}" style="display: none;">
+                <input style="width: 100%;" class="add-menu" type="submit" value="Список продаж">
+              </form>
+              <form action="market/sale_list" method="post">
+                <input name="community" id="community" type="text" value="{{.Community}}" style="display: none;">
+                <input style="width: 100%;" class="add-menu" type="submit" value="Скачать список продаж">
+              </form>
+              <form action="market/statistics" method="get">
+                <input name="community" id="community" type="text" value="{{.Community}}" style="display: none;">
+                <input style="width: 100%; opacity: .5;" disabled class="add-menu" type="submit" value="Статистика продаж">
+              </form>
+          </div>
+          {{ end }}
     <main style="width: 60%;">
       {{ if .Access }}
        
@@ -172,20 +188,30 @@
     </div>
     </div>    
       {{ end }}
+      <div class="sort-button-group">
+        
+        <form action="{{.URL}}" method="get">
+          <a href="{{.Root}}" class="sort-button" data-sort-value="name">По умолчанию</a>
+          {{range $_, $ct := .Category }}
+            <button name="Condition" id="Condition" value="{{$ct}}" class="sort-button" data-sort-value="name">{{$ct}}</button>
+          {{ end }}
+        </form>
+    </div>
       {{ if .OK }}
         <div class="store">
           {{ range $_, $s := .Store }}
             <article>
                 <div class="photo">
-                    <div class="slideshow-container">
+                  <img src="{{ $s.Photo }}">
+                    <!-- <div class="slideshow-container"> -->
 
-                        <div class="mySlides fade">
+                        <!-- <div class="mySlides fade">
                           <img src="{{ $s.Photo }}">
                         </div>
                   
-                    </div>
+                    </div> -->
                 </div>
-                <div class="description">{{ $s.Name }} <br><span>{{ $s.NewPrice }}</span></div>
+                <div class="description">{{ $s.Name }} <br><span>{{ $s.NewPrice }} G</span></div>
                 <div class="btn">
                     <form action="store/card" method="get">
                         <input type="text" id="store_id" name="store_id" value="{{$s.Id}}" style="display: none;">
@@ -194,13 +220,7 @@
                 </div>
             </article>
           {{ end }}
-            <article>Item 2</article>
-            <!-- <article>Item 3</article>
-            <article>Item 4</article>
-            <article>Item 5</article>
-            <article>Item 6</article>
-            <article>Item 7</article>
-            <article>Item 8</article> -->
+            <!-- <article>Item 2</article> -->
         </div>
       {{ else }}
       <div class="store">
@@ -234,6 +254,13 @@
         </div>
     </aside>
 </body>
+
+<!-- <script>
+  $(".sort-button").on('click', function(){
+    $(this).toggleClass('is-checked ');
+    clickId = $(this).attr('id');
+  })
+</script> -->
 
 <!-- <script>
     let slideIndex = 1;

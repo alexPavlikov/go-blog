@@ -78,6 +78,7 @@
 
             {{ if .Ok }}
                 <div id="content-2">
+                    <h3 style="font-weight: 400; width: 100%; color: rgba(60, 161, 255); text-align: right;">Общая сумма всех преобретений - {{ .Purchase }} G</h3>
                     {{ range $_, $s := .Sales }}
                     <div class="friend">
                         <div class="info">

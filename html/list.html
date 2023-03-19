@@ -1,0 +1,50 @@
+{{ define "list" }}
+
+{{ template "header" }}
+
+<link rel="stylesheet" href="/assets/css/list.css">   
+
+    
+
+   {{ if .Done }} 
+    <h1>{{.Title}}</h1> 
+        {{ $lengthSales := len .Sales }}
+        <h3>Общее кол-во пользователей {{$lengthSales}}</h3> 
+        <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Товар</th>
+                <th>Клиент</th>
+                <th>Адресс</th>
+                <th>Цена покупки</th>
+                <th>Категория товара</th>
+                <th>Пол</th>
+                <th>Дата</th>
+                <!-- <th>Дополнительно</th> -->
+            </tr>
+        </thead> 
+        <tbody>
+            {{ range $_, $s := .Sales }}
+            <tr>
+                <td>{{ $s.Id }}</td>
+                <td>{{ $s.Article }} - {{ $s.Name }}</td>
+                <td>{{ $s.User }}</td>
+                <td>{{ $s.Address }}</td>
+                <td>{{ $s.NewPrice }} </td>
+                <td>{{ $s.Category }} </td>
+                <td>{{ $s.Sex }} </td>
+                <td>{{ $s.Date }} </td>
+                <!-- <td><a href="/community/market/sale_list/comment{{ $s.Id }}">Отзывы</a></td> -->
+            </tr>
+            {{ end }}
+        </tbody>
+        </table>
+   {{ else }}
+   <h1>{{.Title}}</h1> 
+   <h3>У Вас еще нет ни одной продажи. Все еще впереди!</h3> 
+   {{ end }}
+
+{{ template "footer" }}
+
+{{ end }}

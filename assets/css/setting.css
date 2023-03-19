@@ -98,6 +98,10 @@ menu .data input {
     margin-top: 20px; 
 }
 
+.btn-4 {
+    width: 100%;
+}
+
 .btn-3 span {
     position: relative;
     display: block;
@@ -246,6 +250,7 @@ menu .data input {
     position: absolute;
     top: 0;
     left: 286px;
+    /* width: 100%; */
     background: white;
     right: 0;
     bottom: 0;
@@ -254,6 +259,7 @@ menu .data input {
    }
   .season_content span {
     animation: 0.5s ease-out 0s 1 slideInFromTop; 
+
   }
   [type=radio]:checked ~ label {
     background: white;
@@ -263,3 +269,31 @@ menu .data input {
   [type=radio]:checked ~ label ~ .season_content {
     z-index: 1;
   }
+
+.pref_img {
+    /* display: inline-block; */
+    width: 30%;
+    height: 30vh;
+    margin: 0 auto;
+    background: silver;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.pref_img li {
+    list-style: none; 
+    position: relative;
+}
+  
+.pref_img li img {
+    width: 80%;
+    height: 75%;
+    border-radius: 45px;
+}
+
+.warning {
+    width: 100%;
+    text-align: center;
+    color: rgb(0,172,238);
+}

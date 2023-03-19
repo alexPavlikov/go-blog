@@ -2,7 +2,7 @@ package api
 
 import "net/http"
 
-func handleRequest() {
+func HandleRequest() {
 	// обработчики статических данных(папок)
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
 	http.Handle("/data/", http.StripPrefix("/data/", http.FileServer(http.Dir("./data/"))))
@@ -29,19 +29,23 @@ func handleRequest() {
 	http.HandleFunc("/community/post", communityPostHandler)
 	http.HandleFunc("/community/edit", communityEditHandler)
 	http.HandleFunc("/community/market", communityMarketHandler)
+	http.HandleFunc("/community/market/sort", communityMarketSortHandler)
 	http.HandleFunc("/community/market/add", communityMarketAddHandler)
 	http.HandleFunc("/community/market/del", communityMarketDelHandler)
 	http.HandleFunc("/community/store/card", communityStoreCardHandler)
+	http.HandleFunc("/community/market/sale_list", communityMarketSaleListHandler)
+	http.HandleFunc("/community/market/market/statistics", communityMarketStatisticsHandler)
 	http.HandleFunc("/guest", guestHandler)
 	http.HandleFunc("/guest/friends", guestFriendsHandler)
 	http.HandleFunc("/guest/communities", guestCommunitiesHandler)
 	http.HandleFunc("/message", messageHandler)
 	http.HandleFunc("/store", storeHandler)
+	http.HandleFunc("/store/sort", storeSortHandler)
 	http.HandleFunc("/store/card", storeCardHandler)
 	http.HandleFunc("/store/buy", storeBuyHandler)
 	http.HandleFunc("/store/favorites", storeFavoritesHandler)
 	http.HandleFunc("/favourites", favouritesPageHandler)
 	http.HandleFunc("/exit", exitHandler)
 
-	//http.HandleFunc("/fr", frHandler)
+	http.HandleFunc("/fr", frHandler)
 }

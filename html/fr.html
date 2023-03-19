@@ -1,38 +1,46 @@
-<div class="season_tabs">
-    
-    <div class="season_tab">
-        <input type="radio" id="tab-1" name="tab-group-1" checked>
-        <label for="tab-1">Осень</label>
-        
-        <div class="season_content">
-            <span>tabik 1</span>
-        </div> 
-    </div>
-     
-    <div class="season_tab">
-        <input type="radio" id="tab-2" name="tab-group-1">
-        <label for="tab-2">Зима</label>
-        
-        <div class="season_content">
-            <span>tabik 2</span>
-        </div> 
-    </div>
-     
-     <div class="season_tab">
-        <input type="radio" id="tab-3" name="tab-group-1">
-        <label for="tab-3">Весна</label>
-      
-        <div class="season_content">
-            <span>tabik 3</span>
-        </div> 
-    </div>
-       <div class="season_tab">
-        <input type="radio" id="tab-4" name="tab-group-1">
-        <label for="tab-4">Лето</label>
-      
-        <div class="season_content">
-            <span>tabik 4</span>
-        </div> 
-    </div>
-     
- </div>
+{{ define "fr" }}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <style>
+        label {
+        display: inline-block;
+        width: 4em;
+        height: 4em;
+        background: silver;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        }
+
+        input {
+        display: none;
+        }
+    </style>
+
+<label for=pct></label>
+<input type=file id=pct>    
+
+</body>
+<script>
+    document.querySelector("input").addEventListener("change", function () {
+  if (this.files[0]) {
+    var fr = new FileReader();
+
+    fr.addEventListener("load", function () {
+      document.querySelector("label").style.backgroundImage = "url(" + fr.result + ")";
+    }, false);
+
+    fr.readAsDataURL(this.files[0]);
+  }
+});
+</script>
+</html>
+
+{{ end }}

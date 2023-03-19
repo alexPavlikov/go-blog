@@ -113,6 +113,19 @@
             <label for="css-modal-checkbox" class="css-modal-close"></label>
         </div>
 
+        <!-- Модальное окно -->    
+        <input type="checkbox" id="css-modal-checkbox2" /> 
+        <div class="cmc">
+            <div class="cmt" style="max-width: 750px;">
+                <form action="buy" method="get">
+                    <h3 style="text-align: center;">Укажите адрес доставки</h3>
+                    <input name="address" id="address" type="text" placeholder="Россия, Республика Татарстан, г.Казань, ул.Братьев Касимовых, д.64 кв 4">
+                    <input type="submit" value="Купить">
+                </form>
+            </div>
+            <label for="css-modal-checkbox2" class="css-modal-close"></label>
+        </div>           
+
     <main style="width: 55%;">
 {{ range $_, $pr := .Market }}
 
@@ -128,9 +141,13 @@
                 <p>{{ $pr.Description }}</p>
                 <div class="product-bottom-details">
                   <div class="product-price">
-                      <form action="buy" method="get">
+                    <div class="add" style="cursor: pointer; border: 1px solid #69b4f3; border-radius: 15px; padding: 8px 15px; text-align: center;">
+                      <label style="    display: block; width: 100%; height: 100%; cursor: pointer;" for="css-modal-checkbox2" class="add">
+                        <small>{{ $pr.Price }}G</small>{{ $pr.NewPrice }}G</label>
+                    </div>  
+                      <!-- <form action="buy" method="get">
                           <button><small>{{ $pr.Price }}G</small>{{ $pr.NewPrice }}G</button>
-                      </form>
+                      </form> -->
                   </div>
                   <div class="product-links">
                     {{ if $pr.Status }}

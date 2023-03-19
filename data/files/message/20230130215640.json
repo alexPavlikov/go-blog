@@ -5,19 +5,33 @@
       "Message": "hello",
       "Data": "2023-01-30 21:58",
       "Photo": "/data/image/blog/standart_avatar.png",
-      "Access": 2
+      "Access": 1
     },
     {
       "User": "r.dinno@gmail.com",
       "Message": "Нормально",
       "Data": "2023-01-30 22:02",
       "Photo": "/data/image/blog/standart_avatar.png",
-      "Access": 2
+      "Access": 1
     },
     {
       "User": "r.dinno@gmail.com",
       "Message": "Работает?",
       "Data": "2023-01-30 22:02",
+      "Photo": "/data/image/blog/standart_avatar.png",
+      "Access": 1
+    },
+    {
+      "User": "a.pavlikov2002@gmail.com",
+      "Message": "hi",
+      "Data": "2023-03-11 12:49",
+      "Photo": "/data/image/blog/standart_avatar.png",
+      "Access": 2
+    },
+    {
+      "User": "a.pavlikov2002@gmail.com",
+      "Message": "Hello",
+      "Data": "2023-03-18 16:23",
       "Photo": "/data/image/blog/standart_avatar.png",
       "Access": 2
     }

@@ -30,12 +30,13 @@
     height: 60%;
     position: relative;
   }
- .mySlides img {
-
-    width: 75%;
-    height: 75%;
+  
+  article .photo img {
+    width: 100%;
+    height: 100%;
     object-fit: contain;
   }
+
   article .description {
     height: 20%;
     text-align: center;
@@ -48,6 +49,7 @@
   }
 
   article .btn button {
+    height: 10%;
     font-size: 18px;
     font-weight: 700;
     background-color: rgba(85, 187, 255, 0.8);;
@@ -200,4 +202,67 @@
   padding: 0;
   margin: 2% 0;
   height: 100%;
+}
+
+.menu {
+  background-color: #fff;
+  position: fixed;
+  top: 300px;
+  right: 50px;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+
+.add-menu {
+  text-align: center;
+  background-color: rgb(2 185 255);
+  padding: 5px;
+  border-radius: 5px;
+  border: none;
+  margin: 5px 0;
+  color: #ffffff;
+  font-size: 18px;
+  transition: opacity .2s linear;
+}
+
+.add-menu:hover {
+  cursor: pointer;
+  opacity: .7;
+}
+
+/*  */
+.sort-button-group {
+  margin: 20px 55px;
+  font: 0/0 a;
+}
+.sort-button {
+  display: inline-flex;
+  margin: 0 2px 4px 2px;
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 1;
+  padding: 4px 16px;
+  color: #337AB7;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-family: 'Roboto', Тahoma, sans-serif;
+  background: #FFF;
+  cursor: pointer;
+  border: 2px solid #BFE2FF;
+  border-radius: 6px;
+  transition: 0.3s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.1);
+}
+.sort-button:hover,
+.sort-button.is-checked {
+  color: #BFE2FF;
+  background: #337AB7;
+  border: 2px solid #337AB7;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2), 0 4px 6px rgba(0,0,0,0.2);
+}
+.no-results {
+  text-align: center;
+  display: none;
+  color: red;
 }

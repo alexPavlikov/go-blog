@@ -9,7 +9,7 @@
     
     <div class="season_tab">
         <input type="radio" id="tab-1" name="tab-group-1" checked>
-        <label for="tab-1">Настройка страницы</label>
+        <label id="tab1" for="tab-1">Настройка страницы</label>
         
         <div class="season_content">
             <menu style="margin-top: 20vh; border: 1px solid #777;">
@@ -37,18 +37,25 @@
      
     <div class="season_tab">
         <input type="radio" id="tab-2" name="tab-group-1">
-        <label for="tab-2">Привязка карты</label>
+        <label id="tab2" for="tab-2">Смена аватара</label>
         
         <div class="season_content">
             <menu>
-                
+                <h1 class="warning">Вам придется перезайти в аккаунт</h1>
+                <form action="setting/refresh" method="post" enctype="multipart/form-data">
+                   
+                    <input type="file" id="files" name="files"  multiple />
+                    <ul for="files" class="pref_img" id="list"></ul>
+                   <br>
+                    <button type="submit" class="custom-btn btn-3 btn-4 "><span>Сохранить изменения</span></button>
+                </form>
             </menu>
         </div> 
     </div>
      
      <div class="season_tab">
         <input type="radio" id="tab-3" name="tab-group-1">
-        <label for="tab-3">Весна</label>
+        <label id="tab3" for="tab-3">Весна</label>
       
         <div class="season_content">
             <span>tabik 3</span>
@@ -56,7 +63,7 @@
     </div>
        <div class="season_tab">
         <input type="radio" id="tab-4" name="tab-group-1">
-        <label for="tab-4">Лето</label>
+        <label id="tab4" for="tab-4">Лето</label>
       
         <div class="season_content">
             <span>tabik 4</span>
@@ -66,7 +73,27 @@
  </div>
 
 
+<script>
 
+function showFile(e) {
+    var files = e.target.files;
+    for (var i = 0, f; f = files[i]; i++) {
+      if (!f.type.match('image.*')) continue;
+      var fr = new FileReader();
+      fr.onload = (function(theFile) {
+        return function(e) {
+          var li = document.createElement('li');
+          li.innerHTML = "<img src='" + e.target.result + "' />";
+          document.getElementById('list').insertBefore(li, null);
+        };
+      })(f);
+ 
+      fr.readAsDataURL(f);
+    }
+  }
+ 
+  document.getElementById('files').addEventListener('change', showFile, false);
+</script>
 
 <!-- <div class="goffer">
     <img src="/data/image/another/goffer1.png" alt="">

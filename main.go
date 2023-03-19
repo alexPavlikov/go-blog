@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/alexPavlikov/go-blog/api"
 	"github.com/alexPavlikov/go-blog/database"
 	"github.com/alexPavlikov/go-blog/models"
 	"github.com/alexPavlikov/go-blog/setting"
@@ -25,6 +26,10 @@ func main() {
 	}
 	defer db.Close()
 
-	api.handleRequest()
-	http.ListenAndServe(":"+models.Cfg.ServerPort, nil)
+	api.HandleRequest()
+
+	err = http.ListenAndServe(":"+models.Cfg.ServerPort, nil)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 }

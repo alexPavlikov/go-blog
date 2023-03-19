@@ -184,6 +184,22 @@ type JoinStore struct {
 	Date        string
 }
 
+type JoinStorePlus struct {
+	Id          uint
+	Article     uint
+	Name        string
+	Photo       string
+	Price       float32
+	NewPrice    float32
+	User        string
+	Description string
+	Category    string
+	Sex         string
+	Community   string
+	Address     string
+	Date        string
+}
+
 type StorePlus struct {
 	Id          uint
 	Name        string

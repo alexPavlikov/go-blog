@@ -35,11 +35,11 @@ func SelectPosts() []models.Posts {
 	rows, err := DB.Query(`SELECT "Posts".*, "Communities"."Photo"
 	FROM "Posts" 
 	JOIN "Communities" ON "Posts"."Communities" = "Communities"."Name"
-	ORDER BY "Date" DESC;`)
+	ORDER BY "Posts"."Date" DESC;`)
 	if err != nil {
 		fmt.Println("Error - selectPosts()", err.Error())
 	}
-
+	defer rows.Close()
 	post := models.Posts{}
 	posts := []models.Posts{}
 
@@ -68,7 +68,7 @@ func SelectPostsByUserSubs(user string) []models.Posts {
 	if err != nil {
 		fmt.Println("Error - SelectPostsByUserSubs()", err.Error())
 	}
-
+	defer rows.Close()
 	post := models.Posts{}
 	posts := []models.Posts{}
 
@@ -96,6 +96,7 @@ func SelectPostById(id int) models.Posts {
 	if err != nil {
 		fmt.Println("Error - SelectPostById()", err.Error())
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo, &post.Category, &post.CommunitiesPhot)
 		if err != nil {
@@ -118,6 +119,7 @@ func SelectPostByCommunities(communities string) []models.Posts {
 	if err != nil {
 		fmt.Println("Error - SelectPostByCommunities()", err.Error())
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&post.Id, &post.Title, &post.Content, &post.Like, &post.View, &post.Date, &post.Communities, &post.Photo, &post.Category, &post.CommunitiesPhot)
 		if err != nil {
@@ -262,6 +264,7 @@ func SelectUsers() []models.Users {
 	if err != nil {
 		fmt.Println("Error - SelecetUser()", err)
 	}
+	defer rows.Close()
 	var user models.Users
 	var users []models.Users
 	for rows.Next() {
@@ -285,6 +288,7 @@ func SelectUserByLogPass(log string, pass string) (user models.Users, err error)
 		fmt.Println("Error - SelectUserByLogPass()", err)
 		return user, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
 		if err != nil {
@@ -306,7 +310,7 @@ func SelectUsersByColumn(column string, value string) ([]models.Users, error) {
 		fmt.Println("Error - SelectUsersByColumn()", err)
 		return users, err
 	}
-
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
 		if err != nil {
@@ -325,7 +329,7 @@ func SelectUserByColumn(column string, value string) (models.Users, error) {
 		fmt.Println("Error - SelectUserByColumn()", err)
 		return user, err
 	}
-
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
 		if err != nil {
@@ -343,6 +347,7 @@ func SelectUserWallet(login string, password string) (models.Users, error) {
 		fmt.Println("Error - SelectUserWallet()", err)
 		return user, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
 		if err != nil {
@@ -372,7 +377,7 @@ func DeleteUserByLogin(login string) error {
 Функция добавления пользователя в таблицу Users по введенным значениям
 */
 func InsertUser(user models.Users) (models.Users, error) {
-	query := `INSERT INTO "Users"("Login", "Password", "Name", "Access") VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	query := `INSERT INTO "Users"("Login", "Password", "Name", "Access", "Photo", "Birthdate", "Wallet") VALUES ($1, $2, $3, $4, $5, $6, $7)`
 	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
 	stmt, err := DB.PrepareContext(ctx, query)
@@ -451,6 +456,7 @@ func CheckCommunity(user, community string) (models.Communities, bool) {
 	if err != nil {
 		fmt.Println("Error - CheckCommunity()", err.Error())
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&communities.Name, &communities.Author, &communities.Photo, &communities.Category)
 		if err != nil {
@@ -473,6 +479,7 @@ func SelectCommunities() []models.Communities {
 	if err != nil {
 		fmt.Println("Error - SelectCommunities()", err.Error())
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&communities.Name, &communities.Author, &communities.Photo, &communities.Category)
 		if err != nil {
@@ -493,6 +500,7 @@ func SelectCommunitiesWithOutSub(user string) []models.Communities {
 	if err != nil {
 		fmt.Println("Error - SelectCommunities()", err.Error())
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&communities.Name, &communities.Author, &communities.Photo, &communities.Category)
 		if err != nil {
@@ -512,6 +520,7 @@ func SelectCommunitiesAuthorByName(name string) (author string, names string) {
 	if err != nil {
 		fmt.Println("Error - SelectCommunitiesAuthorByName()", err.Error())
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&author, &names)
 		if err != nil {
@@ -531,6 +540,7 @@ func SelectCommunitiesByColumn(column string, value string) models.Communities {
 	if err != nil {
 		fmt.Println("Error - SelectCommunitiesByColumn()", err.Error())
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&communities.Name, &communities.Author, &communities.Photo, &communities.Category)
 		if err != nil {
@@ -575,6 +585,7 @@ func SelectAllCommunitiesUser(column string, key string) []models.JoinCommunitie
 	if err != nil {
 		fmt.Println("Error - SelectFriendsByColumn()", err.Error())
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&communitie.Communities, &communitie.User, &communitie.Photo, &communitie.Author, &communitie.Category)
 		if err != nil {
@@ -591,6 +602,7 @@ func SelectCountSubscribersByCommunities(name string) (count uint) {
 	if err != nil {
 		fmt.Println("Error - SelectFriendsByColumn()", err.Error())
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(count)
 		if err != nil {
@@ -654,6 +666,7 @@ func SelectAccess() []models.Access {
 	if err != nil {
 		fmt.Println("Error - SelectAccess()", err.Error())
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&access.Name)
 		if err != nil {
@@ -732,6 +745,7 @@ func SelectComments() []models.Comments {
 	if err != nil {
 		fmt.Println("Error - SelectComments()")
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&comment.Id, &comment.Posts, &comment.Text, &comment.Like, &comment.Author)
 		if err != nil {
@@ -758,6 +772,7 @@ func SelectCommentsByColumn(column string, value string) []models.JoinComments {
 	// if err != nil {
 	// 	fmt.Println("Error - SelectCommentsByColumn()")
 	// }
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&comment.Posts, &comment.Author, &comment.Name, &comment.Photo, &comment.Text, &comment.Like)
 		if err != nil {
@@ -827,6 +842,7 @@ func SelectFriends() []models.JoinUser {
 	if err != nil {
 		fmt.Println("Error - SelectFriendsByColumn()", err.Error())
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&friend.Login, &friend.Friend, &friend.Status, &friend.Name, &friend.Photo, &friend.Birthdate)
 		if err != nil {
@@ -855,7 +871,7 @@ func CheckFriends(user string, frd string) (friend models.JoinUser, ok bool) {
 			fmt.Println("Error - SelectFriendsByColumn() rows.Next()", err.Error())
 		}
 	}
-	fmt.Println(friend)
+	defer rows.Close()
 	if friend.Login == "" || friend.Friend == "" {
 		ok = true
 	} else {
@@ -890,6 +906,7 @@ func SelectFriendsByColumn(column string, value string) []models.Friends {
 	if err != nil {
 		fmt.Println("Error - SelectFriendsByColumn()", err.Error())
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&friend.Id, &friend.Login, &friend.Status, &friend.Friend)
 		if err != nil {
@@ -917,6 +934,7 @@ func SelectAllFriendsUser(key string) []models.JoinUser {
 	if err != nil {
 		fmt.Println("Error - SelectFriendsByColumn()", err.Error())
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&friend.Login, &friend.Friend, &friend.Status, &friend.Name, &friend.Photo, &friend.Birthdate)
 		if err != nil {
@@ -981,6 +999,7 @@ func SelectStatus() []models.Status {
 	if err != nil {
 		fmt.Println("Error - SelectStatus()", err.Error())
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&status.Name)
 		if err != nil {
@@ -1063,6 +1082,7 @@ func SelectRepoPostByUser(user string) []models.RepostPost {
 	if err != nil {
 		fmt.Println("Error - SelectRepoPostByUser()")
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&repoPost.User, &repoPost.Post, &repoPost.Title, &repoPost.Content, &repoPost.Like, &repoPost.View, &repoPost.Date, &repoPost.Communities, &repoPost.PostPhoto, &repoPost.Categoty, &repoPost.CommunitiesPhoto)
 		if err != nil {
@@ -1119,6 +1139,7 @@ func SelectSubscribersBtCommunities(communities string) []models.Subscribers {
 	if err != nil {
 		fmt.Println("Error - SelectSubscribersBtCommunities()")
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&sub.Id, &sub.User, &sub.Communities)
 		if err != nil {
@@ -1192,6 +1213,7 @@ func SelectMessengeListbyUsers(author string, guest string) (models.MessageList,
 		fmt.Println("Error - SelectMessengeListbyUsers()")
 		return messageList, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&messageList.LinkId, &messageList.Main, &messageList.Companion, &messageList.MessageHistory)
 		if err != nil {
@@ -1214,6 +1236,7 @@ func SelectMessengeListbyLogin(author string, guest string) []models.MessageList
 	if err != nil {
 		fmt.Println("Error - SelectMessengeListbyUsers()")
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&messageList.LinkId, &messageList.Main, &messageList.Companion, &messageList.MessageHistory)
 		if err != nil {
@@ -1236,6 +1259,7 @@ func SelectCompanionsByLogin(user string) []models.Companions {
 	if err != nil {
 		fmt.Println("Error - SelectCompanionsByLogin()")
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&companion.LinkId, &companion.Main, &companion.Companion, &companion.MessageHistory, &companion.Name, &companion.Photo)
 		if err != nil {
@@ -1307,6 +1331,7 @@ func SelectUserSub(user string) []models.Users {
 	if err != nil {
 		fmt.Println("Error - SelectUserSub()")
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&sub.Login, &sub.Password, &sub.Name, &sub.Access, &sub.Photo, &sub.Birthdate, &sub.Wallet)
 		if err != nil {
@@ -1364,15 +1389,12 @@ func SelectRecomendationFriends(user string) []models.Users {
 	query := fmt.Sprintf(`
 	SELECT "Users".* FROM "Users"
 	WHERE "Users"."Login" NOT IN 
-	(SELECT "Friends"."Login" FROM "Friends" WHERE "Friends"."Login" != '%s' OR "Friends"."Friend" != '%s')
-	AND "Users"."Login" NOT IN 
-	(SELECT "Friends"."Friend" FROM "Friends" WHERE "Friends"."Login" != '%s' OR "Friends"."Friend" != '%s')
-	AND "Users"."Login" NOT IN 
-	(SELECT "UserSubs"."User" FROM "UserSubs" WHERE  "UserSubs"."User" != '%s' OR "UserSubs"."Sub" != '%s');`, user, user, user, user, user, user)
+	(SELECT "Friends"."Login" FROM "Friends" WHERE "Friends"."Login" = '%s' OR "Friends"."Friend" = '%s')`, user, user)
 	rows, err := DB.Query(query)
 	if err != nil {
 		fmt.Println("Error - SelectRecomendationFriends()")
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&sub.Login, &sub.Password, &sub.Name, &sub.Access, &sub.Photo, &sub.Birthdate, &sub.Wallet)
 		if err != nil {
@@ -1396,6 +1418,7 @@ func SelectRecCommunities(user string) []models.Communities {
 	if err != nil {
 		fmt.Println("Error - SelectRecCommunities()", err.Error())
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&communities.Name, &communities.Author, &communities.Photo, &communities.Category)
 		if err != nil {
@@ -1414,6 +1437,7 @@ func SelectPostCategory() []string {
 	if err != nil {
 		fmt.Println("Error - SelectPostCategory()")
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&category)
 		if err != nil {
@@ -1433,6 +1457,7 @@ func SelectCommunitiesCategory() []string {
 	if err != nil {
 		fmt.Println("Error - SelectCommunitiesCategory()")
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&category)
 		if err != nil {
@@ -1458,6 +1483,7 @@ func SelectOnlineFriends(user string) []models.JoinUser {
 	if err != nil {
 		fmt.Println("Error - SelectOnlineFriends()")
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&friend.Login, &friend.Friend, &friend.Status, &friend.Name, &friend.Photo, &friend.Birthdate)
 		if err != nil {
@@ -1515,6 +1541,7 @@ func SelectGopherByOwner(user string) []models.JoinGopher {
 	if err != nil {
 		fmt.Println("Error - SelectGopherByOwner()")
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&gopher.Id, &gopher.Creator, &gopher.Owner, &gopher.Title, &gopher.Content, &gopher.Like, &gopher.View, &gopher.Date, &gopher.CreatorPhoto, &gopher.CreatorName)
 		if err != nil {
@@ -1533,6 +1560,7 @@ func SelectGopherById(id int) models.JoinGopher {
 	if err != nil {
 		fmt.Println("Error - SelectGopherById()")
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&gopher.Id, &gopher.Creator, &gopher.Owner, &gopher.Title, &gopher.Content, &gopher.Like, &gopher.View, &gopher.Date, &gopher.CreatorPhoto, &gopher.CreatorName)
 		if err != nil {
@@ -1602,6 +1630,7 @@ func SelectStoreItems() ([]models.Store, error) {
 		fmt.Println("Error - SelectStoreItems()", err)
 		return products, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&product.Id, &product.Name, &product.Photo, &product.Price, &product.NewPrice, &product.Description, &product.Category, &product.Sex, &product.Community)
 		if err != nil {
@@ -1621,10 +1650,51 @@ func SelectStoreItemsByCommunity(community string) ([]models.Store, error) {
 		fmt.Println("Error - SelectStoreItemsByCommunity()", err)
 		return products, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&product.Id, &product.Name, &product.Photo, &product.Price, &product.NewPrice, &product.Description, &product.Category, &product.Sex, &product.Community)
 		if err != nil {
 			fmt.Println("Error - SelectStoreItemsByCommunity() rows.Next()", err.Error())
+			return products, err
+		}
+		products = append(products, product)
+	}
+	return products, nil
+}
+
+func SelectStoreItemsByCategory(category string) ([]models.Store, error) {
+	var product models.Store
+	var products []models.Store
+	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "Store" WHERE "Category" = '%s'`, category))
+	if err != nil {
+		fmt.Println("Error - SelectStoreItemsByCategory()", err)
+		return products, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&product.Id, &product.Name, &product.Photo, &product.Price, &product.NewPrice, &product.Description, &product.Category, &product.Sex, &product.Community)
+		if err != nil {
+			fmt.Println("Error - SelectStoreItemsByCategory() rows.Next()", err.Error())
+			return products, err
+		}
+		products = append(products, product)
+	}
+	return products, nil
+}
+
+func SelectStoreItemsByCommunityAndCategory(category string, community string) ([]models.Store, error) {
+	var product models.Store
+	var products []models.Store
+	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "Store" WHERE "Community" = '%s' AND "Category" = '%s'`, community, category))
+	if err != nil {
+		fmt.Println("Error - SelectStoreItemsByCategory()", err)
+		return products, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&product.Id, &product.Name, &product.Photo, &product.Price, &product.NewPrice, &product.Description, &product.Category, &product.Sex, &product.Community)
+		if err != nil {
+			fmt.Println("Error - SelectStoreItemsByCategory() rows.Next()", err.Error())
 			return products, err
 		}
 		products = append(products, product)
@@ -1639,6 +1709,7 @@ func SelectStoreItemById(id int) (models.StorePlus, error) {
 		fmt.Println("Error - SelectStoreItemById()", err)
 		return product, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&product.Id, &product.Name, &product.Photo, &product.Price, &product.NewPrice, &product.Description, &product.Category, &product.Sex, &product.Community)
 		if err != nil {
@@ -1662,6 +1733,7 @@ func SelectFavouritesByUser(login string) ([]models.Store, bool) {
 		fmt.Println("Error - SelectFavouritesByUser()", err)
 		return products, ok
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&product.Id, &product.Name, &product.Photo, &product.Price, &product.NewPrice, &product.Description, &product.Category, &product.Sex, &product.Community)
 		if err != nil {
@@ -1739,6 +1811,7 @@ func SelectSalesByUser(login string) ([]models.JoinStore, bool) {
 		fmt.Println("Error - SelectSalesByUser()", err)
 		return products, ok
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&product.Id, &product.Name, &product.Photo, &product.Price, &product.NewPrice, &product.Description, &product.Category, &product.Sex, &product.Community, &product.Address, &product.Date)
 		if err != nil {
@@ -1748,6 +1821,32 @@ func SelectSalesByUser(login string) ([]models.JoinStore, bool) {
 		products = append(products, product)
 	}
 	if products[0].Id > 0 && products[0].Name != "" {
+		ok = true
+	}
+	return products, ok
+}
+
+func SelectSalesByCommunity(community string) ([]models.JoinStorePlus, bool) {
+	var product models.JoinStorePlus
+	var products []models.JoinStorePlus
+	ok := false
+	rows, err := DB.Query(fmt.Sprintf(`SELECT "Sales"."Id", "Store".*, "Sales"."User", "Sales"."Address", "Sales"."Date" FROM "Sales"
+	JOIN "Store" ON "Store"."Id" = "Sales"."Product"
+	WHERE "Store"."Community" =  '%s'`, community))
+	if err != nil {
+		fmt.Println("Error - SelectSalesByCommunity()", err)
+		return products, ok
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&product.Id, &product.Article, &product.Name, &product.Photo, &product.Price, &product.NewPrice, &product.Description, &product.Category, &product.Sex, &product.Community, &product.User, &product.Address, &product.Date)
+		if err != nil {
+			fmt.Println("Error - SelectSalesByCommunity() rows.Next()", err.Error())
+			return products, ok
+		}
+		products = append(products, product)
+	}
+	if products != nil {
 		ok = true
 	}
 	return products, ok
@@ -1764,6 +1863,25 @@ func InsertToSalesProduct(sale models.Sales) error {
 	}
 }
 
+func SelectTotalPurchaseByUser(user string) (result int) {
+	rows, err := DB.Query(fmt.Sprintf(`SELECT SUM("Store"."NewPrice") FROM "Sales" 
+	JOIN "Store" ON "Sales"."Product" = "Store"."Id"
+	WHERE "Sales"."User" = '%s'`, user))
+	if err != nil {
+		fmt.Println("Error - SelectTotalPurchaseByUser()", err)
+		return result
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&result)
+		if err != nil {
+			fmt.Println("Error - SelectTotalPurchaseByUser() rows.Next()", err.Error())
+			return result
+		}
+	}
+	return result
+}
+
 // sex
 
 func SelectSex() ([]string, error) {
@@ -1774,6 +1892,7 @@ func SelectSex() ([]string, error) {
 		fmt.Println("Error - SelectSex()", err)
 		return sex, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&sx)
 		if err != nil {
@@ -1795,6 +1914,7 @@ func SelectStoreCategory() ([]string, error) {
 		fmt.Println("Error - SelectStoreCategory()", err)
 		return category, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(&ct)
 		if err != nil {
