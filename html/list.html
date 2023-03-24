@@ -5,8 +5,8 @@
 <link rel="stylesheet" href="/assets/css/list.css">   
 
     
-
-   {{ if .Done }} 
+    {{ $st := "Store" }}
+   {{ if eq .Done $st }} 
     <h1>{{.Title}}</h1> 
         {{ $lengthSales := len .Sales }}
         <h3>Общее кол-во пользователей {{$lengthSales}}</h3> 
@@ -40,6 +40,59 @@
             {{ end }}
         </tbody>
         </table>
+    {{ else if eq .Done "Admin" }}
+        {{ $lengthAdmin := len .Admins }}
+        <h3>Общее кол-во строк {{$lengthAdmin}}</h3> 
+        <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Пользователь</th>
+                <th>Причина</th>
+                <th>Время(часов)</th>
+                <th>Админ</th>
+                <!-- <th>Дополнительно</th> -->
+            </tr>
+        </thead> 
+        <tbody>
+            {{ range $_, $ad := .Admins }}
+            <tr>
+                <td>{{ $ad.Id }}</td>
+                <td>{{ $ad.User }}</td>
+                <td>{{ $ad.Reason }}</td>
+                <td>{{ $ad.Time }}</td>
+                <td>{{ $ad.Admin }} </td>
+            </tr>
+            {{ end }}
+        </tbody>
+        </table>
+    {{ else if eq .Done "ListAdmin" }}
+    <h1>{{.Title}}</h1> 
+    {{ $lengthAd := len .ListAdm }}
+    <h3>Общее кол-во строк {{$lengthAd}}</h3> 
+    <table class="table">
+    <thead>
+        <tr>
+            <th>Логин</th>
+            <th>Имя</th>
+            <th>Доступ</th>
+            <th>День рождения</th>
+            <th>Кошелек</th>
+            <!-- <th>Дополнительно</th> -->
+        </tr>
+    </thead> 
+    <tbody>
+        {{ range $_, $la := .ListAdm }}
+        <tr>
+            <td>{{ $la.Login }}</td>
+            <td>{{ $la.Name }}</td>
+            <td>{{ $la.Access }}</td>
+            <td>{{ $la.Birthdate }}</td>
+            <td>{{ $la.Wallet }} </td>
+        </tr>
+        {{ end }}
+    </tbody>
+    </table>
    {{ else }}
    <h1>{{.Title}}</h1> 
    <h3>У Вас еще нет ни одной продажи. Все еще впереди!</h3> 

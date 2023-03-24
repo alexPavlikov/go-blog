@@ -114,3 +114,21 @@ section div {
 .statistics div span:hover {
     cursor: pointer;
 }
+
+.adm-menu {
+    margin-top: 120px;
+    right: 43%;
+    position: absolute;
+    height: 10vh;
+}
+
+.add form input {
+    background-color: inherit;
+    color: white;
+    font-size: 16px;
+    border: none;
+}
+
+.del-form:hover {
+    cursor: pointer;
+}

@@ -1,0 +1,145 @@
+{{ define "admin" }}
+
+{{ template "header" }}
+
+<link rel="stylesheet" href="/assets/css/style.css">
+<link rel="stylesheet" href="/assets/css/admin.css">
+<link rel="stylesheet" href="/assets/css/blog.css">
+<link rel="stylesheet" href="/assets/css/page.css">
+
+<header>
+    <div class="brand">
+        <div class="logos">
+            <img src="/data/image/brand.png" alt="">
+            <span>GOLANG</span>
+        </div>
+        <div class="find"><input type="text" placeholder="Найти"></div>
+    </div>
+    <div class="account">
+        <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
+        <i class="fa-solid fa-chevron-down" onclick="Check()"></i>
+    </div>
+</header>
+
+<script src='//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js'></script>
+
+<body>
+    <aside class="right">
+        <a href="/page#"><i class="fa-regular fa-circle-user"></i><span> Моя страница</span></a>
+        <a href="/blog"><i class="fa-regular fa-newspaper"></i><span> Новости</span></a>
+        <a href="/message"><i class="fa-regular fa-comment"></i><span> Сообщения</span></a>
+        <a href="/friends"><i class="fa-solid fa-user-group"></i><span> Друзья</span></a>
+        <a href="/communities"><i class="fa-solid fa-users"></i><span> Сообщества</span></a>
+        <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+        <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
+        <a href="/help"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
+        <a href="/store"><i class="fa-brands fa-golang"></i><span> Go-Store</span></a>
+    </aside>
+
+    <main>
+        <!-- <div class="frame"> -->
+            <div class="center">
+              
+              <div class="profile">
+                <div class="image">
+                  <div class="circle-1"></div>
+                  <div class="circle-2"></div>
+                  <img src="{{ .User.Photo }}" width="70" height="70" alt="{{ .User.Name }}">
+                </div>
+                
+                <div class="name">{{ .User.Name }}</div>
+                <div class="job">{{ .User.Access }}</div>
+                
+                <div class="actions">
+                  <a href="" class="btn">Список жалоб</a>
+                 {{ if eq .User.Access "Super Admin" }}
+                 <a href="/admin/amd_list" class="btn">Список администраторов</a>
+                 {{ end }}
+                </div>
+              </div>
+              {{ $lenBan := len .BanUser }}
+              {{ $lenDel := len .DelUser }}
+              {{ $lenAll := len .AllUs }}
+              <div class="stats">
+                <a href="/admin/list">
+                  <div class="box admGet">
+                    <span class="value">{{$lenBan}}</span>
+                    <span class="parameter">Кол-во заблокированных пользователей</span>                 
+                  </div>
+                </a>
+                <a href="/admin/list">
+                  <div class="box admPost">
+                      <span class="value">{{$lenDel}}</span>
+                      <span class="parameter">Кол-во удалений аккаунтов</span>
+                  </div>
+                </a>
+                <a href="/admin">
+                  <div class="box">
+                    <span class="value">{{$lenAll}}</span>
+                    <span class="parameter">Кол-во ответов на заявки</span>
+                  </div>
+                </a>
+              </div>
+            </div>
+          <!-- </div> -->
+    </main>
+
+    <aside id="left" class="left">
+        <div class="setacc">
+            <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
+            <div class="info">
+                <div class="name">{{ .User.Name }}</div>
+                <div class="login">{{ .User.Login }}</div>
+            </div>
+        </div>
+        <div class="settings">
+            <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+            <a href="/favourites"><i class="fa-solid fa-bookmark"></i> <span> Избранное</span></a>
+            <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span></a>
+            <a href="/help"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span></a>
+            <a id="exit" href="/exit"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span></a>
+        </div>
+    </aside>
+</body>
+
+<script>
+    function Check() {
+    document.getElementById('left').classList.toggle("hidden");
+}
+</script>
+
+<script>
+  
+  $(document).ready(function(){
+            $('.admGet').click(function(e) {
+                    $.ajax({
+                        url: 'admin/list',
+                        type: 'GET',
+                        dataType: 'html',
+                        data : { btns: ""},
+                        success : function(data) {
+                        $('#result').html(data);
+                        },
+                    });
+            });
+        });
+
+        $(document).ready(function(){
+            $('.admPost').click(function(e) {
+                    $.ajax({
+                        url: 'admin/list',
+                        type: 'POST',
+                        dataType: 'html',
+                        data : { btns: ""},
+                        success : function(data) {
+                        $('#result').html(data);
+                        },
+                    });
+            });
+        });
+
+</script>
+
+{{ template "footer" }}
+
+{{ end }}

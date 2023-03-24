@@ -18,13 +18,37 @@ import (
 	"github.com/alexPavlikov/go-blog/models"
 )
 
+func rootHandler(w http.ResponseWriter, r *http.Request) {
+	c := app.ReadCookies(r)
+	var err error
+	fmt.Println(c)
+	if c == nil {
+		http.Redirect(w, r, "/entry", http.StatusSeeOther)
+		//tmpl.ExecuteTemplate(w, "login", nil)
+	} else if userAuth.Login != "" {
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println("SelectUserByColumn()", err.Error())
+		}
+		http.Redirect(w, r, "/page", http.StatusSeeOther)
+	} else {
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println("SelectUserByColumn()", err.Error())
+		}
+		http.Redirect(w, r, "/page", http.StatusSeeOther)
+	}
+}
+
 func logFormHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles("html/login.html")
 	if err != nil {
 		http.NotFound(w, r)
 	}
-
-	tmpl.ExecuteTemplate(w, "login", nil)
+	Done := true
+	data := map[string]interface{}{"Done": Done}
+	tmpl.ExecuteTemplate(w, "login", data)
 }
 
 func frHandler(w http.ResponseWriter, r *http.Request) {
@@ -51,24 +75,59 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 		if userAuth.Login == "" && userAuth.Password == "" {
 			http.NotFound(w, r)
 			http.Redirect(w, r, "/", http.StatusBadRequest)
+		} else if userAuth.Access == "Banned" {
+			http.NotFound(w, r) //отправлять письмо - вы в бане и сколько осталось часов
 		} else {
 			err = database.InsertUserToOnline(userAuth.Login)
 			if err != nil {
 				fmt.Println("Error - authHandler() InsertUserToOnline()", err)
 				// http.NotFound(w, r)
 			}
-
+			expires := time.Now().AddDate(1, 0, 0)
 			cookie := &http.Cookie{
-				Name:   "id",
-				Value:  userAuth.Login,
-				MaxAge: 300,
+				Name:  "id",
+				Value: userAuth.Login,
+				//MaxAge:  300,
+				Expires: expires,
 			}
 			http.SetCookie(w, cookie)
-
+			if userAuth.Login != "" {
+				code = app.GiveCode()
+				err = app.SendCode(userAuth.Login, code, userAuth.Name)
+				if err != nil {
+					http.NotFound(w, r)
+				}
+			}
 			app.RecordingSessions(fmt.Sprintf("Пользователь, %s (логин - %s, пароль - %s) зашел в аккаунт в %s.\n", userAuth.Name, userAuth.Login, userAuth.Password, time.Now().Format("2006-01-02 15:04")))
-			http.Redirect(w, r, "/blog", http.StatusSeeOther)
+			http.Redirect(w, r, "/second_auth", http.StatusSeeOther)
 		}
 	}
+}
+
+func secondAuthHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/secondAuth.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+
+	if r.Method == "POST" {
+		r.ParseForm()
+		cd := r.FormValue("code")
+		if cd != "" {
+			inputCode, err := strconv.Atoi(cd)
+			if err != nil {
+				w.Write([]byte("Не верно указанный код"))
+			}
+			if inputCode == code {
+				http.Redirect(w, r, "/blog", http.StatusSeeOther)
+			} else {
+				w.Write([]byte("Не верно указанный код"))
+				http.Redirect(w, r, "/exit", http.StatusSeeOther)
+			}
+		}
+	}
+
+	tmpl.ExecuteTemplate(w, "secondAuth", nil)
 }
 
 func regHandler(w http.ResponseWriter, r *http.Request) {
@@ -95,10 +154,12 @@ func regHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 			http.Redirect(w, r, "/", http.StatusBadRequest)
 		}
+		expires := time.Now().AddDate(1, 0, 0)
 		cookie := &http.Cookie{
-			Name:   "id",
-			Value:  userAuth.Login,
-			MaxAge: 300,
+			Name:  "id",
+			Value: userAuth.Login,
+			//MaxAge: 300,
+			Expires: expires,
 		}
 		http.SetCookie(w, cookie)
 		http.Redirect(w, r, "/setting", http.StatusSeeOther)
@@ -116,6 +177,42 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.ExecuteTemplate(w, "setting", account)
 }
 
+func changePasswordHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/login.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+
+	if r.Method == "POST" {
+		r.ParseForm()
+		log := r.FormValue("login")
+		if log != "" {
+			user, err := database.SelectUserByColumn("Login", log)
+			if err != nil {
+				fmt.Println("Error - changePasswordHandler() SelectUserByColumn()", err.Error())
+			}
+			if user.Login != "" {
+				RandomCrypto, _ := rand.Prime(rand.Reader, 32)
+				p := "Gopher" + fmt.Sprint(RandomCrypto.Int64()/20000)
+				pass := app.CreateMd5Hash(p)
+				_, err := database.UpdateUserByColumn("Password", pass, user.Login, user.Password)
+				if err != nil {
+					http.NotFound(w, r)
+				}
+				err = app.SendNewPass(user.Login, p, user.Name)
+				if err != nil {
+					fmt.Println("Error - SendNewPass()", err.Error())
+				}
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+			}
+		}
+	}
+
+	Done := false
+	data := map[string]interface{}{"Done": Done}
+	tmpl.ExecuteTemplate(w, "login", data)
+}
+
 func refreshSettingHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	if r.Method == "GET" {
@@ -124,6 +221,8 @@ func refreshSettingHandler(w http.ResponseWriter, r *http.Request) {
 		oldPass := r.FormValue("oldPass")
 		newName := r.FormValue("newName")
 		date := r.FormValue("newHB")
+		oldPass = app.CreateMd5Hash(oldPass)
+		newPass = app.CreateMd5Hash(newPass)
 		fmt.Println(login, newPass, oldPass, newName, date)
 		if oldPass != "" {
 			_, err := database.SelectUserByLogPass(login, oldPass)
@@ -187,7 +286,8 @@ func refreshSettingHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func blogHandler(w http.ResponseWriter, r *http.Request) {
-	if userAuth.Login != "" {
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
 		tmpl, err := template.ParseFiles("html/blog.html", "html/header.html", "html/footer.html")
 		if err != nil {
 			http.NotFound(w, r)
@@ -222,106 +322,142 @@ func blogHandler(w http.ResponseWriter, r *http.Request) {
 		blog := map[string]interface{}{"Post": posts, "User": userAuth}
 		tmpl.ExecuteTemplate(w, "header", title)
 		tmpl.ExecuteTemplate(w, "blog", blog)
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
 	} else {
 		http.NotFound(w, r)
 	}
 }
 
 func pageHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("html/page.html", "html/header.html", "html/footer.html")
-	if err != nil {
-		http.NotFound(w, r)
-	}
-	fmt.Println("page", postId)
-	var rep models.Repost
-	var DoneGopher bool
-	rep.Post, _ = strconv.Atoi(postId)
-	rep.User = userAuth.Login
-	frd := database.SelectAllFriendsUser(userAuth.Login)
-	comnt := database.SelectAllCommunitiesUser("User", userAuth.Login)
-	gopher := database.SelectGopherByOwner(userAuth.Login)
-	if gopher != nil {
-		DoneGopher = true
-	} else {
-		DoneGopher = false
-	}
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		tmpl, err := template.ParseFiles("html/page.html", "html/header.html", "html/footer.html")
+		if err != nil {
+			http.NotFound(w, r)
+		}
+		fmt.Println("page", postId)
+		var rep models.Repost
+		var DoneGopher bool
+		rep.Post, _ = strconv.Atoi(postId)
+		rep.User = userAuth.Login
+		frd := database.SelectAllFriendsUser(userAuth.Login)
+		comnt := database.SelectAllCommunitiesUser("User", userAuth.Login)
+		gopher := database.SelectGopherByOwner(userAuth.Login)
+		if gopher != nil {
+			DoneGopher = true
+		} else {
+			DoneGopher = false
+		}
 
-	type statistics struct {
-		FrinedsLen     int
-		CommunitiesLen int
-		HappyBithday   string
-	}
+		type statistics struct {
+			FrinedsLen     int
+			CommunitiesLen int
+			HappyBithday   string
+		}
 
-	var stat statistics
-	stat.CommunitiesLen = len(comnt)
-	stat.FrinedsLen = len(frd)
-	stat.HappyBithday = userAuth.Birthdate
+		var stat statistics
+		stat.CommunitiesLen = len(comnt)
+		stat.FrinedsLen = len(frd)
+		stat.HappyBithday = userAuth.Birthdate
 
-	if r.Method == "POST" {
-		r.ParseForm()
-		GofId := r.FormValue("goLike")
-		fmt.Println(GofId)
-		if GofId != "" {
-			err = database.InsertLikeToGopher(GofId)
-			if err != nil {
-				fmt.Println(err.Error())
+		if r.Method == "POST" {
+			r.ParseForm()
+			GofId := r.FormValue("goLike")
+			fmt.Println(GofId)
+			if GofId != "" {
+				err = database.InsertLikeToGopher(GofId)
+				if err != nil {
+					fmt.Println(err.Error())
+				}
 			}
 		}
-	}
 
-	if rep.Post > 0 && rep.User != "" {
-		result, err := database.InsertRepoPost(rep)
-		if err != nil {
-			fmt.Println("Error - pageHandler() InsertRepoPost()")
+		if rep.Post > 0 && rep.User != "" {
+			result, err := database.InsertRepoPost(rep)
+			if err != nil {
+				fmt.Println("Error - pageHandler() InsertRepoPost()")
+			}
+			fmt.Println(result)
 		}
-		fmt.Println(result)
-	}
-	DonePost := true
-	data := database.SelectRepoPostByUser(userAuth.Login)
-	if len(data) == 0 {
-		DonePost = false
-	}
-	title := map[string]string{"Title": userAuth.Name}
-	tmpl.ExecuteTemplate(w, "header", title)
+		DonePost := true
+		data := database.SelectRepoPostByUser(userAuth.Login)
+		if len(data) == 0 {
+			DonePost = false
+		}
+		access := false
+		if userAuth.Access != "User" {
+			access = true
+		}
 
-	sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Statistics": stat, "Done": DonePost, "DoneGopher": DoneGopher, "Gopher": gopher}
-	tmpl.ExecuteTemplate(w, "page", sendUser)
+		title := map[string]string{"Title": userAuth.Name}
+		tmpl.ExecuteTemplate(w, "header", title)
+
+		sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Statistics": stat, "Done": DonePost, "DoneGopher": DoneGopher, "Gopher": gopher, "Access": access}
+		tmpl.ExecuteTemplate(w, "page", sendUser)
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	} else {
+		http.NotFound(w, r)
+	}
 }
 
 func pagePostHandler(w http.ResponseWriter, r *http.Request) {
-	var gopher models.Gopher
-	if r.Method == "GET" {
-		r.ParseForm()
-		gopher.Title = r.FormValue("title")
-		gopher.Content = r.FormValue("content")
-		gopher.Creator = userAuth.Login
-		gopher.Date = time.Now().Format("2006-01-02 15:04")
-		gopher.Like = 0
-		gopher.View = 1
-		gopher.Owner = userAuth.Login
-		// gopher.Owner = r.FormValue()
-		fmt.Println("My", gopher)
-		err := database.InsertGopher(gopher)
-		if err != nil {
-			fmt.Println("Error - pagePostHandler() InsertGopher() r.Method == GET")
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		var gopher models.Gopher
+		if r.Method == "GET" {
+			r.ParseForm()
+			gopher.Title = r.FormValue("title")
+			gopher.Content = r.FormValue("content")
+			gopher.Creator = userAuth.Login
+			gopher.Date = time.Now().Format("2006-01-02 15:04")
+			gopher.Like = 0
+			gopher.View = 1
+			gopher.Owner = userAuth.Login
+			// gopher.Owner = r.FormValue()
+			fmt.Println("My", gopher)
+			err := database.InsertGopher(gopher)
+			if err != nil {
+				fmt.Println("Error - pagePostHandler() InsertGopher() r.Method == GET")
+			}
+			http.Redirect(w, r, "/page", http.StatusSeeOther)
 		}
-		http.Redirect(w, r, "/page", http.StatusSeeOther)
-	}
-	if r.Method == "POST" {
-		r.ParseForm()
-		gopher.Title = r.FormValue("title")
-		gopher.Content = r.FormValue("content")
-		gopher.Creator = userAuth.Login
-		gopher.Date = time.Now().Format("2006-01-02 15:04")
-		gopher.Like = 0
-		gopher.View = 1
-		gopher.Owner = guestId
-		fmt.Println("Guest", gopher)
-		err := database.InsertGopher(gopher)
-		if err != nil {
-			fmt.Println("Error - pagePostHandler() InsertGopher() r.Method == POST")
+		if r.Method == "POST" {
+			r.ParseForm()
+			gopher.Title = r.FormValue("title")
+			gopher.Content = r.FormValue("content")
+			gopher.Creator = userAuth.Login
+			gopher.Date = time.Now().Format("2006-01-02 15:04")
+			gopher.Like = 0
+			gopher.View = 1
+			gopher.Owner = guestId
+			fmt.Println("Guest", gopher)
+			err := database.InsertGopher(gopher)
+			if err != nil {
+				fmt.Println("Error - pagePostHandler() InsertGopher() r.Method == POST")
+			}
+			http.Redirect(w, r, "/guest", http.StatusSeeOther)
 		}
-		http.Redirect(w, r, "/guest", http.StatusSeeOther)
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	} else {
+		http.NotFound(w, r)
 	}
 }
 
@@ -400,79 +536,103 @@ func pageRepGofHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func commentsHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("html/comments.html", "html/header.html", "html/footer.html")
-	if err != nil {
-		http.NotFound(w, r)
-	}
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		tmpl, err := template.ParseFiles("html/comments.html", "html/header.html", "html/footer.html")
+		if err != nil {
+			http.NotFound(w, r)
+		}
 
-	fmt.Println("comments", postId)
+		fmt.Println("comments", postId)
 
-	if r.Method == "GET" {
-		r.ParseForm()
-		inputComment = r.FormValue("commentsInput")
-		var comment models.Comments
-		if inputComment != "" {
-			comment.Posts, _ = strconv.Atoi(postId) // err
-			comment.Author = userAuth.Login
-			comment.Like = 1
-			comment.Text = inputComment
-			fmt.Println(comment)
-			_, err = database.InsertComment(comment)
+		if r.Method == "GET" {
+			r.ParseForm()
+			inputComment = r.FormValue("commentsInput")
+			var comment models.Comments
+			if inputComment != "" {
+				comment.Posts, _ = strconv.Atoi(postId) // err
+				comment.Author = userAuth.Login
+				comment.Like = 1
+				comment.Text = inputComment
+				fmt.Println(comment)
+				_, err = database.InsertComment(comment)
 
-			if err != nil {
-				fmt.Println("Error - commentsHandler() InsertComment()")
+				if err != nil {
+					fmt.Println("Error - commentsHandler() InsertComment()")
+				}
 			}
 		}
-	}
 
-	commentPost := database.SelectCommentsByColumn("Posts", postId)
-	res, _ := strconv.Atoi(postId)
-	post := database.SelectPostById(res)
-	//comment := map[string]interface{}{"Comments": commentPost}
-	data := map[string]interface{}{"User": userAuth, "Comments": commentPost, "CommentsTitle": post.Title}
-	title := map[string]interface{}{"Title": models.Cfg.CommentsTitle}
-	tmpl.ExecuteTemplate(w, "header", title)
-	tmpl.ExecuteTemplate(w, "comments", data)
+		commentPost := database.SelectCommentsByColumn("Posts", postId)
+		res, _ := strconv.Atoi(postId)
+		post := database.SelectPostById(res)
+		//comment := map[string]interface{}{"Comments": commentPost}
+		data := map[string]interface{}{"User": userAuth, "Comments": commentPost, "CommentsTitle": post.Title}
+		title := map[string]interface{}{"Title": models.Cfg.CommentsTitle}
+		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "comments", data)
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	} else {
+		http.NotFound(w, r)
+	}
 }
 
 func friendsHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("html/friends.html", "html/header.html", "html/footer.html")
-	if err != nil {
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		tmpl, err := template.ParseFiles("html/friends.html", "html/header.html", "html/footer.html")
+		if err != nil {
+			http.NotFound(w, r)
+		}
+
+		r.ParseForm()
+		if r.Method == "POST" {
+			id = r.FormValue("friend_id")
+			fmt.Println(id)
+			idN, err := database.DeleteFriendByLogin(userAuth.Login, id)
+			if err != nil {
+				fmt.Println("Error - friendsDelHandler()1 DeleteFriendByLogin()")
+			}
+			err = database.InsertUserSub(userAuth.Login, idN)
+			if err != nil {
+				fmt.Println("Error - InsertUserSub() DeleteFriendsById()", err)
+			}
+		}
+		if r.Method == "GET" {
+			//r.ParseForm()
+			guestId = r.FormValue("Id")
+			fmt.Println("GET friendsHandler()", guestId)
+			check, err = database.SelectMessengeListbyUsers(userAuth.Login, guestId)
+			if err != nil {
+				fmt.Println("Error - friendsHandler() SelectMessengeListbyUsers()")
+			}
+		}
+
+		rec := database.SelectRecomendationFriends(userAuth.Login)
+		subs := database.SelectUserSub(userAuth.Login)
+		friends := database.SelectAllFriendsUser(userAuth.Login)
+		online := database.SelectOnlineFriends(userAuth.Login)
+
+		data := map[string]interface{}{"User": userAuth, "Friends": friends, "Subs": subs, "Rec": rec, "Online": online, "Done": true}
+		title := map[string]string{"Title": models.Cfg.FriendsTitile}
+		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "friends", data)
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	} else {
 		http.NotFound(w, r)
 	}
-
-	r.ParseForm()
-	if r.Method == "POST" {
-		id = r.FormValue("friend_id")
-		fmt.Println(id)
-		idN, err := database.DeleteFriendByLogin(userAuth.Login, id)
-		if err != nil {
-			fmt.Println("Error - friendsDelHandler()1 DeleteFriendByLogin()")
-		}
-		err = database.InsertUserSub(userAuth.Login, idN)
-		if err != nil {
-			fmt.Println("Error - InsertUserSub() DeleteFriendsById()", err)
-		}
-	}
-	if r.Method == "GET" {
-		//r.ParseForm()
-		guestId = r.FormValue("Id")
-		fmt.Println("GET friendsHandler()", guestId)
-		check, err = database.SelectMessengeListbyUsers(userAuth.Login, guestId)
-		if err != nil {
-			fmt.Println("Error - friendsHandler() SelectMessengeListbyUsers()")
-		}
-	}
-
-	rec := database.SelectRecomendationFriends(userAuth.Login)
-	subs := database.SelectUserSub(userAuth.Login)
-	friends := database.SelectAllFriendsUser(userAuth.Login)
-	online := database.SelectOnlineFriends(userAuth.Login)
-
-	data := map[string]interface{}{"User": userAuth, "Friends": friends, "Subs": subs, "Rec": rec, "Online": online, "Done": true}
-	title := map[string]string{"Title": models.Cfg.FriendsTitile}
-	tmpl.ExecuteTemplate(w, "header", title)
-	tmpl.ExecuteTemplate(w, "friends", data)
 }
 
 func addFriendsHandler(w http.ResponseWriter, r *http.Request) {
@@ -532,73 +692,97 @@ func recFriendsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func guestFriendsHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("html/friends.html", "html/header.html", "html/footer.html")
-	if err != nil {
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		tmpl, err := template.ParseFiles("html/friends.html", "html/header.html", "html/footer.html")
+		if err != nil {
+			http.NotFound(w, r)
+		}
+
+		r.ParseForm()
+		if r.Method == "POST" {
+			id = r.FormValue("friend_id")
+			fmt.Println(id)
+		}
+		if r.Method == "GET" {
+			// guestId = r.FormValue("Id2")
+			fmt.Println("GET - guestFriendsHandler", guestId)
+		}
+		gst, _ := database.SelectUserByColumn("Login", guestId)
+		friends := database.SelectAllFriendsUser(guestId)
+		rec := database.SelectRecomendationFriends(guestId)
+		subs := database.SelectUserSub(guestId)
+		online := database.SelectOnlineFriends(guestId)
+
+		data := map[string]interface{}{"User": userAuth, "Friends": friends, "Guest": gst, "Subs": subs, "Rec": rec, "Done": false, "Online": online}
+		title := map[string]string{"Title": models.Cfg.FriendsTitile}
+		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "friends", data)
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	} else {
 		http.NotFound(w, r)
 	}
-
-	r.ParseForm()
-	if r.Method == "POST" {
-		id = r.FormValue("friend_id")
-		fmt.Println(id)
-	}
-	if r.Method == "GET" {
-		// guestId = r.FormValue("Id2")
-		fmt.Println("GET - guestFriendsHandler", guestId)
-	}
-	gst, _ := database.SelectUserByColumn("Login", guestId)
-	friends := database.SelectAllFriendsUser(guestId)
-	rec := database.SelectRecomendationFriends(guestId)
-	subs := database.SelectUserSub(guestId)
-	online := database.SelectOnlineFriends(guestId)
-
-	data := map[string]interface{}{"User": userAuth, "Friends": friends, "Guest": gst, "Subs": subs, "Rec": rec, "Done": false, "Online": online}
-	title := map[string]string{"Title": models.Cfg.FriendsTitile}
-	tmpl.ExecuteTemplate(w, "header", title)
-	tmpl.ExecuteTemplate(w, "friends", data)
 }
 
 func communitiesHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("html/communities.html", "html/header.html", "html/footer.html")
-	if err != nil {
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		tmpl, err := template.ParseFiles("html/communities.html", "html/header.html", "html/footer.html")
+		if err != nil {
+			http.NotFound(w, r)
+		}
+
+		if r.Method == "GET" {
+			r.ParseForm()
+			data := r.FormValue("name_com")
+			fmt.Println("GET Отписка от сообщества", data, userAuth.Login)
+			if data != "" {
+				err := database.DeleteSubOnCommunities(data, userAuth.Login)
+				if err != nil {
+					fmt.Println("Error - communitiesHandler() DeleteCommunitiesByName()")
+				}
+			}
+		}
+		if r.Method == "POST" {
+			r.ParseForm()
+			subCom := r.FormValue("communityRec")
+			fmt.Println(subCom)
+			if subCom != "" {
+				err := database.InsertSubscribersToUser(userAuth.Login, subCom)
+				if err != nil {
+					fmt.Println("Error - communitiesHandler() InsertSubscribersToUser()", err.Error())
+				}
+			}
+			communitiesName = r.FormValue("community_id")
+			fmt.Println("POST", communitiesName)
+			communities := database.SelectCommunitiesByColumn("Name", communitiesName)
+			communitiesPhoto = communities.Photo
+		}
+		done := true
+		//	comWithOutSub := database.SelectCommunitiesWithOutSub(userAuth.Login)
+		catComm := database.SelectCommunitiesCategory()
+		communities := database.SelectAllCommunitiesUser("User", userAuth.Login)
+		recCommunities := database.SelectRecCommunities(userAuth.Login)
+		data := map[string]interface{}{"User": userAuth, "Communities": communities, "Done": done, "RecCom": recCommunities, "CommCat": catComm}
+		title := map[string]string{"Title": models.Cfg.CommunitiesTitile}
+		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "communities", data)
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	} else {
 		http.NotFound(w, r)
 	}
-
-	if r.Method == "GET" {
-		r.ParseForm()
-		data := r.FormValue("name_com")
-		fmt.Println("GET Отписка от сообщества", data, userAuth.Login)
-		if data != "" {
-			err := database.DeleteSubOnCommunities(data, userAuth.Login)
-			if err != nil {
-				fmt.Println("Error - communitiesHandler() DeleteCommunitiesByName()")
-			}
-		}
-	}
-	if r.Method == "POST" {
-		r.ParseForm()
-		subCom := r.FormValue("communityRec")
-		fmt.Println(subCom)
-		if subCom != "" {
-			err := database.InsertSubscribersToUser(userAuth.Login, subCom)
-			if err != nil {
-				fmt.Println("Error - communitiesHandler() InsertSubscribersToUser()", err.Error())
-			}
-		}
-		communitiesName = r.FormValue("community_id")
-		fmt.Println("POST", communitiesName)
-		communities := database.SelectCommunitiesByColumn("Name", communitiesName)
-		communitiesPhoto = communities.Photo
-	}
-	done := true
-	//	comWithOutSub := database.SelectCommunitiesWithOutSub(userAuth.Login)
-	catComm := database.SelectCommunitiesCategory()
-	communities := database.SelectAllCommunitiesUser("User", userAuth.Login)
-	recCommunities := database.SelectRecCommunities(userAuth.Login)
-	data := map[string]interface{}{"User": userAuth, "Communities": communities, "Done": done, "RecCom": recCommunities, "CommCat": catComm}
-	title := map[string]string{"Title": models.Cfg.CommunitiesTitile}
-	tmpl.ExecuteTemplate(w, "header", title)
-	tmpl.ExecuteTemplate(w, "communities", data)
 }
 
 func communitiesAddHandler(w http.ResponseWriter, r *http.Request) {
@@ -612,7 +796,7 @@ func communitiesAddHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		defer file.Close()
-		imgPath = fmt.Sprintf("./data/image/blog/%d%s", time.Now().UnixNano(), filepath.Ext(fileHeader.Filename))
+		imgPath = fmt.Sprintf("/data/image/blog/%d%s", time.Now().UnixNano(), filepath.Ext(fileHeader.Filename))
 		dst, err := os.Create(imgPath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -651,99 +835,132 @@ func communitiesAddHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func guestCommunitiesHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("html/communities.html", "html/header.html", "html/footer.html")
-	if err != nil {
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		tmpl, err := template.ParseFiles("html/communities.html", "html/header.html", "html/footer.html")
+		if err != nil {
+			http.NotFound(w, r)
+		}
+		fmt.Println(guestLogin)
+		if r.Method == "POST" {
+			r.ParseForm()
+			subCom := r.FormValue("communityRec")
+			fmt.Println(subCom)
+			communitiesName = r.FormValue("community_id")
+			fmt.Println("POST", communitiesName)
+			communities := database.SelectCommunitiesByColumn("Name", communitiesName)
+			communitiesPhoto = communities.Photo
+		}
+		done := false
+		var comWithOutSub []models.Communities
+		var communities []models.JoinCommunities
+		if guestLogin != "" {
+			comWithOutSub = database.SelectCommunitiesWithOutSub(guestLogin)
+			communities = database.SelectAllCommunitiesUser("User", guestLogin)
+		} else {
+			comWithOutSub = database.SelectCommunitiesWithOutSub(guestId)
+			communities = database.SelectAllCommunitiesUser("User", guestId)
+		}
+
+		data := map[string]interface{}{"User": userAuth, "Communities": communities, "RecCommunities": comWithOutSub, "Done": done}
+		// data := map[string]interface{}{"User": userAuth, "Communities": communities, "Done": done, "RecCom": recCommunities, "CommCat": catComm}
+		title := map[string]string{"Title": models.Cfg.CommunitiesTitile}
+		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "communities", data)
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	} else {
 		http.NotFound(w, r)
 	}
-
-	if r.Method == "POST" {
-		r.ParseForm()
-		subCom := r.FormValue("communityRec")
-		fmt.Println(subCom)
-		communitiesName = r.FormValue("community_id")
-		fmt.Println("POST", communitiesName)
-		communities := database.SelectCommunitiesByColumn("Name", communitiesName)
-		communitiesPhoto = communities.Photo
-	}
-	done := false
-	comWithOutSub := database.SelectCommunitiesWithOutSub(guestLogin)
-	communities := database.SelectAllCommunitiesUser("User", guestLogin)
-	data := map[string]interface{}{"User": userAuth, "Communities": communities, "RecCommunities": comWithOutSub, "Done": done}
-	title := map[string]string{"Title": models.Cfg.CommunitiesTitile}
-	tmpl.ExecuteTemplate(w, "header", title)
-	tmpl.ExecuteTemplate(w, "communities", data)
 }
 
 func communityHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("html/community.html", "html/header.html", "html/footer.html")
-	if err != nil {
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		tmpl, err := template.ParseFiles("html/community.html", "html/header.html", "html/footer.html")
+		if err != nil {
+			http.NotFound(w, r)
+		}
+
+		res, _ := strconv.Atoi(export)
+		post = database.SelectPostById(res)
+		type Comm struct {
+			Name  string
+			Photo string
+		}
+		if communitiesName == "" && r.Method == "POST" {
+			r.ParseForm()
+			communitiesName = r.FormValue("community_id")
+		}
+		if communitiesName != "" {
+			post.Communities = communitiesName
+			post.CommunitiesPhot = communitiesPhoto
+		}
+		var Foo Comm
+		Foo.Name = post.Communities
+		Foo.Photo = post.CommunitiesPhot
+
+		catComm := database.SelectCommunitiesCategory()
+		posts = database.SelectPostByCommunities(post.Communities)
+		subs := database.SelectSubscribersBtCommunities(post.Communities)
+		author, names := database.SelectCommunitiesAuthorByName(post.Communities)
+		category := database.SelectPostCategory()
+		store, err := database.SelectStoreItemsByCommunity(communitiesName)
+		if err != nil {
+			fmt.Println(err)
+		}
+		comm := database.SelectCommunitiesByColumn("Name", post.Communities)
+		fmt.Println("SelectCommunitiesByColumn", comm.Name)
+
+		if r.Method == "GET" {
+			fmt.Println("GET")
+			r.ParseForm()
+			postId = r.FormValue("postId")
+			val, _ := strconv.Atoi(postId)
+			err := database.UpdateLikeInPost(val)
+			if err != nil {
+				fmt.Println("Error - communityHandler() UpdateLikeInPost()")
+			}
+			postId = ""
+
+		}
+
+		if r.Method == "POST" {
+			fmt.Println("POST")
+			r.ParseForm()
+
+			guestId = r.FormValue("guestId")
+			fmt.Println("guestId", guestId)
+
+			postId = r.FormValue("postId")
+			fmt.Println("POST", postId)
+			err = database.UpdateViewInCommunityPost(communitiesName)
+			if err != nil {
+				fmt.Println("Error - communityHandler() UpdateViewInPost()")
+			}
+		}
+
+		_, ok := database.CheckCommunity(userAuth.Login, communitiesName)
+
+		title := map[string]string{"Title": Foo.Name}
+		blog := map[string]interface{}{"Post": posts, "User": userAuth, "Subs": subs, "Author": author, "Names": names, "Communities": Foo, "PostCat": category, "CommCat": catComm, "SetCom": comm, "OK": ok, "Store": store}
+		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "community", blog)
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	} else {
 		http.NotFound(w, r)
 	}
-
-	res, _ := strconv.Atoi(export)
-	post = database.SelectPostById(res)
-	type Comm struct {
-		Name  string
-		Photo string
-	}
-	if communitiesName == "" && r.Method == "POST" {
-		r.ParseForm()
-		communitiesName = r.FormValue("community_id")
-	}
-	if communitiesName != "" {
-		post.Communities = communitiesName
-		post.CommunitiesPhot = communitiesPhoto
-	}
-	var Foo Comm
-	Foo.Name = post.Communities
-	Foo.Photo = post.CommunitiesPhot
-
-	catComm := database.SelectCommunitiesCategory()
-	posts = database.SelectPostByCommunities(post.Communities)
-	subs := database.SelectSubscribersBtCommunities(post.Communities)
-	author, names := database.SelectCommunitiesAuthorByName(post.Communities)
-	category := database.SelectPostCategory()
-	store, err := database.SelectStoreItemsByCommunity(communitiesName)
-	if err != nil {
-		fmt.Println(err)
-	}
-	comm := database.SelectCommunitiesByColumn("Name", post.Communities)
-	fmt.Println("SelectCommunitiesByColumn", comm.Name)
-
-	if r.Method == "GET" {
-		fmt.Println("GET")
-		r.ParseForm()
-		postId = r.FormValue("postId")
-		val, _ := strconv.Atoi(postId)
-		err := database.UpdateLikeInPost(val)
-		if err != nil {
-			fmt.Println("Error - communityHandler() UpdateLikeInPost()")
-		}
-		postId = ""
-
-	}
-
-	if r.Method == "POST" {
-		fmt.Println("POST")
-		r.ParseForm()
-
-		guestId = r.FormValue("guestId")
-		fmt.Println("guestId", guestId)
-
-		postId = r.FormValue("postId")
-		fmt.Println("POST", postId)
-		err = database.UpdateViewInCommunityPost(communitiesName)
-		if err != nil {
-			fmt.Println("Error - communityHandler() UpdateViewInPost()")
-		}
-	}
-
-	_, ok := database.CheckCommunity(userAuth.Login, communitiesName)
-
-	title := map[string]string{"Title": Foo.Name}
-	blog := map[string]interface{}{"Post": posts, "User": userAuth, "Subs": subs, "Author": author, "Names": names, "Communities": Foo, "PostCat": category, "CommCat": catComm, "SetCom": comm, "OK": ok, "Store": store}
-	tmpl.ExecuteTemplate(w, "header", title)
-	tmpl.ExecuteTemplate(w, "community", blog)
 }
 
 func communityDelHandler(w http.ResponseWriter, r *http.Request) { // сделать удаление сначала всех подписок с такой группой, а потом саму группу
@@ -877,95 +1094,119 @@ func communityEditHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func communityMarketHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("html/store.html", "html/header.html", "html/footer.html")
-	if err != nil {
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		tmpl, err := template.ParseFiles("html/store.html", "html/header.html", "html/footer.html")
+		if err != nil {
+			http.NotFound(w, r)
+		}
+		var Ok bool
+		Access := false
+		Ok = true
+		store, err := database.SelectStoreItemsByCommunity(communitiesName)
+		if err != nil {
+			fmt.Println(err)
+		}
+		if store == nil {
+			Ok = false
+		}
+
+		grp := database.SelectCommunitiesByColumn("Name", communitiesName)
+		if grp.Author == userAuth.Login {
+			Access = true
+		}
+
+		sex, err := database.SelectSex()
+		if err != nil {
+			fmt.Println(err)
+		}
+		cat, err := database.SelectStoreCategory()
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		url := "/community/market/sort"
+		root := "/community/market"
+
+		user, _ := database.SelectUserWallet(userAuth.Login, userAuth.Password)
+		title := map[string]string{"Title": "Товары - " + communitiesName}
+		tmpl.ExecuteTemplate(w, "header", title)
+		data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Store": store, "OK": Ok, "Access": Access, "Sex": sex, "Category": cat, "Community": communitiesName, "URL": url, "Root": root}
+		tmpl.ExecuteTemplate(w, "store", data)
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	} else {
 		http.NotFound(w, r)
 	}
-	var Ok bool
-	Access := false
-	Ok = true
-	store, err := database.SelectStoreItemsByCommunity(communitiesName)
-	if err != nil {
-		fmt.Println(err)
-	}
-	if store == nil {
-		Ok = false
-	}
-
-	grp := database.SelectCommunitiesByColumn("Name", communitiesName)
-	if grp.Author == userAuth.Login {
-		Access = true
-	}
-
-	sex, err := database.SelectSex()
-	if err != nil {
-		fmt.Println(err)
-	}
-	cat, err := database.SelectStoreCategory()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	url := "/community/market/sort"
-	root := "/community/market"
-
-	user, _ := database.SelectUserWallet(userAuth.Login, userAuth.Password)
-	title := map[string]string{"Title": "Товары - " + communitiesName}
-	tmpl.ExecuteTemplate(w, "header", title)
-	data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Store": store, "OK": Ok, "Access": Access, "Sex": sex, "Category": cat, "Community": communitiesName, "URL": url, "Root": root}
-	tmpl.ExecuteTemplate(w, "store", data)
 }
 
 func communityMarketSortHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("html/store.html", "html/header.html", "html/footer.html")
-	if err != nil {
-		http.NotFound(w, r)
-	}
-	var store []models.Store
-	if r.Method == "GET" {
-		r.ParseForm()
-		val := r.FormValue("Condition")
-		if val != "" {
-			store, err = database.SelectStoreItemsByCommunityAndCategory(val, communitiesName)
-			if err != nil {
-				fmt.Println(err)
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		tmpl, err := template.ParseFiles("html/store.html", "html/header.html", "html/footer.html")
+		if err != nil {
+			http.NotFound(w, r)
+		}
+		var store []models.Store
+		if r.Method == "GET" {
+			r.ParseForm()
+			val := r.FormValue("Condition")
+			if val != "" {
+				store, err = database.SelectStoreItemsByCommunityAndCategory(val, communitiesName)
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 		}
+
+		Access := false
+		Ok := true
+		if store == nil {
+			Ok = false
+		}
+
+		grp := database.SelectCommunitiesByColumn("Name", communitiesName)
+		if grp.Author == userAuth.Login {
+			Access = true
+		}
+
+		sex, err := database.SelectSex()
+		if err != nil {
+			fmt.Println(err)
+		}
+		cat, err := database.SelectStoreCategory()
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		user, _ := database.SelectUserWallet(userAuth.Login, userAuth.Password)
+		url := "/community/market/sort"
+		root := "/community/market"
+
+		// title := map[string]string{"Title": models.Cfg.StoreTitle}
+		// tmpl.ExecuteTemplate(w, "header", title)
+		// data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Store": store, "OK": Ok, "Access": Access, "Category": ct, "URL": url}
+		// tmpl.ExecuteTemplate(w, "store", data)
+
+		title := map[string]string{"Title": models.Cfg.StoreTitle}
+		tmpl.ExecuteTemplate(w, "header", title)
+		data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Store": store, "OK": Ok, "Access": Access, "Sex": sex, "Category": cat, "Community": communitiesName, "URL": url, "Root": root}
+		tmpl.ExecuteTemplate(w, "store", data)
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	} else {
+		http.NotFound(w, r)
 	}
-
-	Access := false
-	Ok := true
-	if store == nil {
-		Ok = false
-	}
-
-	grp := database.SelectCommunitiesByColumn("Name", communitiesName)
-	if grp.Author == userAuth.Login {
-		Access = true
-	}
-
-	sex, err := database.SelectSex()
-	if err != nil {
-		fmt.Println(err)
-	}
-	cat, err := database.SelectStoreCategory()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	user, _ := database.SelectUserWallet(userAuth.Login, userAuth.Password)
-	url := "/community/market/sort"
-	root := "/community/market"
-
-	// title := map[string]string{"Title": models.Cfg.StoreTitle}
-	// tmpl.ExecuteTemplate(w, "header", title)
-	// data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Store": store, "OK": Ok, "Access": Access, "Category": ct, "URL": url}
-	// tmpl.ExecuteTemplate(w, "store", data)
-
-	title := map[string]string{"Title": models.Cfg.StoreTitle}
-	tmpl.ExecuteTemplate(w, "header", title)
-	data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Store": store, "OK": Ok, "Access": Access, "Sex": sex, "Category": cat, "Community": communitiesName, "URL": url, "Root": root}
-	tmpl.ExecuteTemplate(w, "store", data)
 }
 
 func communityMarketAddHandler(w http.ResponseWriter, r *http.Request) {
@@ -1055,6 +1296,7 @@ func communityStoreCardHandler(w http.ResponseWriter, r *http.Request) {
 func communityMarketSaleListHandler(w http.ResponseWriter, r *http.Request) {
 	var sales []models.JoinStorePlus
 	var ok bool
+	var Done string
 	if r.Method == "GET" {
 		r.ParseForm()
 		comName := r.FormValue("community")
@@ -1062,7 +1304,9 @@ func communityMarketSaleListHandler(w http.ResponseWriter, r *http.Request) {
 			com := database.SelectCommunitiesByColumn("Name", comName)
 			if com.Author == userAuth.Login {
 				sales, ok = database.SelectSalesByCommunity(comName)
-
+				if ok {
+					Done = "Store"
+				}
 				fmt.Println(ok)
 				tmpl, err := template.ParseFiles("html/list.html", "html/header.html", "html/footer.html")
 				if err != nil {
@@ -1070,7 +1314,7 @@ func communityMarketSaleListHandler(w http.ResponseWriter, r *http.Request) {
 				}
 				ttl := "Список продаж " + comName
 				title := map[string]string{"Title": ttl}
-				data := map[string]interface{}{"Sales": sales, "Done": ok, "Community": comName, "Title": ttl}
+				data := map[string]interface{}{"Sales": sales, "Done": Done, "Community": comName, "Title": ttl}
 				tmpl.ExecuteTemplate(w, "header", title)
 				tmpl.ExecuteTemplate(w, "list", data)
 			} else {
@@ -1097,262 +1341,341 @@ func communityMarketSaleListHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func communityMarketStatisticsHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("html/statistics.html", "html/header.html", "html/footer.html")
-	if err != nil {
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		tmpl, err := template.ParseFiles("html/statistics.html", "html/header.html", "html/footer.html")
+		if err != nil {
+			http.NotFound(w, r)
+		}
+
+		if r.Method == "GET" {
+			r.ParseForm()
+			comName := r.FormValue("community")
+
+			title := map[string]string{"Title": fmt.Sprintf("Статистика - %s", comName)}
+			data := map[string]interface{}{}
+			tmpl.ExecuteTemplate(w, "header", title)
+			tmpl.ExecuteTemplate(w, "stat", data)
+		} else {
+			http.Redirect(w, r, "/page", http.StatusSeeOther)
+		}
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	} else {
 		http.NotFound(w, r)
 	}
-
-	if r.Method == "GET" {
-		r.ParseForm()
-		comName := r.FormValue("community")
-
-		title := map[string]string{"Title": fmt.Sprintf("Статистика - %s", comName)}
-		data := map[string]interface{}{}
-		tmpl.ExecuteTemplate(w, "header", title)
-		tmpl.ExecuteTemplate(w, "stat", data)
-	} else {
-		http.Redirect(w, r, "/page", http.StatusSeeOther)
-	}
-
 }
 
 func guestHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("html/guest.html", "html/header.html", "html/footer.html")
-	if err != nil {
-		http.NotFound(w, r)
-	}
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		tmpl, err := template.ParseFiles("html/guest.html", "html/header.html", "html/footer.html")
+		if err != nil {
+			http.NotFound(w, r)
+		}
 
-	fmt.Println("guest", guestId)
-	if r.Method == "GET" {
-		r.ParseForm()
-		guestLogin = r.FormValue("guestLogin")
-	}
-	if r.Method == "POST" {
-		GofId := r.FormValue("goLike")
-		fmt.Println(GofId)
-		if GofId != "" {
-			err = database.InsertLikeToGopher(GofId)
-			if err != nil {
-				fmt.Println(err.Error())
+		fmt.Println("guest", guestId)
+		if r.Method == "GET" {
+			r.ParseForm()
+			guestLogin = r.FormValue("guestLogin")
+			fmt.Println("guestLogin", guestLogin)
+		}
+		if r.Method == "POST" {
+			GofId := r.FormValue("goLike")
+			fmt.Println(GofId)
+			if GofId != "" {
+				err = database.InsertLikeToGopher(GofId)
+				if err != nil {
+					fmt.Println(err.Error())
+				}
 			}
 		}
-	}
 
-	_, ok := database.CheckFriends(userAuth.Login, guestId)
+		_, ok := database.CheckFriends(userAuth.Login, guestId)
 
-	userGuest, err := database.SelectUserByColumn("Login", guestId)
-	if err != nil {
-		fmt.Println("Error - guestHandler() SelectUsersByColumn()")
-	}
-	// fmt.Println(userGuest)
+		userGuest, err := database.SelectUserByColumn("Login", guestId)
+		if err != nil {
+			fmt.Println("Error - guestHandler() SelectUsersByColumn()")
+		}
+		// fmt.Println(userGuest)
 
-	frd := database.SelectAllFriendsUser(userGuest.Login)
-	comnt := database.SelectAllCommunitiesUser("User", userGuest.Login)
+		frd := database.SelectAllFriendsUser(userGuest.Login)
+		comnt := database.SelectAllCommunitiesUser("User", userGuest.Login)
 
-	type statistics struct {
-		FrinedsLen     int
-		CommunitiesLen int
-		HappyBithday   string
-	}
+		type statistics struct {
+			FrinedsLen     int
+			CommunitiesLen int
+			HappyBithday   string
+		}
 
-	var stat statistics
+		var stat statistics
 
-	stat.CommunitiesLen = len(comnt)
-	stat.FrinedsLen = len(frd)
-	stat.HappyBithday = userGuest.Birthdate
-	Done := true
-	data := database.SelectRepoPostByUser(userGuest.Login)
-	if len(data) == 0 {
-		Done = false
-	}
-	var DoneGopher bool
-	gopher := database.SelectGopherByOwner(userGuest.Login)
-	if gopher != nil {
-		DoneGopher = true
+		stat.CommunitiesLen = len(comnt)
+		stat.FrinedsLen = len(frd)
+		stat.HappyBithday = userGuest.Birthdate
+		Done := true
+		data := database.SelectRepoPostByUser(userGuest.Login)
+		if len(data) == 0 {
+			Done = false
+		}
+		var DoneGopher bool
+		gopher := database.SelectGopherByOwner(userGuest.Login)
+		if gopher != nil {
+			DoneGopher = true
+		} else {
+			DoneGopher = false
+		}
+
+		var Friend bool
+		_, Friend = database.CheckFriends(userAuth.Login, userGuest.Login)
+
+		Access := false
+		if userAuth.Access != "User" {
+			Access = true
+		}
+
+		complaint := []string{"Оскорбление личности", "Оскорбление вероисповедания", "Распространение запрещенных веществ", "Обман на деньги", "Украл аккаунт"}
+
+		title := map[string]string{"Title": userGuest.Name}
+		tmpl.ExecuteTemplate(w, "header", title)
+
+		sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Guest": userGuest, "Statistics": stat, "Done": Done, "OK": ok, "Gopher": gopher, "DoneGopher": DoneGopher, "Friend": Friend, "Access": Access, "Complaint": complaint}
+
+		tmpl.ExecuteTemplate(w, "guest", sendUser)
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
 	} else {
-		DoneGopher = false
+		http.NotFound(w, r)
 	}
-
-	var Friend bool
-	_, Friend = database.CheckFriends(userAuth.Login, userGuest.Login)
-
-	title := map[string]string{"Title": userGuest.Name}
-	tmpl.ExecuteTemplate(w, "header", title)
-
-	sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Guest": userGuest, "Statistics": stat, "Done": Done, "OK": ok, "Gopher": gopher, "DoneGopher": DoneGopher, "Friend": Friend}
-
-	tmpl.ExecuteTemplate(w, "guest", sendUser)
 }
 
 func messageHandler(w http.ResponseWriter, r *http.Request) {
-	OK = true
-	tmpl, err := template.ParseFiles("html/message.html", "html/header.html", "html/footer.html")
-	if err != nil {
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		OK = true
+		tmpl, err := template.ParseFiles("html/message.html", "html/header.html", "html/footer.html")
+		if err != nil {
+			http.NotFound(w, r)
+		}
+
+		//createFile(check)
+		companion = database.SelectCompanionsByLogin(userAuth.Login)
+		fmt.Println("UsersLink1111", UsersLink)
+		Link = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
+
+		if r.Method == "GET" {
+			r.ParseForm()
+			usrMesg = r.FormValue("user_id")
+			fmt.Println(usrMesg)
+			UsersLink, err = database.SelectMessengeListbyUsers(userAuth.Login, usrMesg)
+			if err != nil {
+				fmt.Println("Error - messageHandler() SelectMessengeListbyUsers()", err)
+			}
+			activeChatUser, err = database.SelectUserByColumn("Login", usrMesg)
+			if err != nil {
+				fmt.Println("Error - messageHandler() SelectUserByColumn()", err)
+			}
+			OK = true
+
+		}
+		fmt.Println("UsersLink2222", UsersLink)
+		//Link = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
+		if r.Method == "POST" {
+
+			r.ParseForm()
+
+			message := r.FormValue("commentsInput")
+			if message != "" {
+				Link = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
+				//Link = "C:/Users/admin/go/src/go-blog/data/files/message/test.json"
+				fmt.Println("Link------------------", Link)
+				f, err = os.OpenFile(Link, os.O_WRONLY|os.O_APPEND, 0755)
+				if err != nil {
+					fmt.Println("Error - messageHandler() os.OpenFile()")
+				}
+				defer f.Close()
+
+				msg := models.Message{
+					User:    userAuth.Login,
+					Message: message,
+					Data:    time.Now().Format("2006-01-02 15:04"),
+					Photo:   userAuth.Photo,
+				}
+				// err = app.JSON(msg, Link, userAuth.Login)
+				// if err != nil {
+				// 	log.Fatal(err.Error())
+				// }
+				Messenger, err = app.JSON(msg, Link, userAuth.Login)
+				if err != nil {
+					log.Fatal(err.Error())
+				}
+				fmt.Println(Messenger)
+			}
+		}
+
+		title := map[string]string{"Title": models.Cfg.MessageTitle}
+		tmpl.ExecuteTemplate(w, "header", title)
+		fmt.Println(OK)
+		data := map[string]interface{}{"User": userAuth, "Done": OK, "OK": OK, "Companions": companion, "ChatUser": activeChatUser, "Chat": Messenger.Messenge}
+		tmpl.ExecuteTemplate(w, "message", data)
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	} else {
 		http.NotFound(w, r)
 	}
-
-	//createFile(check)
-	companion = database.SelectCompanionsByLogin(userAuth.Login)
-	fmt.Println("UsersLink1111", UsersLink)
-	Link = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
-
-	if r.Method == "GET" {
-		r.ParseForm()
-		usrMesg = r.FormValue("user_id")
-		fmt.Println(usrMesg)
-		UsersLink, err = database.SelectMessengeListbyUsers(userAuth.Login, usrMesg)
-		if err != nil {
-			fmt.Println("Error - messageHandler() SelectMessengeListbyUsers()", err)
-		}
-		activeChatUser, err = database.SelectUserByColumn("Login", usrMesg)
-		if err != nil {
-			fmt.Println("Error - messageHandler() SelectUserByColumn()", err)
-		}
-		OK = true
-
-	}
-	fmt.Println("UsersLink2222", UsersLink)
-	//Link = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
-	if r.Method == "POST" {
-
-		r.ParseForm()
-
-		message := r.FormValue("commentsInput")
-		if message != "" {
-			Link = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
-			//Link = "C:/Users/admin/go/src/go-blog/data/files/message/test.json"
-			fmt.Println("Link------------------", Link)
-			f, err = os.OpenFile(Link, os.O_WRONLY|os.O_APPEND, 0755)
-			if err != nil {
-				fmt.Println("Error - messageHandler() os.OpenFile()")
-			}
-			defer f.Close()
-
-			msg := models.Message{
-				User:    userAuth.Login,
-				Message: message,
-				Data:    time.Now().Format("2006-01-02 15:04"),
-				Photo:   userAuth.Photo,
-			}
-			// err = app.JSON(msg, Link, userAuth.Login)
-			// if err != nil {
-			// 	log.Fatal(err.Error())
-			// }
-			Messenger, err = app.JSON(msg, Link, userAuth.Login)
-			if err != nil {
-				log.Fatal(err.Error())
-			}
-			fmt.Println(Messenger)
-		}
-	}
-
-	title := map[string]string{"Title": models.Cfg.MessageTitle}
-	tmpl.ExecuteTemplate(w, "header", title)
-	fmt.Println(OK)
-	data := map[string]interface{}{"User": userAuth, "Done": OK, "OK": OK, "Companions": companion, "ChatUser": activeChatUser, "Chat": Messenger.Messenge}
-	tmpl.ExecuteTemplate(w, "message", data)
 }
 
 func storeHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("html/store.html", "html/header.html", "html/footer.html")
-	if err != nil {
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		tmpl, err := template.ParseFiles("html/store.html", "html/header.html", "html/footer.html")
+		if err != nil {
+			http.NotFound(w, r)
+		}
+		Access := false
+		Ok := true
+		store, err := database.SelectStoreItems()
+		if err != nil {
+			fmt.Println(err)
+		}
+		if store == nil {
+			Ok = false
+		}
+
+		user, _ := database.SelectUserWallet(userAuth.Login, userAuth.Password)
+		ct, err := database.SelectStoreCategory()
+		if err != nil {
+			fmt.Println("Error - storeHandler() SelectStoreCategory()", err.Error())
+		}
+
+		url := "store/sort"
+		root := "/store"
+
+		title := map[string]string{"Title": models.Cfg.StoreTitle}
+		tmpl.ExecuteTemplate(w, "header", title)
+		data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Store": store, "OK": Ok, "Access": Access, "Category": ct, "URL": url, "Root": root}
+		tmpl.ExecuteTemplate(w, "store", data)
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	} else {
 		http.NotFound(w, r)
 	}
-	Access := false
-	Ok := true
-	store, err := database.SelectStoreItems()
-	if err != nil {
-		fmt.Println(err)
-	}
-	if store == nil {
-		Ok = false
-	}
-
-	user, _ := database.SelectUserWallet(userAuth.Login, userAuth.Password)
-	ct, err := database.SelectStoreCategory()
-	if err != nil {
-		fmt.Println("Error - storeHandler() SelectStoreCategory()", err.Error())
-	}
-
-	url := "store/sort"
-	root := "/store"
-
-	title := map[string]string{"Title": models.Cfg.StoreTitle}
-	tmpl.ExecuteTemplate(w, "header", title)
-	data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Store": store, "OK": Ok, "Access": Access, "Category": ct, "URL": url, "Root": root}
-	tmpl.ExecuteTemplate(w, "store", data)
 }
 
 func storeSortHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("html/store.html", "html/header.html", "html/footer.html")
-	if err != nil {
-		http.NotFound(w, r)
-	}
-	var store []models.Store
-	if r.Method == "GET" {
-		r.ParseForm()
-		val := r.FormValue("Condition")
-		if val != "" {
-			store, err = database.SelectStoreItemsByCategory(val)
-			if err != nil {
-				fmt.Println(err)
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		tmpl, err := template.ParseFiles("html/store.html", "html/header.html", "html/footer.html")
+		if err != nil {
+			http.NotFound(w, r)
+		}
+		var store []models.Store
+		if r.Method == "GET" {
+			r.ParseForm()
+			val := r.FormValue("Condition")
+			if val != "" {
+				store, err = database.SelectStoreItemsByCategory(val)
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 		}
-	}
 
-	Access := false
-	Ok := true
-	if store == nil {
-		Ok = false
-	}
+		Access := false
+		Ok := true
+		if store == nil {
+			Ok = false
+		}
 
-	user, _ := database.SelectUserWallet(userAuth.Login, userAuth.Password)
-	ct, err := database.SelectStoreCategory()
-	if err != nil {
-		fmt.Println("Error - storeHandler() SelectStoreCategory()", err.Error())
-	}
-	url := ""
-	root := "/store"
+		user, _ := database.SelectUserWallet(userAuth.Login, userAuth.Password)
+		ct, err := database.SelectStoreCategory()
+		if err != nil {
+			fmt.Println("Error - storeHandler() SelectStoreCategory()", err.Error())
+		}
+		url := ""
+		root := "/store"
 
-	title := map[string]string{"Title": models.Cfg.StoreTitle}
-	tmpl.ExecuteTemplate(w, "header", title)
-	data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Store": store, "OK": Ok, "Access": Access, "Category": ct, "URL": url, "Root": root}
-	tmpl.ExecuteTemplate(w, "store", data)
+		title := map[string]string{"Title": models.Cfg.StoreTitle}
+		tmpl.ExecuteTemplate(w, "header", title)
+		data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Store": store, "OK": Ok, "Access": Access, "Category": ct, "URL": url, "Root": root}
+		tmpl.ExecuteTemplate(w, "store", data)
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	} else {
+		http.NotFound(w, r)
+	}
 }
 
 func storeCardHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("html/card.html", "html/header.html", "html/footer.html")
-	if err != nil {
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		tmpl, err := template.ParseFiles("html/card.html", "html/header.html", "html/footer.html")
+		if err != nil {
+			http.NotFound(w, r)
+		}
+		user, _ := database.SelectUserWallet(userAuth.Login, userAuth.Password)
+		if r.Method == "GET" {
+			r.ParseForm()
+			itemId = r.FormValue("store_id")
+		}
+		Id, _ := strconv.Atoi(itemId)
+		product, err = database.SelectStoreItemById(Id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+		}
+
+		title := map[string]string{"Title": product.Name}
+		tmpl.ExecuteTemplate(w, "header", title)
+
+		var products []models.StorePlus
+		arr, _ := database.SelectFavouritesByUserCheck(userAuth.Login)
+		fmt.Println(arr)
+		for _, i := range arr {
+			if product.Id == uint(i) {
+				product.Status = true
+			} else {
+				product.Status = false
+			}
+		}
+		fmt.Println(product)
+		products = append(products, product)
+		data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Market": products}
+		tmpl.ExecuteTemplate(w, "card", data)
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	} else {
 		http.NotFound(w, r)
 	}
-	user, _ := database.SelectUserWallet(userAuth.Login, userAuth.Password)
-	if r.Method == "GET" {
-		r.ParseForm()
-		itemId = r.FormValue("store_id")
-	}
-	Id, _ := strconv.Atoi(itemId)
-	product, err = database.SelectStoreItemById(Id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
-	}
-
-	title := map[string]string{"Title": product.Name}
-	tmpl.ExecuteTemplate(w, "header", title)
-
-	var products []models.StorePlus
-	arr, _ := database.SelectFavouritesByUserCheck(userAuth.Login)
-	fmt.Println(arr)
-	for _, i := range arr {
-		if product.Id == uint(i) {
-			product.Status = true
-		} else {
-			product.Status = false
-		}
-	}
-	fmt.Println(product)
-	products = append(products, product)
-	data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Market": products}
-	tmpl.ExecuteTemplate(w, "card", data)
 }
 
 func storeBuyHandler(w http.ResponseWriter, r *http.Request) {
@@ -1453,19 +1776,67 @@ func storeFavoritesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func favouritesPageHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("html/favourites.html", "html/header.html", "html/footer.html")
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		tmpl, err := template.ParseFiles("html/favourites.html", "html/header.html", "html/footer.html")
+		if err != nil {
+			http.NotFound(w, r)
+		}
+
+		fav, ok := database.SelectFavouritesByUser(userAuth.Login)
+		sales, done := database.SelectSalesByUser(userAuth.Login)
+		purchase := database.SelectTotalPurchaseByUser(userAuth.Login)
+
+		title := map[string]string{"Title": models.Cfg.FavTitle}
+		tmpl.ExecuteTemplate(w, "header", title)
+		data := map[string]interface{}{"User": userAuth, "Done": ok, "Fav": fav, "Ok": done, "Sales": sales, "Purchase": purchase}
+		tmpl.ExecuteTemplate(w, "favourites", data)
+	} else if c.Value != "" {
+		var err error
+		userAuth.Login = c.Value
+		userAuth, err = database.SelectUserByColumn("Login", userAuth.Login)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	} else {
+		http.NotFound(w, r)
+	}
+}
+
+func helpHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/help.html", "html/header.html", "html/footer.html")
 	if err != nil {
 		http.NotFound(w, r)
 	}
 
-	fav, ok := database.SelectFavouritesByUser(userAuth.Login)
-	sales, done := database.SelectSalesByUser(userAuth.Login)
-	purchase := database.SelectTotalPurchaseByUser(userAuth.Login)
+	arrCategory := []string{"Баг при работе", "Предложение", "Некорректная работа приложения", "У вас что-то украли/пропало", "Другое"}
 
-	title := map[string]string{"Title": models.Cfg.FavTitle}
+	title := map[string]string{"Title": models.Cfg.HelpTitle}
+	data := map[string]interface{}{"User": userAuth, "Category": arrCategory}
+
 	tmpl.ExecuteTemplate(w, "header", title)
-	data := map[string]interface{}{"User": userAuth, "Done": ok, "Fav": fav, "Ok": done, "Sales": sales, "Purchase": purchase}
-	tmpl.ExecuteTemplate(w, "favourites", data)
+	tmpl.ExecuteTemplate(w, "help", data)
+}
+
+func helpComplaintHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+		title := r.FormValue("title")
+		description := r.FormValue("description")
+		selectCat := r.FormValue("selectCat")
+		fmt.Println(title, description, selectCat)
+		//добавление заявки в бд
+
+		http.Redirect(w, r, "/help", http.StatusSeeOther)
+	}
+	if r.Method == "GET" {
+		r.ParseForm()
+		guest := r.FormValue("guest")
+		complaint := r.FormValue("selectComplaint")
+		fmt.Println(guest, complaint)
+
+		http.Redirect(w, r, "/guest", http.StatusSeeOther)
+	}
 }
 
 func exitHandler(w http.ResponseWriter, r *http.Request) {
@@ -1474,7 +1845,7 @@ func exitHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 	}
 	c := &http.Cookie{
-		Name:    "storage",
+		Name:    "id",
 		Value:   "",
 		Path:    "/",
 		Expires: time.Unix(0, 0),
@@ -1487,4 +1858,177 @@ func exitHandler(w http.ResponseWriter, r *http.Request) {
 	userAuth = models.Users{}
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+// Admins Handler
+
+func adminHandler(w http.ResponseWriter, r *http.Request) {
+	c := app.ReadCookies(r)
+	if c.Value == userAuth.Login {
+		if userAuth.Access != "User" {
+			tmpl, err := template.ParseFiles("html/admin.html", "html/header.html", "html/footer.html")
+			if err != nil {
+				http.NotFound(w, r)
+			}
+
+			uBan, err := database.SelectUserBannedByAdmin(userAuth.Login)
+			if err != nil {
+				fmt.Println("Error - SelectUserBannedByAdmin()", err.Error())
+			}
+			uDel, err := database.SelectUserDeletedByAdmin(userAuth.Login)
+			if err != nil {
+				fmt.Println("Error - SelectUserBannedByAdmin()", err.Error())
+			}
+
+			all, err := database.SelectUserBannedAllByAdmin(userAuth.Login)
+			if err != nil {
+				fmt.Println("Error - SelectUserBannedAllByAdmin()", err.Error())
+			}
+
+			title := map[string]string{"Title": "Админ панель"}
+			data := map[string]interface{}{"User": userAuth, "AllUs": all, "DelUser": uDel, "BanUser": uBan}
+
+			tmpl.ExecuteTemplate(w, "header", title)
+			tmpl.ExecuteTemplate(w, "admin", data)
+		} else {
+			http.Redirect(w, r, "/page", http.StatusSeeOther)
+		}
+	} else {
+		http.NotFound(w, r)
+	}
+}
+
+func adminBanHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+
+		us := r.FormValue("user")
+		title := r.FormValue("title")
+		time := r.FormValue("time")
+
+		user, err := database.SelectUserByColumn("Login", us)
+		if err != nil {
+			fmt.Println("Error - adminBanHandler() SelectUserByColumn()", err.Error())
+		}
+		user.Access = "Bannerd"
+		pass := user.Password
+		user.Password = user.Photo
+		user.Photo = "/data/image/blog/banned.jpg"
+		err = database.UpdateUserByLogPass(user.Login, pass, user)
+		if err != nil {
+			fmt.Println("Error - adminBanHandler() UpdateUserByLogPass()", err.Error())
+		}
+
+		banTime, err := strconv.Atoi(time)
+		if err != nil {
+			fmt.Println("Error ", err.Error())
+		}
+		var ban = models.UserBanned{
+			Id:     0,
+			User:   us,
+			Reason: title,
+			Time:   banTime,
+			Admin:  userAuth.Login,
+		}
+
+		err = database.InsertUserToBanList(ban)
+		if err != nil {
+			fmt.Println("Error - adminBanHandler() InsertUserToBanList()", err.Error())
+		}
+
+		http.Redirect(w, r, "/admin", http.StatusSeeOther)
+	}
+}
+
+func adminDelHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+
+		us := r.FormValue("Adm-guestId")
+		// fmt.Println(us)
+		// err := database.DeleteUserByLogin(us)
+		// if err != nil {
+		// 	fmt.Println("Error - adminDelHandler() DeleteUserByLogin()", err.Error())
+		// }
+
+		user, err := database.SelectUserByColumn("Login", us)
+		if err != nil {
+			fmt.Println("Error - adminBanHandler() SelectUserByColumn()", err.Error())
+		}
+		user.Access = "Bannerd"
+		pass := user.Password
+		user.Password = user.Photo
+		user.Photo = "/data/image/blog/banned.jpg"
+		err = database.UpdateUserByLogPass(user.Login, pass, user)
+		if err != nil {
+			fmt.Println("Error - adminBanHandler() UpdateUserByLogPass()", err.Error())
+		}
+
+		var ban = models.UserBanned{
+			Id:     0,
+			User:   us,
+			Reason: "Удаленный аккаунт",
+			Time:   2147483647, //integer
+			Admin:  userAuth.Login,
+		}
+
+		err = database.InsertUserToBanList(ban)
+		if err != nil {
+			fmt.Println("Error - adminDelHandler() InsertUserToBanList()", err.Error())
+		}
+
+		http.Redirect(w, r, "/admin", http.StatusSeeOther)
+	}
+}
+
+func adminDelBanListHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/list.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+	done := "Admin"
+	var Data []models.UserBanned
+	if r.Method == "GET" {
+
+		Data, err = database.SelectUserBannedByAdmin(userAuth.Login)
+		if err != nil {
+			fmt.Println("Error - SelectUserBannedByAdmin()", err.Error())
+		}
+
+	} else if r.Method == "POST" {
+		Data, err = database.SelectUserDeletedByAdmin(userAuth.Login)
+		if err != nil {
+			fmt.Println("Error - SelectUserBannedByAdmin()", err.Error())
+		}
+	}
+
+	fmt.Println(Data)
+	ttl := "Админ меню"
+	title := map[string]string{"Title": ttl}
+	data := map[string]interface{}{"Admins": Data, "Done": done, "Title": ttl}
+
+	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "list", data)
+
+}
+
+func adminListHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/list.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+	done := "ListAdmin"
+
+	admin, err := database.SelectAdmins()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	ttl := "Список администраторов"
+	title := map[string]string{"Title": ttl}
+	data := map[string]interface{}{"ListAdm": admin, "Done": done, "Title": ttl}
+
+	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "list", data)
+
 }

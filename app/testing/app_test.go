@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	rnd "math/rand"
+
 	"github.com/alexPavlikov/go-blog/app"
 	"github.com/alexPavlikov/go-blog/models"
 )
@@ -151,5 +153,18 @@ func TestCreateMd5Hash(t *testing.T) {
 				t.Logf("Success !")
 			}
 		})
+	}
+}
+
+func TestGiveCode(t *testing.T) {
+	for i := 0; i < 100; i++ {
+		rnd.Seed(time.Now().UTC().UnixNano())
+		//var bytes int
+		bytes := rnd.Intn(9999) + 999
+		if bytes <= 1000 {
+			bytes = app.GiveCode()
+		}
+		fmt.Println(bytes)
+
 	}
 }

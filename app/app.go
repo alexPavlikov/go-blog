@@ -3,14 +3,19 @@ package app
 import (
 	"crypto/md5"
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	rnd "math/rand"
+	"net/http"
 	"os"
 	"time"
+
+	gomail "gopkg.in/mail.v2"
 
 	"github.com/alexPavlikov/go-blog/database"
 	"github.com/alexPavlikov/go-blog/models"
@@ -163,4 +168,69 @@ func CreateMd5Hash(text string) string {
 		panic(err)
 	}
 	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func ReadCookies(r *http.Request) *http.Cookie {
+	var c *http.Cookie
+	for _, c = range r.Cookies() {
+		fmt.Println(c)
+	}
+	return c
+}
+
+func GiveCode() (bytes int) {
+
+	rnd.Seed(time.Now().UTC().UnixNano())
+	//var bytes int
+	bytes = rnd.Intn(9999) + 999
+	return bytes
+	// RandomCrypto, _ := rand.Prime(rand.Reader, 32)
+	// id := RandomCrypto.Int64() / 20000
+	// fmt.Println(id)
+	// RandomIntegerwithinRange = rnd.Intn(10000) + 1
+	// if RandomIntegerwithinRange <= 1000 {
+	// 	RandomIntegerwithinRange = GiveCode()
+	// }
+	// fmt.Println(RandomIntegerwithinRange)
+	// return RandomIntegerwithinRange
+}
+
+func SendCode(email string, code int, name string) error {
+	m := gomail.NewMessage()
+	m.SetHeader("From", "a.pavlikov2002@gmail.com")
+	m.SetHeader("To", email)
+
+	m.SetHeader("Subject", "Gopher.go")
+
+	message := fmt.Sprintf(`Hello %s - %d`, name, code)
+	m.SetBody("text/plain", message)
+	d := gomail.NewDialer("smtp.gmail.com", 587, "a.pavlikov2002@gmail.com", "isei dkte iiwl wior")
+
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+
+	if err := d.DialAndSend(m); err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
+}
+
+func SendNewPass(email string, pass string, name string) error {
+	m := gomail.NewMessage()
+	m.SetHeader("From", "a.pavlikov2002@gmail.com")
+	m.SetHeader("To", email)
+
+	m.SetHeader("Subject", "Gopher.go")
+
+	message := fmt.Sprintf(`Здравствуйте, %s, Ваш новый пароль - %s`, name, pass)
+	m.SetBody("text/plain", message)
+	d := gomail.NewDialer("smtp.gmail.com", 587, "a.pavlikov2002@gmail.com", "isei dkte iiwl wior")
+
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+
+	if err := d.DialAndSend(m); err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
 }

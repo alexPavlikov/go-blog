@@ -20,6 +20,7 @@ type Setting struct {
 	MessageTitle      string
 	StoreTitle        string
 	FavTitle          string
+	HelpTitle         string
 }
 
 var Cfg Setting

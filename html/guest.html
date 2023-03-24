@@ -24,6 +24,53 @@
 
 <script src='//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js'></script>
 
+{{ if .Access }}
+
+        <!-- Модальное окно -->    
+        <input type="checkbox" id="css-modal-checkbox" />    
+        <div class="cmc">
+            <div class="cmt">
+                <form action="/admin/banned" method="post">
+                    <input type="text" id="user" name="user" value="{{ .Guest.Login }}" style="display: none;">
+                    <input type="text" id="title" name="title"   placeholder="Укажите причину блокировки">
+                    <input type="number" id="time" name="time" placeholder="Укажите время блокировки (часов)">
+                    <button class="goBTN" type="submit">Заблокировать</button>
+                </form>
+            </div>
+            <label for="css-modal-checkbox" class="css-modal-close"></label>
+        </div>
+
+    <div class="adm-menu">
+        <div class="add">
+            <label for="css-modal-checkbox" class="add">Забанить пользователя</label>
+        </div>
+        <div class="add">
+            <form action="/admin/del" method="post">
+                <input type="text" value="{{ .Guest.Login }}" name="Adm-guestId" id="Adm-guestId" style="display: none;">
+                <input class="del-form" style="width: 100%; height: 100%;" type="submit" value="Удалить пользователя">
+            </form>
+        </div>
+    </div>
+
+{{ end }}
+
+
+<input type="checkbox" id="css-modal-checkbox2" />    
+<div class="cmc">
+    <div class="cmt">
+        <form action="help/complaint" method="get">
+            <input type="text" id="guest" name="guest" value="{{ .Guest.Login }}" style="display: none;">
+            <select name="selectComplaint" id="selectComplaint">
+                <option style="display: none;" selected>Выберите причину жалобы</option>
+                {{ range $_, $ct := .Complaint }}
+                <option>{{ $ct }}</option>
+                {{ end }}
+            </select>
+            <input type="submit" value="Отправить">
+        </form>
+    </div>
+    <label for="css-modal-checkbox2" class="css-modal-close"></label>
+</div>
 
 <body>
     <aside class="right">
@@ -34,7 +81,7 @@
         <a href="/communities"><i class="fa-solid fa-users"></i><span> Сообщества</span></a>
         <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
         <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
-        <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
+        <a href="/help"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
         <a href="/store"><i class="fa-brands fa-golang"></i><span> Go-Store</span></a>
     </aside>
 
@@ -68,13 +115,17 @@
             </div>
             <div class="com_stat">               
                 <div class="txt">Дата рождения: <span>{{ .Statistics.HappyBithday }}</span></div>
-                <div class="txt">Сообществ <a class="guestId" href="/communities">{{ .Statistics.CommunitiesLen }}</a></div>
+                <div class="txt">Сообществ <a class="guestId" href="/guest/communities">{{ .Statistics.CommunitiesLen }}</a></div>
                 <div class="txt">Друзей <a class="guestId" href="/guest/friends">{{ .Statistics.FrinedsLen }}</a></div>
             </div>
 
         </section>
 
-        {{ if .Friend }}
+        <div class="adds">
+            <label for="css-modal-checkbox2" class="add del"><i class="fa-solid fa-person-circle-exclamation"></i> Пожаловаться</label>
+        </div>
+
+        {{ if .Friend }}    
        
         {{ else }}
             <div class="adds">
@@ -163,7 +214,7 @@
             <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
             <a href="/favourites"><i class="fa-solid fa-bookmark"></i> <span> Избранное</span></a>
             <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span></a>
-            <a href="#"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span></a>
+            <a href="/help"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span></a>
             <a id="exit" href="/exit"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span> Выйти</span></a>
         </div>
     </aside>

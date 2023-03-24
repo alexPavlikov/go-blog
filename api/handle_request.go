@@ -8,8 +8,11 @@ func HandleRequest() {
 	http.Handle("/data/", http.StripPrefix("/data/", http.FileServer(http.Dir("./data/"))))
 
 	//обработчики всех ссылок веб-сайта
-	http.HandleFunc("/", logFormHandler)
+	http.HandleFunc("/", rootHandler)
+	http.HandleFunc("/entry", logFormHandler)
 	http.HandleFunc("/auth", authHandler)
+	http.HandleFunc("/second_auth", secondAuthHandler)
+	http.HandleFunc("/change_pass", changePasswordHandler)
 	http.HandleFunc("/registration", regHandler)
 	http.HandleFunc("/blog", blogHandler)
 	http.HandleFunc("/page", pageHandler)
@@ -45,7 +48,16 @@ func HandleRequest() {
 	http.HandleFunc("/store/buy", storeBuyHandler)
 	http.HandleFunc("/store/favorites", storeFavoritesHandler)
 	http.HandleFunc("/favourites", favouritesPageHandler)
+	http.HandleFunc("/help", helpHandler)
+	http.HandleFunc("/help/complaint", helpComplaintHandler)
 	http.HandleFunc("/exit", exitHandler)
+
+	//admin
+	http.HandleFunc("/admin", adminHandler)
+	http.HandleFunc("/admin/banned", adminBanHandler)
+	http.HandleFunc("/admin/del", adminDelHandler)
+	http.HandleFunc("/admin/list", adminDelBanListHandler)
+	http.HandleFunc("/admin/amd_list", adminListHandler)
 
 	http.HandleFunc("/fr", frHandler)
 }

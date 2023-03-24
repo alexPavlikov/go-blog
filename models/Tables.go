@@ -232,3 +232,11 @@ type Sales struct {
 	Address string
 	Date    string
 }
+
+type UserBanned struct {
+	Id     int
+	User   string
+	Reason string
+	Time   int
+	Admin  string
+}

@@ -305,7 +305,7 @@ func SelectUserByLogPass(log string, pass string) (user models.Users, err error)
 func SelectUsersByColumn(column string, value string) ([]models.Users, error) {
 	var user models.Users
 	var users []models.Users
-	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "Users" WHERE "%s" = '%s'`, column, value))
+	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "Users" WHERE "%s" = '%s' AND "Access" = 'User'`, column, value))
 	if err != nil {
 		fmt.Println("Error - SelectUsersByColumn()", err)
 		return users, err
@@ -358,6 +358,26 @@ func SelectUserWallet(login string, password string) (models.Users, error) {
 	return user, nil
 }
 
+func SelectAdmins() ([]models.Users, error) {
+	var user models.Users
+	var users []models.Users
+	rows, err := DB.Query(`SELECT * FROM "Users" WHERE "Access" != 'User' AND "Access" != 'Banned'`)
+	if err != nil {
+		fmt.Println("Error - SelectAdmins()", err)
+		return users, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
+		if err != nil {
+			fmt.Println("Error - SelectAdmins() rows.Next()", err.Error())
+			return users, err
+		}
+		users = append(users, user)
+	}
+	return users, nil
+}
+
 /*
 Функция удаления пользователя из таблицы Users по определенному Login
 */
@@ -404,7 +424,7 @@ func InsertUser(user models.Users) (models.Users, error) {
 Функция обновления пользователя из таблицы Users по введенным Login и Password
 */
 func UpdateUserByLogPass(login string, password string, user models.Users) error {
-	query := fmt.Sprintf(`UPDATE "Users" SET "Login" = '%s', "Password" = '%s', "Name" = '%s', "Access" = '%s', "Photo" = '%s' "Birthdate" = '%s' WHERE "Login" = '%s' AND "Password" =  '%s'`, user.Login, user.Password, user.Name, user.Access, user.Photo, user.Birthdate, login, password)
+	query := fmt.Sprintf(`UPDATE "Users" SET "Login" = '%s', "Password" = '%s', "Name" = '%s', "Access" = '%s', "Photo" = '%s', "Birthdate" = '%s', "Wallet" = %f WHERE "Login" = '%s' AND "Password" =  '%s'`, user.Login, user.Password, user.Name, user.Access, user.Photo, user.Birthdate, user.Wallet, login, password)
 	_, err := DB.Query(query)
 	if err != nil {
 		fmt.Println(err)
@@ -440,6 +460,90 @@ func UpdateUserByColumn(column string, value string, login string, pass string) 
 	}
 	fmt.Println(query)
 	return user, err
+}
+
+func SelectUserBannedAllByAdmin(admin string) ([]models.UserBanned, error) {
+	var user models.UserBanned
+	var users []models.UserBanned
+	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "UserBanned" WHERE "Admin" = '%s'`, admin))
+	if err != nil {
+		fmt.Println("Error - SelectUserBanned()", err)
+		return users, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&user.Id, &user.User, &user.Reason, &user.Time, &user.Admin)
+		if err != nil {
+			fmt.Println("Error - SelectUserBanned() rows.Next()", err.Error())
+			return users, err
+		}
+		users = append(users, user)
+	}
+	return users, nil
+}
+
+func SelectUserBannedByAdmin(admin string) ([]models.UserBanned, error) {
+	var user models.UserBanned
+	var users []models.UserBanned
+	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "UserBanned" WHERE "Admin" = '%s' AND "Reason" != 'Удаленный аккаунт'`, admin))
+	if err != nil {
+		fmt.Println("Error - SelectUserBannedByAdmin()", err)
+		return users, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&user.Id, &user.User, &user.Reason, &user.Time, &user.Admin)
+		if err != nil {
+			fmt.Println("Error - SelectUserBannedByAdmin() rows.Next()", err.Error())
+			return users, err
+		}
+		users = append(users, user)
+	}
+	return users, nil
+}
+
+func SelectUserDeletedByAdmin(admin string) ([]models.UserBanned, error) {
+	var user models.UserBanned
+	var users []models.UserBanned
+	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "UserBanned" WHERE "Admin" = '%s' AND "Reason" = 'Удаленный аккаунт'`, admin))
+	if err != nil {
+		fmt.Println("Error - SelectUserDeletedByAdmin()", err)
+		return users, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&user.Id, &user.User, &user.Reason, &user.Time, &user.Admin)
+		if err != nil {
+			fmt.Println("Error - SelectUserDeletedByAdmin() rows.Next()", err.Error())
+			return users, err
+		}
+		users = append(users, user)
+	}
+	return users, nil
+}
+
+func InsertUserToBanList(ban models.UserBanned) error {
+	query := `INSERT INTO "UserBanned"("User", "Reason", "Time", "Admin") VALUES ($1, $2, $3, $4)`
+	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelfunc()
+	stmt, err := DB.PrepareContext(ctx, query)
+	if err != nil {
+		log.Printf("Error %s when preparing SQL statement", err)
+		return err
+	}
+	defer stmt.Close()
+	res, err := stmt.ExecContext(ctx, ban.User, ban.Reason, ban.Time, ban.Admin)
+	if err != nil {
+		log.Printf("Error %s when inserting row into User table", err)
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		log.Printf("Error %s when finding rows affected", err)
+		return err
+	}
+	log.Printf("%d user created ", rows)
+	return err
 }
 
 //Добавить еще обновление фото, имени, доступа
@@ -493,10 +597,14 @@ func SelectCommunities() []models.Communities {
 func SelectCommunitiesWithOutSub(user string) []models.Communities {
 	var communities models.Communities
 	var communitiesArr []models.Communities
-	rows, err := DB.Query(fmt.Sprintf(`SELECT "Communities".*
-	FROM "Communities"
-	JOIN "Subscribers" ON "Subscribers"."Communities" <> "Communities"."Name"
-	WHERE "Subscribers"."User"='%s';`, user))
+	rows, err := DB.Query(fmt.Sprintf(`
+	SELECT "Communities".* FROM "Communities"
+		WHERE "Communities"."Name" NOT IN 
+		(SELECT "Communities"."Name"
+		FROM "Communities"
+		JOIN "Subscribers" ON "Subscribers"."Communities" = "Communities"."Name"
+		WHERE "Subscribers"."User"='%s')
+	`, user))
 	if err != nil {
 		fmt.Println("Error - SelectCommunities()", err.Error())
 	}
@@ -1389,7 +1497,7 @@ func SelectRecomendationFriends(user string) []models.Users {
 	query := fmt.Sprintf(`
 	SELECT "Users".* FROM "Users"
 	WHERE "Users"."Login" NOT IN 
-	(SELECT "Friends"."Login" FROM "Friends" WHERE "Friends"."Login" = '%s' OR "Friends"."Friend" = '%s')`, user, user)
+	(SELECT "Friends"."Login" FROM "Friends" WHERE "Friends"."Login" = '%s' OR "Friends"."Friend" = '%s') AND "Access" = 'User'`, user, user)
 	rows, err := DB.Query(query)
 	if err != nil {
 		fmt.Println("Error - SelectRecomendationFriends()")

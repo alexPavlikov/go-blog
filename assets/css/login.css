@@ -102,3 +102,12 @@ button:hover{
 .hidden {
     visibility:visible;
 }
+
+.link {
+	margin-top: 40px;
+	display: block;
+	width: 100%;
+	text-align: center;
+	font-size: 14px;
+	
+}

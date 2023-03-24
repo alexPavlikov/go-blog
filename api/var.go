@@ -33,3 +33,4 @@ var OK bool
 var Messenger models.Messenger
 var itemId string
 var product models.StorePlus
+var code int
