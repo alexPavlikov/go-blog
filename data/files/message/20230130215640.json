@@ -34,6 +34,20 @@
       "Data": "2023-03-18 16:23",
       "Photo": "/data/image/blog/standart_avatar.png",
       "Access": 2
+    },
+    {
+      "User": "a.pavlikov2002@gmail.com",
+      "Message": "Hi",
+      "Data": "2023-04-02 14:41",
+      "Photo": "/data/image/blog/1679156936060126200.jpg",
+      "Access": 2
+    },
+    {
+      "User": "a.pavlikov2002@gmail.com",
+      "Message": "What`s up, Rex",
+      "Data": "2023-04-02 15:12",
+      "Photo": "/data/image/blog/1679156936060126200.jpg",
+      "Access": 2
     }
   ]
 }

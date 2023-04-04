@@ -34,3 +34,5 @@ var Messenger models.Messenger
 var itemId string
 var product models.StorePlus
 var code int
+var Id int
+var complaintStatus = []string{"не решена", "выполняется", "решена"}

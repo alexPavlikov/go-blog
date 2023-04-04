@@ -378,6 +378,31 @@ func SelectAdmins() ([]models.Users, error) {
 	return users, nil
 }
 
+func FindUsers(query string, login string) ([]models.Users, error) {
+	var user models.Users
+	var users []models.Users
+	query = "%" + query + "%"
+	rows, err := DB.Query(fmt.Sprintf(`SELECT "Users".* FROM "Users"
+	WHERE "Users"."Login" NOT IN 
+	(SELECT "Friends"."Login" FROM "Friends" WHERE "Friends"."Login" = '%s' OR "Friends"."Friend" = '%s') 
+	 AND "Access" = 'User'
+	 AND "Name" ILIKE '%s'`, login, login, query))
+	if err != nil {
+		fmt.Println("Error - FindUsers() ", err)
+		return users, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
+		if err != nil {
+			fmt.Println("Error - FindUsers() ", err)
+			return users, err
+		}
+		users = append(users, user)
+	}
+	return users, err
+}
+
 /*
 Функция удаления пользователя из таблицы Users по определенному Login
 */
@@ -424,7 +449,7 @@ func InsertUser(user models.Users) (models.Users, error) {
 Функция обновления пользователя из таблицы Users по введенным Login и Password
 */
 func UpdateUserByLogPass(login string, password string, user models.Users) error {
-	query := fmt.Sprintf(`UPDATE "Users" SET "Login" = '%s', "Password" = '%s', "Name" = '%s', "Access" = '%s', "Photo" = '%s', "Birthdate" = '%s', "Wallet" = %f WHERE "Login" = '%s' AND "Password" =  '%s'`, user.Login, user.Password, user.Name, user.Access, user.Photo, user.Birthdate, user.Wallet, login, password)
+	query := fmt.Sprintf(`UPDATE "Users" SET "Password" = '%s', "Name" = '%s', "Access" = '%s', "Photo" = '%s', "Birthdate" = '%s', "Wallet" = %f WHERE "Login" = '%s' AND "Password" =  '%s'`, user.Password, user.Name, user.Access, user.Photo, user.Birthdate, user.Wallet, login, password)
 	_, err := DB.Query(query)
 	if err != nil {
 		fmt.Println(err)
@@ -594,6 +619,29 @@ func SelectCommunities() []models.Communities {
 	return communitiesArr
 }
 
+func FindCommunities(query string, login string) ([]models.Communities, error) {
+	var communitie models.Communities
+	var communities []models.Communities
+	query = "%" + query + "%"
+	rows, err := DB.Query(fmt.Sprintf(`SELECT * FROM "Communities"
+	WHERE "Name" ILIKE '%s' AND "Name" NOT IN
+	(SELECT "Communities" FROM "Subscribers" WHERE "User" = '%s');`, query, login))
+	if err != nil {
+		fmt.Println("Error - FindCommunities() ", err)
+		return communities, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&communitie.Name, &communitie.Author, &communitie.Photo, &communitie.Category)
+		if err != nil {
+			fmt.Println("Error - FindCommunities() ", err)
+			return communities, err
+		}
+		communities = append(communities, communitie)
+	}
+	return communities, err
+}
+
 func SelectCommunitiesWithOutSub(user string) []models.Communities {
 	var communities models.Communities
 	var communitiesArr []models.Communities
@@ -671,13 +719,6 @@ func UpdateCommunity(communities models.Communities, name string) error {
 
 /*
 Функция выборки все сообщества из таблицы Communities определенного пользователя
-SELECT  "Subscribers"."Communities", "Subscribers"."User",
-
-	"Communities"."Photo", "Communities"."Author", "Communities"."Category"
-
-FROM "Subscribers"
-JOIN "Communities" ON "Communities"."Name" = "Subscribers"."Communities"
-WHERE "Subscribers"."User" = 'a.pavlikov2002@gmail.com';
 */
 func SelectAllCommunitiesUser(column string, key string) []models.JoinCommunities {
 	var communitie models.JoinCommunities
@@ -1202,7 +1243,7 @@ func SelectRepoPostByUser(user string) []models.RepostPost {
 }
 
 func InsertRepoPost(reppost models.Repost) (models.Repost, error) {
-	query := `INSERT INTO "RepostPost"( "Post", "User") VALUES ($1, $2)`
+	query := `INSERT INTO "RepostPost"("Post", "User") VALUES ($1, $2)`
 	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
 	stmt, err := DB.PrepareContext(ctx, query)
@@ -1225,8 +1266,10 @@ func InsertRepoPost(reppost models.Repost) (models.Repost, error) {
 	return reppost, err
 }
 
-func DeleteRepoPostByUser(id string, user string) error {
-	res, err := DB.Exec(`DELETE FROM "RepostPost" WHERE "Post" = ($1) AND "User" = ($2)`, id, user)
+func DeleteRepoPostByUser(id int, user string) error {
+	query := fmt.Sprintf(`DELETE FROM "RepostPost" WHERE "Post" = %d AND "User" = '%s';`, id, user)
+	fmt.Println(query)
+	res, err := DB.Exec(query)
 	if err == nil {
 		count, err := res.RowsAffected()
 		if err == nil {
@@ -2055,4 +2098,68 @@ func DeleteStore(id int) error {
 		return nil
 	}
 	return err
+}
+
+//complaints
+
+func SelectComplaints() ([]models.Complaints, error) {
+	var complaint models.Complaints
+	var complaints []models.Complaints
+	rows, err := DB.Query(`SELECT "Id", "Criminals", "Complaint", "Author", "Status", COALESCE("Comment", ''), COALESCE("Admin", '') FROM "Complaints"`)
+	if err != nil {
+		fmt.Println("Error - SelectComplaints()", err)
+		return complaints, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&complaint.Id, &complaint.Criminal, &complaint.Complaint, &complaint.Author, &complaint.Status, &complaint.Comment, &complaint.Admin)
+		if err != nil {
+			fmt.Println("Error - SelectComplaints() rows.Next()", err.Error())
+			return complaints, err
+		}
+		complaints = append(complaints, complaint)
+	}
+	return complaints, nil
+}
+
+func SelectComplaint(id int) (models.Complaints, error) {
+	var complaint models.Complaints
+	rows, err := DB.Query(fmt.Sprintf(`SELECT "Id", "Criminals", "Complaint", "Author", "Status", COALESCE("Comment", ''), COALESCE("Admin", '') FROM "Complaints" WHERE "Id" = %d`, id))
+	if err != nil {
+		fmt.Println("Error - SelectComplaint()", err)
+		return complaint, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&complaint.Id, &complaint.Criminal, &complaint.Complaint, &complaint.Author, &complaint.Status, &complaint.Comment, &complaint.Admin)
+		if err != nil {
+			fmt.Println("Error - SelectComplaint() rows.Next()", err.Error())
+			return complaint, err
+		}
+	}
+	return complaint, nil
+}
+
+func UpdateComplaintById(com models.Complaints) error {
+	fmt.Println("_________UpdateComplaintById___________", com)
+	//UPDATE "Complaints" SET "Status" = 'решена', "Comment" = 'Все выполнил', "Admin" = 'a.pavlikov2002@gmail.com' WHERE "Id" = 2;
+	query := fmt.Sprintf(`UPDATE "Complaints" SET "Status" = '%s', "Comment" = '%s', "Admin" = '%s' WHERE "Id" = %d;`, com.Status, com.Comment, com.Admin, com.Id)
+	fmt.Println(query)
+	_, err = DB.Query(query)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
+}
+
+func InsertComplaint(prd models.Complaints) error {
+	query := `INSERT INTO "Complaints"("Criminals", "Complaint", "Author", "Status") VALUES($1, $2, $3, $4)`
+	_, err := DB.Exec(query, prd.Criminal, prd.Complaint, prd.Author, prd.Status)
+	if err != nil {
+		return err
+	} else {
+		fmt.Println("\nRow inserted successfully!")
+		return nil
+	}
 }

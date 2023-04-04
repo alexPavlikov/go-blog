@@ -35,7 +35,7 @@ func TestRecordingSessions(t *testing.T) {
 		t.Run(fmt.Sprintf("Step - %d", i), func(t *testing.T) {
 			session = fmt.Sprintf("Пользователь, %s (логин - %s, пароль - %s) зашел в аккаунт в %s.\n", us.Name, us.Login, us.Password, time.Now().Format("2006-01-02 15:04"))
 
-			err := app.RecordingSessions(session)
+			err := app.RecordingSessions(session, "test.txt")
 			if err != nil {
 				t.Errorf("Функция не прошла тестирования - %s", err.Error())
 			} else {

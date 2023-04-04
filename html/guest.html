@@ -14,7 +14,9 @@
             <img src="/data/image/brand.png" alt="">
             <span>GOLANG</span>
         </div>
-        <div class="find"><input type="text" placeholder="Найти"></div>
+        <div class="find"><form action="find" method="post">
+            <input type="text" name="find" placeholder="Найти пользователя" autocomplete="off" >
+        </form></div>
     </div>
     <div class="account">
         <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
@@ -86,7 +88,7 @@
     </aside>
 
         <!-- Модальное окно -->    
-        <input type="checkbox" id="css-modal-checkbox" />    
+        <input type="checkbox" id="css-modal-checkbox3" />    
         <div class="cmc">
             <div class="cmt-gopher cmt cmt-gopher" style="background: url(/data/image/brand.png);background-size: no-repeat;
             background-position: center;
@@ -99,7 +101,7 @@
                     <button id="{{ .Guest.Login }}" class="goBTN" type="submit">GO</button>
                 </form>
             </div>
-            <label for="css-modal-checkbox" class="css-modal-close"></label>
+            <label for="css-modal-checkbox3" class="css-modal-close"></label>
         </div>
 
     <main>
@@ -129,7 +131,7 @@
        
         {{ else }}
             <div class="adds">
-                <label for="css-modal-checkbox" class="add-rev add add-com"><i class="fa-solid fa-circle-plus"></i> Написть гофер</label>
+                <label for="css-modal-checkbox3" class="add-rev add add-com"><i class="fa-solid fa-circle-plus"></i> Написть гофер</label>
             </div>
         {{ end }}
 

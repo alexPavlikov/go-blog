@@ -42,9 +42,9 @@ func CheckArray(fav []int64, id uint) bool {
 // 	fmt.Println(client)
 // }
 
-func RecordingSessions(session string) error {
+func RecordingSessions(session string, filename string) error {
 	// fmt.Println(session)
-	file, err := os.OpenFile("C:/Users/admin/go/src/go-blog/data/files/listOfVisits.txt", os.O_WRONLY|os.O_APPEND, 0755)
+	file, err := os.OpenFile(fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/%s", filename), os.O_WRONLY|os.O_APPEND, 0755)
 	if err != nil {
 		fmt.Println(err)
 		// os.Exit(1)
@@ -131,34 +131,37 @@ func JSON(msg models.Message, Path string, userLogin string) (models.Messenger, 
 		return settings, err
 	}
 
-	newClient := models.Message{
-		User:    msg.User,
-		Message: msg.Message,
-		Data:    msg.Data,
-		Photo:   msg.Photo,
-	}
-
-	settings.Messenge = append(settings.Messenge, newClient)
-	for i := range settings.Messenge {
-		if settings.Messenge[i].User == userLogin {
-			settings.Messenge[i].Access = 2
-		} else {
-			settings.Messenge[i].Access = 1
+	if msg.Message != "" {
+		newClient := models.Message{
+			User:    msg.User,
+			Message: msg.Message,
+			Data:    msg.Data,
+			Photo:   msg.Photo,
 		}
-	}
 
-	rawDataOut, err := json.MarshalIndent(&settings, "", "  ")
-	if err != nil {
-		log.Fatal("JSON marshaling failed:", err)
-		return settings, err
-	}
+		settings.Messenge = append(settings.Messenge, newClient)
+		for i := range settings.Messenge {
+			if settings.Messenge[i].User == userLogin {
+				settings.Messenge[i].Access = 2
+			} else {
+				settings.Messenge[i].Access = 1
+			}
+		}
 
-	err = ioutil.WriteFile(Path, rawDataOut, 0)
-	if err != nil {
-		log.Fatal("Cannot write updated settings file:", err)
-		return settings, err
+		rawDataOut, err := json.MarshalIndent(&settings, "", "  ")
+		if err != nil {
+			log.Fatal("JSON marshaling failed:", err)
+			return settings, err
+		}
+
+		err = ioutil.WriteFile(Path, rawDataOut, 0)
+		if err != nil {
+			log.Fatal("Cannot write updated settings file:", err)
+			return settings, err
+		}
+		return settings, nil
 	}
-	return settings, nil
+	return settings, err
 }
 
 func CreateMd5Hash(text string) string {
@@ -183,6 +186,7 @@ func GiveCode() (bytes int) {
 	rnd.Seed(time.Now().UTC().UnixNano())
 	//var bytes int
 	bytes = rnd.Intn(9999) + 999
+	fmt.Println("Code---------", bytes)
 	return bytes
 	// RandomCrypto, _ := rand.Prime(rand.Reader, 32)
 	// id := RandomCrypto.Int64() / 20000

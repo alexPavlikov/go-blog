@@ -13,7 +13,9 @@
             <img src="/data/image/brand.png" alt="">
             <span>GOLANG</span>
         </div>
-        <div class="find"><input type="text" placeholder="Найти"></div>
+        <div class="find"><form action="find" method="post" autocomplete="off" >
+          <input type="text" name="find" placeholder="Найти пользователя">
+      </form></div>
     </div>
     <div class="account">
         <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
@@ -36,53 +38,104 @@
         <a href="/store"><i class="fa-brands fa-golang"></i><span> Go-Store</span></a>
     </aside>
 
-    <main>
-        <!-- <div class="frame"> -->
-            <div class="center">
-              
-              <div class="profile">
-                <div class="image">
-                  <div class="circle-1"></div>
-                  <div class="circle-2"></div>
-                  <img src="{{ .User.Photo }}" width="70" height="70" alt="{{ .User.Name }}">
-                </div>
-                
-                <div class="name">{{ .User.Name }}</div>
-                <div class="job">{{ .User.Access }}</div>
-                
-                <div class="actions">
-                  <a href="" class="btn">Список жалоб</a>
-                 {{ if eq .User.Access "Super Admin" }}
-                 <a href="/admin/amd_list" class="btn">Список администраторов</a>
-                 {{ end }}
-                </div>
-              </div>
-              {{ $lenBan := len .BanUser }}
-              {{ $lenDel := len .DelUser }}
-              {{ $lenAll := len .AllUs }}
-              <div class="stats">
-                <a href="/admin/list">
-                  <div class="box admGet">
-                    <span class="value">{{$lenBan}}</span>
-                    <span class="parameter">Кол-во заблокированных пользователей</span>                 
-                  </div>
-                </a>
-                <a href="/admin/list">
-                  <div class="box admPost">
-                      <span class="value">{{$lenDel}}</span>
-                      <span class="parameter">Кол-во удалений аккаунтов</span>
-                  </div>
-                </a>
-                <a href="/admin">
-                  <div class="box">
-                    <span class="value">{{$lenAll}}</span>
-                    <span class="parameter">Кол-во ответов на заявки</span>
-                  </div>
-                </a>
-              </div>
+  {{ if .Done }}
+  <main>
+    <div class="center">
+      
+      <div class="profile">
+        <div class="image">
+          <div class="circle-1"></div>
+          <div class="circle-2"></div>
+          <img src="{{ .User.Photo }}" width="70" height="70" alt="{{ .User.Name }}">
+        </div>
+        
+        <div class="name">{{ .User.Name }}</div>
+        <div class="job">{{ .User.Access }}</div>
+        
+        <div class="actions">
+          <a href="/admin/complaint/list" class="btn">Список жалоб</a>
+         {{ if eq .User.Access "Super Admin" }}
+         <a href="/admin/amd_list" class="btn">Список администраторов</a>
+         {{ end }}
+        </div>
+      </div>
+      {{ $lenBan := len .BanUser }}
+      {{ $lenDel := len .DelUser }}
+      {{ $lenAll := len .AllUs }}
+      <div class="stats">
+        <form class="form" action="admin/list" method="get">
+          <button>
+            <div class="box">
+              <span class="value">{{$lenBan}}</span>
+              <span class="parameter">Кол-во заблокированных пользователей</span>                 
             </div>
-          <!-- </div> -->
-    </main>
+          </button>
+        </form>
+        <form class="form" action="admin/list" method="post">
+          <button>
+            <div class="box">
+              <span class="value">{{$lenDel}}</span>
+              <span class="parameter">Кол-во удалений аккаунтов</span>                 
+            </div>
+          </button>
+        </form>
+        <form class="form" action="admin" method="get">
+          <button>
+            <div class="box">
+              <span class="value">{{$lenAll}}</span>
+              <span class="parameter">Кол-во ответов на заявки</span>                 
+            </div>
+          </button>
+        </form>
+      </div>
+    </div>
+  </main>
+  {{ else if eq .Done false }}
+  <main>
+    <div class="center center-new">
+      <form class="form-style-9" method="post" action="/admin/complaint/edit" style="position: relative;">
+        <div class="idd">Id жалобы: {{ .Complaint.Id }}</div>
+        <input type="text" name="id" id="id" value="{{ .Complaint.Id }}" style="display: none;">
+        <ul>
+        <li>
+            <input type="text" name="field1" value="{{ .Complaint.Criminal }}" class="field-style field-split align-left" placeholder="Нарушитель" readonly/>
+            <input type="text" name="field2" value="{{ .Complaint.Complaint }}" class="field-style field-split align-right" placeholder="Жалоба" readonly/>
+        
+        </li>
+        <li>
+            <input type="text" value="{{ .Complaint.Author }}" name="field3" class="field-style field-split align-left" placeholder="Автор" readonly/>
+            <!-- <input type="url" name="field4" class="field-style field-split align-right" placeholder="Website" /> -->
+            <select name="selectuser" class="field-style field-split align-right" id="selectuser">
+              {{ if ne .Complaint.Status "" }}
+              <option selected style="display: none;">{{.Complaint.Status}}</option>
+                {{ range $_, $v := .CompStat }}
+                  <option>{{$v}}</option>
+                {{ end }}
+              {{ end }}
+            </select>
+        </li>
+        <li>
+        {{ if eq .Complaint.Admin "" }}
+        <input type="text" name="field5" class="field-style field-full align-none" placeholder="Админ" />
+        {{ else }}
+        <input value="{{ .Complaint.Admin }}" type="text" name="field5" class="field-style field-full align-none" placeholder="Админ" readonly/>
+        {{ end }}
+        </li>
+        <li>
+        {{ if eq .Complaint.Comment "" }}
+        <textarea name="field6" class="field-style" placeholder="Комментарий"></textarea>
+        {{ else }}
+        <textarea name="field6" class="field-style" placeholder="Комментарий" readonly>{{ .Complaint.Comment }}</textarea>
+        {{ end }}
+        </li>
+        <li>
+        <input type="submit" value="Изменить" />
+        </li>
+        </ul>
+        </form>
+    </div>
+  </main>
+  {{ end }}
 
     <aside id="left" class="left">
         <div class="setacc">

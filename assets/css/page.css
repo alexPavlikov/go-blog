@@ -132,3 +132,11 @@ section div {
 .del-form:hover {
     cursor: pointer;
 }
+
+.gof2 {
+    height: 40px;
+    width: 48px;
+    margin: auto;
+    margin: 0 10px 0 0;
+    padding: 0 5px 0 0;
+}

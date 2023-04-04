@@ -14,7 +14,9 @@
             <img src="/data/image/brand.png" alt="">
             <span>GOLANG</span>
         </div>
-        <div class="find"><input type="text" placeholder="Найти"></div>
+        <div class="find"><form action="find" method="post" autocomplete="off" >
+            <input type="text" name="find" placeholder="Найти пользователя">
+        </form></div>
     </div>
     <div class="account">
         <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
@@ -138,8 +140,12 @@
                                 <div class="statistics">
                                     <div>
                                         <a href="blog" id="{{$r.Post}}"  class="spans span spany" style="color: #fff; text-decoration: none;"><i style="margin-right: 5px;" class="fa-regular fa-heart"></i>{{$r.Like}}</a>
-                                        <a href="comments"  id="{{$r.Post}}" class="spans span spany" type="submit"><i class="fa-regular fa-message"></i></a>     
-                                        <a href="page/del_gof" id="{{$r.Post}}" class="spans gof2" type="submit"><i class="fa-regular fa-trash-can"></i></a> 
+                                        <a href="comments"  id="{{$r.Post}}" class="spans span spany" type="submit"><i class="fa-regular fa-message"></i></a> 
+                                        <form action="page/del_gof" method="get">
+                                            <input type="text" value="{{$r.Post}}" name="rep_id" style="display: none;">
+                                            <button class="spans gof2"><i class="fa-regular fa-trash-can"></i></button>
+                                        </form>    
+                                        <!-- <a href="page/del_gof" id="{{$r.Post}}" class="spans gof2" type="submit"><i class="fa-regular fa-trash-can"></i></a>  -->
                                     </div>
                                     
                                     <i class="fa-solid fa-eye">{{$r.View}}</i>

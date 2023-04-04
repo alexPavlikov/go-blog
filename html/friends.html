@@ -15,7 +15,9 @@
             <img src="/data/image/brand.png" alt="">
             <span>GOLANG</span>
         </div>
-        <div class="find"><input type="text" placeholder="Найти"></div>
+        <div class="find"><form action="find" method="post" autocomplete="off" >
+            <input type="text" name="find" placeholder="Найти пользователя">
+        </form></div>
     </div>
     <div class="account">
         <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
@@ -41,7 +43,7 @@
         {{ $lenghtS := len .Subs }}
         {{ $lenghtO := len .Online }}
         <div class="friends">
-            {{ if .Done }}
+            {{ if eq .Done "Friends" }}
             <div class="tabs">
                 <input type="radio" name="tab-btn" id="tab-btn-1" value="" checked>
                 <label for="tab-btn-1">Друзья ({{$lengthF}})</label>
@@ -60,8 +62,9 @@
                                 <div class="name"><a style="color: black; text-decoration: none;" class="guestId inputFriends" id="{{$f.Friend}}" href="/guest">{{ $f.Name }}</a> <br><span>{{ $f.Status }}</span></div>
                             </div>
                             <div class="menu">
-                                <form action="message#{{ $f.Name }}" method="get">
-                                    <input type="submit" id="{{$f.Friend}}" class="inputFriends" value="Написть">
+                                <form action="message" method="get">
+                                    <input type="text" name="user_id" value="{{$f.Friend}}" style="display: none;">
+                                    <input type="submit"  id="{{$f.Friend}}" class="inputFriends" value="Написть">
                                 </form>
                                 <form action="friends" method="post">
                                     <input class="input" id="{{$f.Friend}}" type="submit" value="Удалить" onclick="ReadId(this)">
@@ -78,7 +81,8 @@
                             <div class="name"><a style="color: black; text-decoration: none;" class="guestId inputFriends" id="{{$f.Friend}}" href="/guest">{{ $f.Name }}</a> <br><span>{{ $f.Status }}</span></div>
                         </div>
                         <div class="menu">
-                            <form class="online" action="message#{{ $f.Name }}" method="get">
+                            <form class="online" action="message" method="get">
+                                <input type="text" name="user_id" value="{{$f.Friend}}" style="display: none;">
                                 <input type="submit" id="{{$f.Friend}}" class="inputFriends" value="Написть">
                             </form>
 
@@ -94,10 +98,12 @@
                             <div class="name"><a style="color: black; text-decoration: none;" class="guestId inputFriends" id="{{$s.Login}}" href="/guest">{{ $s.Name }}</a> <br><span></span></div>
                         </div>
                         <div class="menu">
-                            <form action="message#{{ $s.Name }}" method="get">
+                           
+                            <!-- <form action="message" method="get">
+                                <input type="text" name="user_id" value="{{$s.Login}}" style="display: none;">
                                 <input type="submit" id="{{$s.Login}}" class="inputFriends" value="Написть">
-                            </form>
-                            <form action="friends/add" method="post">
+                            </form> -->
+                            <form class="online" action="friends/add" method="post">
                                 <input class="inputAdd" id="{{$s.Login}}" type="submit" value="Добавить" onclick="ReadId(this)">
                             </form>
                         </div>
@@ -112,10 +118,13 @@
                                 <div class="name"><a style="color: black; text-decoration: none;" class="guestId inputFriends" id="{{$rf.Login}}" href="/guest">{{ $rf.Name }}</a> <br><span></span></div>
                             </div>
                             <div class="menu">
-                                <form action="message#{{ $rf.Name }}" method="get">
+                                <!-- <form action="message#{{ $rf.Name }}" method="get">
+                                    <input type="text" name="user_id" value="{{$rf.Login}}" style="display: none;">
                                     <input type="submit" id="{{$rf.Login}}" class="inputFriends" value="Написть">
-                                </form>
-                                <form action="friends/rec" method="post">
+                                </form> -->
+                               
+                                <form class="online" action="friends/rec" method="post">
+                                    <input type="text" name="friend_id" value="{{$rf.Login}}" style="display: none;">
                                     <input class="inputRec" id="{{$rf.Login}}" type="submit" value="Добавить" onclick="ReadId(this)">
                                 </form>
                             </div>
@@ -124,7 +133,7 @@
                    
                 </div>
             </div>
-            {{ else }}
+            {{ else if eq .Done "GuestFR" }}
             <div class="tabs">
                 <input type="radio" name="tab-btn" id="tab-btn-1" value="" checked>
                 <label for="tab-btn-1">Друзья ({{$lengthF}})</label>
@@ -185,6 +194,56 @@
                     {{ end }} 
                 </div>
             </div>
+            {{ else if eq .Done "FindFR" }}
+            <div class="tabs">
+                <input type="radio" name="tab-btn" id="tab-btn-1" value="" checked>
+                <label for="tab-btn-1">Поиск людей</label>
+                <input type="radio" name="tab-btn" id="tab-btn-2" value="" checked>
+                <label for="tab-btn-2">Поиск сообществ</label>
+            
+                <div id="content-1">
+                    {{ range $_, $ff := .Find }}         
+                        <div class="friend">
+                            <div class="info">
+                                <div class="img"><img src="{{ $ff.Photo }}" alt=""></div>
+                                <div class="name"><a style="color: black; text-decoration: none;" class="guestId inputFriends" id="{{$ff.Login}}" href="/guest">{{ $ff.Name }}</a> <br><span></span></div>
+                            </div>
+                            <div class="menu">
+                               
+                                <form class="online" action="friends/rec" method="post">
+                                    <input type="text" name="friend_id" value="{{$ff.Login}}" style="display: none;">
+                                    <input class="inputRec" id="{{$ff.Login}}" type="submit" value="Добавить" onclick="ReadId(this)">
+                                </form>
+                            </div>
+                        </div>
+                    {{ end }}      
+                    {{ if .OKU }}
+                    <h1 class="center">К сожалению по данному запросу никого не найденно</h1>
+                     {{ end }}              
+                </div>
+                <div id="content-2">
+                    {{ range $_, $rc := .Communities }}         
+                        <div class="friend">
+                            <div class="info">
+                                <div class="img"><img src="{{ $rc.Photo }}" alt=""></div>
+                                <div class="name"><a style="color: black; text-decoration: none;" class="communa" id="{{$rc.Name}}" href="/community">{{ $rc.Name }}</a> <br><span>{{ $rc.Category }}</span></div>
+                            </div>
+                            <div class="menu com">
+                               
+                                <form class="online" action="/communities" method="post">
+                                    <input type="text" name="communityRec" value="{{ $rc.Name }}" style="display: none;">
+                                    <input name="{{ $rc.Name }}" class="communaRec communitiesSub" id="{{$rc.Name}}" class="coms" type="submit" value="Подписаться">
+                                </form>        
+                            </div>
+                        </div>
+                    {{ end }}    
+                    {{ if .OKC }}
+                    <h1 class="center">К сожалению по данному запросу ничего не найденно</h1>
+                     {{ end }}                
+                </div>
+            </div>
+            {{ else }}
+            <h1>Error 404</h1>
             {{ end }}
     </main>
 
@@ -209,6 +268,39 @@
 <script src="/assets/js/style.js"></script>
 
 <script>
+
+$(document).ready(function(){
+        $('.coms').click(function(e) {
+            clickId = $(this).attr('name');
+                $.ajax({
+                    url: '/communities',
+                    type: 'GET',
+                    dataType: 'html',
+                    data : { name_com: clickId},
+                    success : function(data) {
+                    $('#result').html(data);
+                    },
+                });
+                
+            alert(name_com);
+        });
+    });
+
+    $(document).ready(function(){
+        $('.communa').click(function(e) {
+            clickId = $(this).attr('id');
+            // alert('fa'+clickId);
+                $.ajax({
+                    url: '/communities',
+                    type: 'POST',
+                    dataType: 'html',
+                    data : { community_id: clickId},
+                    success : function(data) {
+                    $('#result').html(data);
+                    },
+                });
+        });
+    });
 
     $(document).ready(function(){
        $('.inputFriends').click(function(e) {
@@ -270,20 +362,20 @@
        });
    });
 
-   $(document).ready(function(){
-       $('.inputRec').click(function(e) {
-           clickId = $(this).attr('id');
-               $.ajax({
-                   url: '/friends/rec',
-                   type: 'POST',
-                   dataType: 'html',
-                   data : { friend_id: clickId},
-                   success : function(data) {
-                   $('#result').html(data);
-                   },
-               });
-       });
-   });
+//    $(document).ready(function(){
+//        $('.inputRec').click(function(e) {
+//            clickId = $(this).attr('id');
+//                $.ajax({
+//                    url: '/friends/rec',
+//                    type: 'POST',
+//                    dataType: 'html',
+//                    data : { friend_id: clickId},
+//                    success : function(data) {
+//                    $('#result').html(data);
+//                    },
+//                });
+//        });
+//    });
 
    $(document).ready(function(){
        $('.guestId').click(function(e) {

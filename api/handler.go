@@ -98,7 +98,7 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 					http.NotFound(w, r)
 				}
 			}
-			app.RecordingSessions(fmt.Sprintf("Пользователь, %s (логин - %s, пароль - %s) зашел в аккаунт в %s.\n", userAuth.Name, userAuth.Login, userAuth.Password, time.Now().Format("2006-01-02 15:04")))
+			app.RecordingSessions(fmt.Sprintf("Пользователь, %s (логин - %s, пароль - %s) зашел в аккаунт в %s.\n", userAuth.Name, userAuth.Login, userAuth.Password, time.Now().Format("2006-01-02 15:04")), "listOfVisits.txt")
 			http.Redirect(w, r, "/second_auth", http.StatusSeeOther)
 		}
 	}
@@ -164,6 +164,45 @@ func regHandler(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, cookie)
 		http.Redirect(w, r, "/setting", http.StatusSeeOther)
 	}
+}
+
+func findUserHandler(w http.ResponseWriter, r *http.Request) { //FindFR
+	tmpl, err := template.ParseFiles("html/friends.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+
+	var users []models.Users
+	var communities []models.Communities
+
+	if r.Method == "POST" {
+		r.ParseForm()
+		value := r.FormValue("find")
+		users, err = database.FindUsers(value, userAuth.Login)
+		if err != nil {
+			fmt.Println("Error - findUserHandler() FindUsers()", err.Error())
+		}
+		fmt.Println(users)
+		communities, err = database.FindCommunities(value, userAuth.Login)
+		if err != nil {
+			fmt.Println("Error - findUserHandler() FindCommunities()", err.Error())
+		}
+		fmt.Println(communities)
+	}
+	okuser := false
+	okcom := false
+	if users == nil {
+		okuser = true
+	}
+	if communities == nil {
+		okcom = true
+	}
+
+	data := map[string]interface{}{"User": userAuth, "Find": users, "Done": "FindFR", "Friends": "", "Subs": "", "Online": "", "OKU": okuser, "OKC": okcom, "Communities": communities}
+	title := map[string]string{"Title": models.Cfg.FriendsTitile}
+	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "friends", data)
+
 }
 
 func settingHandler(w http.ResponseWriter, r *http.Request) {
@@ -478,9 +517,10 @@ func pageDelGofHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if r.Method == "GET" {
 		r.ParseForm()
-		gof := r.FormValue("gof2")
+		gof := r.FormValue("rep_id")
+		id, _ := strconv.Atoi(gof)
 		if gof != "" {
-			err := database.DeleteRepoPostByUser(gof, userAuth.Login)
+			err := database.DeleteRepoPostByUser(id, userAuth.Login)
 			if err != nil {
 				fmt.Println("Error - pageDelGofHandler() DeleteRepoPostByUser()", err.Error())
 			}
@@ -619,7 +659,7 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) {
 		friends := database.SelectAllFriendsUser(userAuth.Login)
 		online := database.SelectOnlineFriends(userAuth.Login)
 
-		data := map[string]interface{}{"User": userAuth, "Friends": friends, "Subs": subs, "Rec": rec, "Online": online, "Done": true}
+		data := map[string]interface{}{"User": userAuth, "Friends": friends, "Subs": subs, "Rec": rec, "Online": online, "Done": "Friends"}
 		title := map[string]string{"Title": models.Cfg.FriendsTitile}
 		tmpl.ExecuteTemplate(w, "header", title)
 		tmpl.ExecuteTemplate(w, "friends", data)
@@ -714,7 +754,7 @@ func guestFriendsHandler(w http.ResponseWriter, r *http.Request) {
 		subs := database.SelectUserSub(guestId)
 		online := database.SelectOnlineFriends(guestId)
 
-		data := map[string]interface{}{"User": userAuth, "Friends": friends, "Guest": gst, "Subs": subs, "Rec": rec, "Done": false, "Online": online}
+		data := map[string]interface{}{"User": userAuth, "Friends": friends, "Guest": gst, "Subs": subs, "Rec": rec, "Done": "GuestFR", "Online": online}
 		title := map[string]string{"Title": models.Cfg.FriendsTitile}
 		tmpl.ExecuteTemplate(w, "header", title)
 		tmpl.ExecuteTemplate(w, "friends", data)
@@ -1470,22 +1510,39 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 
 		//createFile(check)
 		companion = database.SelectCompanionsByLogin(userAuth.Login)
-		fmt.Println("UsersLink1111", UsersLink)
-		Link = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
+
+		r.ParseForm()
+		usrMesg = r.FormValue("user_id")
+		activeChatUser, err = database.SelectUserByColumn("Login", usrMesg)
+		if err != nil {
+			fmt.Println("Error - messageHandler() SelectUserByColumn()", err)
+		}
 
 		if r.Method == "GET" {
 			r.ParseForm()
 			usrMesg = r.FormValue("user_id")
-			fmt.Println(usrMesg)
 			UsersLink, err = database.SelectMessengeListbyUsers(userAuth.Login, usrMesg)
 			if err != nil {
 				fmt.Println("Error - messageHandler() SelectMessengeListbyUsers()", err)
 			}
-			activeChatUser, err = database.SelectUserByColumn("Login", usrMesg)
-			if err != nil {
-				fmt.Println("Error - messageHandler() SelectUserByColumn()", err)
-			}
+			// activeChatUser, err = database.SelectUserByColumn("Login", usrMesg)
+			// if err != nil {
+			// 	fmt.Println("Error - messageHandler() SelectUserByColumn()", err)
+			// }
 			OK = true
+			if UsersLink.MessageHistory != "" {
+				Link = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
+				msg := models.Message{
+					User:    userAuth.Login,
+					Message: "",
+					Data:    time.Now().Format("2006-01-02 15:04"),
+					Photo:   userAuth.Photo,
+				}
+				Messenger, err = app.JSON(msg, Link, userAuth.Login)
+				if err != nil {
+					log.Fatal(err.Error())
+				}
+			}
 
 		}
 		fmt.Println("UsersLink2222", UsersLink)
@@ -1495,8 +1552,9 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 			r.ParseForm()
 
 			message := r.FormValue("commentsInput")
+			//Link = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
 			if message != "" {
-				Link = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
+
 				//Link = "C:/Users/admin/go/src/go-blog/data/files/message/test.json"
 				fmt.Println("Link------------------", Link)
 				f, err = os.OpenFile(Link, os.O_WRONLY|os.O_APPEND, 0755)
@@ -1819,21 +1877,37 @@ func helpHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func helpComplaintHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "POST" {
+	if r.Method == "POST" { //жалобы и предложения
 		r.ParseForm()
 		title := r.FormValue("title")
 		description := r.FormValue("description")
 		selectCat := r.FormValue("selectCat")
-		fmt.Println(title, description, selectCat)
-		//добавление заявки в бд
+		sessins := fmt.Sprintf("Категория - %s; Заголовок - %s; Описание - %s", selectCat, title, description)
+		err := app.RecordingSessions(sessins, "complaints_and_suggestions.txt")
+		if err != nil {
+			fmt.Println("Error - RecordingSessions() ", err.Error())
+		}
+		//записывать все жалобы и предложения в отдельный файл
 
 		http.Redirect(w, r, "/help", http.StatusSeeOther)
 	}
-	if r.Method == "GET" {
+	if r.Method == "GET" { // жалобы на пользователей
 		r.ParseForm()
 		guest := r.FormValue("guest")
 		complaint := r.FormValue("selectComplaint")
-		fmt.Println(guest, complaint)
+		status := complaintStatus[0]
+		fmt.Println(guest, complaint, status)
+		comp := models.Complaints{
+			Criminal:  guest,
+			Complaint: complaint,
+			Author:    userAuth.Login,
+			Status:    status,
+		}
+
+		err := database.InsertComplaint(comp)
+		if err != nil {
+			fmt.Println("Error - InsertComplaint() ", err.Error())
+		}
 
 		http.Redirect(w, r, "/guest", http.StatusSeeOther)
 	}
@@ -1886,7 +1960,7 @@ func adminHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			title := map[string]string{"Title": "Админ панель"}
-			data := map[string]interface{}{"User": userAuth, "AllUs": all, "DelUser": uDel, "BanUser": uBan}
+			data := map[string]interface{}{"User": userAuth, "AllUs": all, "DelUser": uDel, "BanUser": uBan, "Done": true}
 
 			tmpl.ExecuteTemplate(w, "header", title)
 			tmpl.ExecuteTemplate(w, "admin", data)
@@ -1910,7 +1984,7 @@ func adminBanHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Println("Error - adminBanHandler() SelectUserByColumn()", err.Error())
 		}
-		user.Access = "Bannerd"
+		user.Access = "Banned"
 		pass := user.Password
 		user.Password = user.Photo
 		user.Photo = "/data/image/blog/banned.jpg"
@@ -1955,7 +2029,7 @@ func adminDelHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Println("Error - adminBanHandler() SelectUserByColumn()", err.Error())
 		}
-		user.Access = "Bannerd"
+		user.Access = "Banned"
 		pass := user.Password
 		user.Password = user.Photo
 		user.Photo = "/data/image/blog/banned.jpg"
@@ -1994,8 +2068,9 @@ func adminDelBanListHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Println("Error - SelectUserBannedByAdmin()", err.Error())
 		}
+	}
 
-	} else if r.Method == "POST" {
+	if r.Method == "POST" {
 		Data, err = database.SelectUserDeletedByAdmin(userAuth.Login)
 		if err != nil {
 			fmt.Println("Error - SelectUserBannedByAdmin()", err.Error())
@@ -2030,5 +2105,78 @@ func adminListHandler(w http.ResponseWriter, r *http.Request) {
 
 	tmpl.ExecuteTemplate(w, "header", title)
 	tmpl.ExecuteTemplate(w, "list", data)
+
+}
+
+func adminComplaintListHandler(w http.ResponseWriter, r *http.Request) { ///admin/complaint/list
+	tmpl, err := template.ParseFiles("html/list.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+	comp, err := database.SelectComplaints()
+	if err != nil {
+		fmt.Println("Error - SelectComplaints()", err.Error())
+	}
+
+	done := "Complaint"
+
+	fmt.Println(comp)
+
+	ttl := "Список жалоб"
+	title := map[string]string{"Title": ttl}
+	data := map[string]interface{}{"Complaint": comp, "Done": done, "Title": ttl}
+
+	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "list", data)
+}
+func adminComplaintHandler(w http.ResponseWriter, r *http.Request) { ///admin/complaint
+	tmpl, err := template.ParseFiles("html/admin.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+
+	var comp models.Complaints
+
+	if r.Method == "POST" {
+		r.ParseForm()
+		id = r.FormValue("id")
+		fmt.Println("ID-------", id)
+		Id, _ := strconv.Atoi(id)
+		comp, err = database.SelectComplaint(Id)
+		if err != nil {
+			fmt.Println("Error - SelectComplaint() ", err.Error())
+		}
+		fmt.Println(comp)
+	}
+
+	ttl := "Жалоба - №" + fmt.Sprint(Id)
+	title := map[string]string{"Title": ttl}
+	//"User": userAuth, "AllUs": all, "DelUser": uDel, "BanUser": uBan, "Done": true}
+	data := map[string]interface{}{"User": userAuth, "Complaint": comp, "Title": ttl, "Done": false, "CompStat": complaintStatus}
+
+	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "admin", data)
+}
+
+func adminComplaintEditHandler(w http.ResponseWriter, r *http.Request) {
+	var complaint models.Complaints
+	if r.Method == "POST" {
+		r.ParseForm()
+		complaint.Id, _ = strconv.Atoi(r.FormValue("id"))
+		complaint.Criminal = r.FormValue("field1")
+		complaint.Complaint = r.FormValue("field2")
+		complaint.Author = r.FormValue("field3")
+		complaint.Status = r.FormValue("selectuser")
+		complaint.Comment = r.FormValue("field6")
+		complaint.Admin = r.FormValue("field5")
+		fmt.Println(complaint)
+
+		err := database.UpdateComplaintById(complaint)
+		if err != nil {
+			fmt.Println("Error - UpdateComplaintById() ", err.Error())
+		}
+
+		http.Redirect(w, r, "/admin/complaint/list", http.StatusSeeOther)
+	}
 
 }

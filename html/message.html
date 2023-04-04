@@ -16,7 +16,9 @@
             <img src="/data/image/brand.png" alt="">
             <span>GOLANG</span>
         </div>
-        <div class="find"><input type="text" placeholder="Найти"></div>
+        <div class="find"><form action="find" method="post" autocomplete="off" >
+            <input type="text" name="find" placeholder="Найти пользователя">
+        </form></div>
     </div>
     <div class="account">
         <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
@@ -40,14 +42,21 @@
     <main>   
         <section class="msg-list">
             {{ range $_, $c := .Companions }}  
-			<div class="user head-chat" id="{{$c.Name}}" data-log="{{$c.Companion}}">
-				<div class="setacc">
-					<div class="avatar"><img src="{{ $c.Photo }}" alt=""></div>
-					<div class="info">
-						<div class="name">{{ $c.Name }}</div>
-					</div>
-				</div>
-			</div>
+            <form action="" method="get">
+                <input type="text" name="user_id" value="{{ $c.Companion }}" style="display: none;">
+                <button class="btn-msg">
+                    <div class="user head-chat" id="{{$c.Name}}" data-log="{{$c.Companion}}">
+                        <div class="setacc">
+                            <div class="avatar" ><img src="{{ $c.Photo }}" alt=""></div>
+                            <div class="info" style="margin: auto 0;">
+
+                                <div class="name">{{ $c.Name }}</div>
+                            
+                            </div>
+                        </div>
+                    </div>
+                </button>
+            </form>
             {{ end }}
 		</section>
 
@@ -56,9 +65,9 @@
             <section class="chat">
                 
                 <div class="head-chat">
-                    <div class="setacc" style="position: fixed; width: 45%; top:85px">
-                        <div class="avatar"><img src="{{ .ChatUser.Photo }}" alt=""></div>
-                        <div class="info">
+                    <div class="setacc" style="position: fixed; width: 45%; top: 93px; height: 65px;">
+                        <div class="avatar" style="margin: auto 0;"><img src="{{ .ChatUser.Photo }}" alt=""></div>
+                        <div class="info" style="margin: auto 0;">
                         <div class="name">{{ .ChatUser.Name }}</div>
                         </div>
                     </div>

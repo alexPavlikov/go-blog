@@ -16,7 +16,9 @@
             <img src="/data/image/brand.png" alt="">
             <span>GOLANG</span>
         </div>
-        <div class="find"><input type="text" placeholder="Найти"></div>
+        <div class="find"><form action="find" method="post">
+            <input type="text" name="find" placeholder="Найти пользователя" autocomplete="off" >
+        </form></div>
     </div>
     <div class="account">
         <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
@@ -103,7 +105,10 @@
                             </div>
                             <div class="menu com">
                                 <div></div>
-                                <form action="" method="post"><input name="{{ $rc.Name }}" class="communaRec communitiesSub" id="{{$rc.Name}}" class="coms" type="submit" value="Подписаться"></form>        
+                                <form action="" method="post">
+                                    <input type="text" name="communityRec" value="{{ $rc.Name }}" style="display: none;">
+                                    <input name="{{ $rc.Name }}" class="communaRec communitiesSub" id="{{$rc.Name}}" class="coms" type="submit" value="Подписаться">
+                                </form>        
                             </div>
                         </div>
                         {{ end }}
@@ -206,21 +211,21 @@
         });
     });
 
-    $(document).ready(function(){
-        $('.communaRec').click(function(e) {
-            clickId = $(this).attr('id');
-            // alert('fa'+clickId);
-                $.ajax({
-                    url: '/communities',
-                    type: 'POST',
-                    dataType: 'html',
-                    data : { communityRec: clickId},
-                    success : function(data) {
-                    $('#result').html(data);
-                    },
-                });
-        });
-    });
+    // $(document).ready(function(){
+    //     $('.communaRec').click(function(e) {
+    //         clickId = $(this).attr('id');
+    //         // alert('fa'+clickId);
+    //             $.ajax({
+    //                 url: '/communities',
+    //                 type: 'POST',
+    //                 dataType: 'html',
+    //                 data : { communityRec: clickId},
+    //                 success : function(data) {
+    //                 $('#result').html(data);
+    //                 },
+    //             });
+    //     });
+    // });
 
 </script>
 

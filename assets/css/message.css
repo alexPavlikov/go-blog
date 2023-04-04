@@ -5,20 +5,31 @@
 
 .head-chat .setacc {
     width: 100%;
-    margin: 10px 0;
-    padding: 10px 0;
+    
     display: flex;
     flex-direction: row;
     justify-content: center;
     background-color: rgb(206, 206, 206);
     border-radius: 25px;
-    height: 50px;
+   
+}
+
+.btn-msg {
+    width: 100%;
+    margin: 5px 0;
+    padding: 10px 0;
+    position: relative;
+    background-color: rgb(206, 206, 206);
+    border-radius: 25px;
+    height: 70px;
 }
 
 .head-chat .setacc .info .name {
-    margin: 30% 0;
+    margin: 20% 0;
     font-size: 20px;
     font-weight: 700;
+    border: none;
+    background-color: inherit;
 }
 
 .head-chat .setacc .avatar img {

@@ -4,6 +4,8 @@
 
 <link rel="stylesheet" href="/assets/css/list.css">   
 
+<script src='//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js'></script>
+
     
     {{ $st := "Store" }}
    {{ if eq .Done $st }} 
@@ -58,7 +60,7 @@
             {{ range $_, $ad := .Admins }}
             <tr>
                 <td>{{ $ad.Id }}</td>
-                <td>{{ $ad.User }}</td>
+                <td class="us" id="{{ $ad.User }}"><a href="/guest">{{ $ad.User }}</a></td>
                 <td>{{ $ad.Reason }}</td>
                 <td>{{ $ad.Time }}</td>
                 <td>{{ $ad.Admin }} </td>
@@ -93,10 +95,70 @@
         {{ end }}
     </tbody>
     </table>
+    {{ else if eq .Done "Complaint" }}
+    <h1>{{.Title}}</h1> 
+    {{ $lengthCom := len .Complaint }}
+    <h3>Общее кол-во жалоб {{$lengthCom}}</h3> 
+    <table class="table">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Нарушитель</th>
+            <th>Жалоба</th>
+            <th>Автор</th>
+            <th>Статус</th>
+            <th>Комментарий</th>
+            <th>Админ</th>
+            <!-- <th>Дополнительно</th> -->
+        </tr>
+    </thead> 
+    <tbody>
+        {{ range $_, $lc := .Complaint }}
+        <tr>
+            <td>
+                <form action="/admin/complaint" method="post">
+                    <input type="text" name="id" id="id" value="{{ $lc.Id }}" style="display: none;">
+                    <input class="com_sub" type="submit" value="{{ $lc.Id }}">
+                </form>
+            </td>
+            <td class="us" id="{{ $lc.Criminal }}"><a href="/guest">{{ $lc.Criminal }}</a></td>
+            <td>{{ $lc.Complaint }}</td>
+            <td>{{ $lc.Author }}</td>
+            {{ if eq $lc.Status "не решена" }}
+            <td class="status" style="background-color: rgba(255, 0, 0, 0.750);">{{ $lc.Status }} </td>
+            {{ else if eq $lc.Status "решена" }}
+            <td class="status" style="background-color: rgba(0, 128, 0, 0.750);">{{ $lc.Status }} </td>
+            {{ else }}
+            <td class="status" style="background-color: rgba(0, 0, 255, 0.750);">{{ $lc.Status }} </td>
+            {{ end }}
+            <td>{{ $lc.Comment }}</td>
+            <td>{{ $lc.Admin }} </td>
+        </tr>
+        {{ end }}
+    </tbody>
+    </table>
+
    {{ else }}
    <h1>{{.Title}}</h1> 
    <h3>У Вас еще нет ни одной продажи. Все еще впереди!</h3> 
    {{ end }}
+
+   <script>
+        $(document).ready(function(){
+       $('.us').click(function(e) {
+           clickId = $(this).attr('id');
+               $.ajax({
+                   url: '/friends',
+                   type: 'GET',
+                   dataType: 'html',
+                   data : { Id: clickId},
+                   success : function(data) {
+                   $('#result').html(data);
+                   },
+               });
+       });
+   });
+   </script>
 
 {{ template "footer" }}
 

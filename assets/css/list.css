@@ -45,3 +45,17 @@ h3 {
     text-align: center;
     padding-bottom: 30px;
 }
+
+.status {
+	font-weight: 700; 
+	color: white; 
+	text-align: center;
+}
+
+.com_sub {
+	width: 100%;
+}
+
+.com_sub:hover {
+	cursor: pointer;
+}

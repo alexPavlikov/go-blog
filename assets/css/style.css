@@ -43,8 +43,9 @@ header .brand .logos {
 
 
 header .brand .find {
-    width: 200px;
+    width: 235px;
     margin-top: 16px;
+    position: relative;
 }
 
 header .brand .find input {
@@ -91,4 +92,9 @@ header .account i:hover {
     width: 65%;
     color: rgba(60, 161, 255, 0.550);
     text-align: center;
+}
+
+.center {
+    text-align: center;
+    color: rgba(60, 161, 255);
 }

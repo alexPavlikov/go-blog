@@ -50,6 +50,7 @@ func HandleRequest() {
 	http.HandleFunc("/favourites", favouritesPageHandler)
 	http.HandleFunc("/help", helpHandler)
 	http.HandleFunc("/help/complaint", helpComplaintHandler)
+	http.HandleFunc("/find", findUserHandler)
 	http.HandleFunc("/exit", exitHandler)
 
 	//admin
@@ -58,6 +59,9 @@ func HandleRequest() {
 	http.HandleFunc("/admin/del", adminDelHandler)
 	http.HandleFunc("/admin/list", adminDelBanListHandler)
 	http.HandleFunc("/admin/amd_list", adminListHandler)
+	http.HandleFunc("/admin/complaint/list", adminComplaintListHandler)
+	http.HandleFunc("/admin/complaint", adminComplaintHandler)
+	http.HandleFunc("/admin/complaint/edit", adminComplaintEditHandler)
 
 	http.HandleFunc("/fr", frHandler)
 }

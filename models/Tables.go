@@ -240,3 +240,13 @@ type UserBanned struct {
 	Time   int
 	Admin  string
 }
+
+type Complaints struct {
+	Id        int
+	Criminal  string
+	Complaint string
+	Author    string
+	Status    string
+	Comment   string
+	Admin     string
+}
