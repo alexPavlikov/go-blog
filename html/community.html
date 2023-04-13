@@ -90,6 +90,23 @@
     <label for="css-modal-checkbox3" class="css-modal-close"></label>
 </div>
 
+<input type="checkbox" id="css-modal-checkbox4" />    
+<div class="cmc">
+    <div class="cmt">
+        <h4>Выберите нового главу сообщества</h4>
+        <form action="community/author" method="post">
+            <input type="text" name="commun" value="{{ .Communities.Name }}" style="display: none;">
+            <select name="userSel">
+                {{ range $_, $us := .Users }}
+                    <option>{{$us.User}}</option>
+                {{ end }}
+            </select>
+            <button class="goBTN" type="submit">GO</button>
+        </form>
+    </div>
+    <label for="css-modal-checkbox4" class="css-modal-close"></label>
+</div>
+
 
         <section>
             <div class="photo">
@@ -125,7 +142,9 @@
                     <div class="add">
                         <label for="css-modal-checkbox3" class="add"><i class="fa-solid fa-pen-to-square"></i> Изменить сообщество</label>
                     </div>
-                    <button class="add"><i class="fa-solid fa-right-left"></i>Отдать командывание</button>
+                    <div class="add">
+                        <label for="css-modal-checkbox4" class="add"><i class="fa-solid fa-pen-to-square"></i> Отдать командывание</label>
+                    </div>
                     <form action="community/del" method="post">
                         <input id="inputName" name="inputName" type="text" style="display: none;" value="{{.Communities.Name}}">
                         <button style="width: 100%;" type="submit" class="add del">Удалить сообщество<i class="fa-solid fa-delete-left"></i></button>

@@ -41,22 +41,24 @@
 
     <main>   
         <section class="msg-list">
-            {{ range $_, $c := .Companions }}  
-            <form action="" method="get">
-                <input type="text" name="user_id" value="{{ $c.Companion }}" style="display: none;">
-                <button class="btn-msg">
-                    <div class="user head-chat" id="{{$c.Name}}" data-log="{{$c.Companion}}">
-                        <div class="setacc">
-                            <div class="avatar" ><img src="{{ $c.Photo }}" alt=""></div>
-                            <div class="info" style="margin: auto 0;">
-
-                                <div class="name">{{ $c.Name }}</div>
-                            
+            {{ range $_, $c := .Companions }} 
+            <form action="#last_mes" method="get">
+                <input type="text" name="user_id" value="{{ $c.Companion}}" style="display: none;">
+                
+                <button id="btn-msg" class="btn-msg">
+                        <div class="user head-chat" id="{{$c.Name}}" data-log="{{$c.Companion}}">
+                            <div class="setacc">
+                                <div class="avatar" ><img src="{{ $c.Photo }}" alt=""></div>
+                                <div class="info" style="margin: auto 0;">
+    
+                                    <div class="name">{{ $c.Name }}</div>
+                                
+                                </div>
                             </div>
                         </div>
-                    </div>
                 </button>
-            </form>
+
+            </form> 
             {{ end }}
 		</section>
 
@@ -85,16 +87,7 @@
                             </div>
                         </div>              
                     {{ end }}
-
-                        <!-- <div class="message message--user-2">
-                        <time class="message__time">21.02.2017 21:12:07</time>
-                        <figure class="message__author-pic">
-                            <img src="https://placeimg.com/40/40/people">
-                        </figure>
-                        <div class="message__text">
-                            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis at purus nibh. Cras metus nulla, vestibulum in auctor ac, fermentum vitae tellus.</p>
-                        </div>
-                        </div> -->
+                    <div id="last_mes"></div>
                     
                 {{ else }}    
 
@@ -139,6 +132,7 @@
 <script src="/assets/js/style.js"></script>
 
 <script>
+
     $(document).ready(function(){
        $('.user').click(function(e) {
            clickId = $(this).attr('data-log');

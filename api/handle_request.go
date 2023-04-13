@@ -28,6 +28,7 @@ func HandleRequest() {
 	http.HandleFunc("/communities/add", communitiesAddHandler)
 	http.HandleFunc("/comments", commentsHandler)
 	http.HandleFunc("/community", communityHandler)
+	http.HandleFunc("/community/author", communityAuthorHandler)
 	http.HandleFunc("/community/del", communityDelHandler)
 	http.HandleFunc("/community/post", communityPostHandler)
 	http.HandleFunc("/community/edit", communityEditHandler)

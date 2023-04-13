@@ -1,13 +1,12 @@
 package api
 
 import (
-	"net/http"
 	"os"
 
 	"github.com/alexPavlikov/go-blog/models"
 )
 
-var client http.Client
+// var client http.Client
 var postId string
 var id string
 var posts []models.Posts
@@ -19,7 +18,8 @@ var inputComment string
 var guestLogin string
 var Path string
 var Communication []models.Message
-var check models.MessageList
+
+// var check models.MessageList
 var export string
 var userAuth models.Users
 var imgPath, title, content string

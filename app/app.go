@@ -201,14 +201,14 @@ func GiveCode() (bytes int) {
 
 func SendCode(email string, code int, name string) error {
 	m := gomail.NewMessage()
-	m.SetHeader("From", "a.pavlikov2002@gmail.com")
+	m.SetHeader("From", models.Cfg.Email)
 	m.SetHeader("To", email)
 
 	m.SetHeader("Subject", "Gopher.go")
 
 	message := fmt.Sprintf(`Hello %s - %d`, name, code)
 	m.SetBody("text/plain", message)
-	d := gomail.NewDialer("smtp.gmail.com", 587, "a.pavlikov2002@gmail.com", "isei dkte iiwl wior")
+	d := gomail.NewDialer("smtp.gmail.com", 587, models.Cfg.Email, "isei dkte iiwl wior")
 
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
@@ -221,14 +221,34 @@ func SendCode(email string, code int, name string) error {
 
 func SendNewPass(email string, pass string, name string) error {
 	m := gomail.NewMessage()
-	m.SetHeader("From", "a.pavlikov2002@gmail.com")
+	m.SetHeader("From", models.Cfg.Email)
 	m.SetHeader("To", email)
 
 	m.SetHeader("Subject", "Gopher.go")
 
 	message := fmt.Sprintf(`Здравствуйте, %s, Ваш новый пароль - %s`, name, pass)
 	m.SetBody("text/plain", message)
-	d := gomail.NewDialer("smtp.gmail.com", 587, "a.pavlikov2002@gmail.com", "isei dkte iiwl wior")
+	d := gomail.NewDialer("smtp.gmail.com", 587, models.Cfg.Email, "isei dkte iiwl wior")
+
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+
+	if err := d.DialAndSend(m); err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
+}
+
+func SendSales(email string, name string, sale models.StorePlus) error {
+	m := gomail.NewMessage()
+	m.SetHeader("From", models.Cfg.Email)
+	m.SetHeader("To", email)
+
+	m.SetHeader("Subject", "Gopher.go")
+
+	message := fmt.Sprintf(`Здравствуйте, %s, с Вашего аккаунта была совершена покупка - %s на сумму - %.2f, у частного продавца - %s`, name, sale.Name, sale.NewPrice, sale.Community)
+	m.SetBody("text/plain", message)
+	d := gomail.NewDialer("smtp.gmail.com", 587, models.Cfg.Email, "isei dkte iiwl wior")
 
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 

@@ -92,6 +92,7 @@ header .account i:hover {
     width: 65%;
     color: rgba(60, 161, 255, 0.550);
     text-align: center;
+    margin: auto;
 }
 
 .center {

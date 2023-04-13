@@ -386,7 +386,8 @@ func FindUsers(query string, login string) ([]models.Users, error) {
 	WHERE "Users"."Login" NOT IN 
 	(SELECT "Friends"."Login" FROM "Friends" WHERE "Friends"."Login" = '%s' OR "Friends"."Friend" = '%s') 
 	 AND "Access" = 'User'
-	 AND "Name" ILIKE '%s'`, login, login, query))
+	 AND "Name" ILIKE '%s'
+	 AND "Login" != '%s'`, login, login, query, login))
 	if err != nil {
 		fmt.Println("Error - FindUsers() ", err)
 		return users, err
@@ -575,8 +576,9 @@ func InsertUserToBanList(ban models.UserBanned) error {
 
 // --------------------Query from Communities table--------------------
 
-func CheckCommunity(user, community string) (models.Communities, bool) {
-	var communities models.Communities
+func CheckCommunity(user, community string) ([]models.Communities, bool) {
+	var communiti models.Communities
+	var communities []models.Communities
 	ok := false
 	rows, err := DB.Query(fmt.Sprintf(`SELECT "Communities".* FROM "Communities","Subscribers"
 	WHERE "Communities"."Name" = '%s'
@@ -587,13 +589,15 @@ func CheckCommunity(user, community string) (models.Communities, bool) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		err = rows.Scan(&communities.Name, &communities.Author, &communities.Photo, &communities.Category)
+		err = rows.Scan(&communiti.Name, &communiti.Author, &communiti.Photo, &communiti.Category)
 		if err != nil {
 			fmt.Println("Error - CheckCommunity() rows.Next()", err.Error())
 		}
+		communities = append(communities, communiti)
 	}
-	if communities.Name == "" || communities.Author == "" {
+	if len(communities) == 0 {
 		ok = true
+		return communities, ok
 	}
 	return communities, ok
 }
@@ -708,6 +712,17 @@ func SelectCommunitiesByColumn(column string, value string) models.Communities {
 
 func UpdateCommunity(communities models.Communities, name string) error {
 	query := fmt.Sprintf(`UPDATE "Communities" SET "Name" = '%s', "Photo" = '%s', "Category" = '%s' WHERE "Name" = '%s'`, communities.Name, communities.Photo, communities.Category, name)
+	_, err := DB.Query(query)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println(query)
+	return nil
+}
+
+func UpdateCommunityAuthor(communities models.Communities, name string) error {
+	query := fmt.Sprintf(`UPDATE "Communities" SET "Author" = '%s' WHERE "Name" = '%s'`, communities.Author, name)
 	_, err := DB.Query(query)
 	if err != nil {
 		fmt.Println(err)
@@ -1540,7 +1555,8 @@ func SelectRecomendationFriends(user string) []models.Users {
 	query := fmt.Sprintf(`
 	SELECT "Users".* FROM "Users"
 	WHERE "Users"."Login" NOT IN 
-	(SELECT "Friends"."Login" FROM "Friends" WHERE "Friends"."Login" = '%s' OR "Friends"."Friend" = '%s') AND "Access" = 'User'`, user, user)
+	(SELECT "Friends"."Login" FROM "Friends" WHERE "Friends"."Login" = '%s' OR "Friends"."Friend" = '%s') AND "Access" = 'User'
+	AND "Users"."Login" != '%s'`, user, user, user)
 	rows, err := DB.Query(query)
 	if err != nil {
 		fmt.Println("Error - SelectRecomendationFriends()")

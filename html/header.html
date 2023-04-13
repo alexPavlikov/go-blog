@@ -16,6 +16,37 @@
     <title>{{ .Title }}</title>
 </head>
 
+<header>
+<div class="brand">
+    <div class="logos">
+        <img src="/data/image/brand.png" alt="">
+        <span>GOLANG</span>
+    </div>
+    <div class="find"><form action="find" method="post" autocomplete="off" >
+        <input type="text" name="find" placeholder="Найти пользователя">
+    </form></div>
+</div>
+<div class="account">
+    <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
+    <i class="fa-solid fa-chevron-down" onclick="Check();"></i>
+</div>
+</header>
+
+<script src='//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js'></script>
+
+<body>
+    <aside class="right">
+        <a href="/page#"><i class="fa-regular fa-circle-user"></i><span> Моя страница</span></a>
+        <a href="/blog"><i class="fa-regular fa-newspaper"></i><span> Новости</span></a>
+        <a href="/message"><i class="fa-regular fa-comment"></i><span> Сообщения</span></a>
+        <a href="/friends"><i class="fa-solid fa-user-group"></i><span> Друзья</span></a>
+        <a href="/communities"><i class="fa-solid fa-users"></i><span> Сообщества</span></a>
+        <a href="/setting"><i class="fa-solid fa-gear"></i> <span> Настройки</span></a>
+        <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
+        <a href="/help"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
+        <a href="/store"><i class="fa-brands fa-golang"></i><span> Go-Store</span></a>
+    </aside>
+
 <script src="/assets/js/style.js"></script>
 
 {{ end }}

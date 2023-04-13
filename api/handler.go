@@ -300,7 +300,7 @@ func refreshSettingHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		defer file.Close()
-		imgPath = fmt.Sprintf("./data/image/blog/%d%s", time.Now().UnixNano(), filepath.Ext(fileHeader.Filename))
+		imgPath = fmt.Sprintf("/data/image/blog/%d%s", time.Now().UnixNano(), filepath.Ext(fileHeader.Filename))
 		dst, err := os.Create(imgPath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -357,9 +357,10 @@ func blogHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		title := map[string]string{"Title": models.Cfg.BlogTitle}
+		title := map[string]interface{}{"Title": models.Cfg.BlogTitle, "User": userAuth}
 		blog := map[string]interface{}{"Post": posts, "User": userAuth}
 		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "footer", title)
 		tmpl.ExecuteTemplate(w, "blog", blog)
 	} else if c.Value != "" {
 		var err error
@@ -648,7 +649,7 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) {
 			//r.ParseForm()
 			guestId = r.FormValue("Id")
 			fmt.Println("GET friendsHandler()", guestId)
-			check, err = database.SelectMessengeListbyUsers(userAuth.Login, guestId)
+			_, err = database.SelectMessengeListbyUsers(userAuth.Login, guestId)
 			if err != nil {
 				fmt.Println("Error - friendsHandler() SelectMessengeListbyUsers()")
 			}
@@ -836,7 +837,7 @@ func communitiesAddHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		defer file.Close()
-		imgPath = fmt.Sprintf("/data/image/blog/%d%s", time.Now().UnixNano(), filepath.Ext(fileHeader.Filename))
+		imgPath = fmt.Sprintf("./data/image/blog/%d%s", time.Now().UnixNano(), filepath.Ext(fileHeader.Filename))
 		dst, err := os.Create(imgPath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -950,13 +951,14 @@ func communityHandler(w http.ResponseWriter, r *http.Request) {
 		subs := database.SelectSubscribersBtCommunities(post.Communities)
 		author, names := database.SelectCommunitiesAuthorByName(post.Communities)
 		category := database.SelectPostCategory()
-		store, err := database.SelectStoreItemsByCommunity(communitiesName)
+		Users := database.SelectSubscribersBtCommunities(post.Communities)
+		store, err := database.SelectStoreItemsByCommunity(post.Communities)
 		if err != nil {
 			fmt.Println(err)
 		}
 		comm := database.SelectCommunitiesByColumn("Name", post.Communities)
 		fmt.Println("SelectCommunitiesByColumn", comm.Name)
-
+		ok := false
 		if r.Method == "GET" {
 			fmt.Println("GET")
 			r.ParseForm()
@@ -967,7 +969,13 @@ func communityHandler(w http.ResponseWriter, r *http.Request) {
 				fmt.Println("Error - communityHandler() UpdateLikeInPost()")
 			}
 			postId = ""
-
+			if communitiesName != "" {
+				_, ok = database.CheckCommunity(userAuth.Login, communitiesName)
+				fmt.Println("31231", ok)
+			} else {
+				_, ok = database.CheckCommunity(userAuth.Login, post.Communities)
+				fmt.Println("45543", ok)
+			}
 		}
 
 		if r.Method == "POST" {
@@ -985,10 +993,8 @@ func communityHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		_, ok := database.CheckCommunity(userAuth.Login, communitiesName)
-
 		title := map[string]string{"Title": Foo.Name}
-		blog := map[string]interface{}{"Post": posts, "User": userAuth, "Subs": subs, "Author": author, "Names": names, "Communities": Foo, "PostCat": category, "CommCat": catComm, "SetCom": comm, "OK": ok, "Store": store}
+		blog := map[string]interface{}{"Post": posts, "User": userAuth, "Users": Users, "Subs": subs, "Author": author, "Names": names, "Communities": Foo, "PostCat": category, "CommCat": catComm, "SetCom": comm, "OK": ok, "Store": store}
 		tmpl.ExecuteTemplate(w, "header", title)
 		tmpl.ExecuteTemplate(w, "community", blog)
 	} else if c.Value != "" {
@@ -1000,6 +1006,26 @@ func communityHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		http.NotFound(w, r)
+	}
+}
+
+func communityAuthorHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+		com := r.FormValue("commun")
+		user := r.FormValue("userSel")
+		fmt.Println(com, user)
+
+		upCom := database.SelectCommunitiesByColumn("Name", com)
+
+		upCom.Author = user
+
+		err := database.UpdateCommunityAuthor(upCom, com)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+
+		http.Redirect(w, r, "/community", http.StatusSeeOther)
 	}
 }
 
@@ -1143,7 +1169,7 @@ func communityMarketHandler(w http.ResponseWriter, r *http.Request) {
 		var Ok bool
 		Access := false
 		Ok = true
-		store, err := database.SelectStoreItemsByCommunity(communitiesName)
+		store, err := database.SelectStoreItemsByCommunity(post.Communities)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -1151,7 +1177,7 @@ func communityMarketHandler(w http.ResponseWriter, r *http.Request) {
 			Ok = false
 		}
 
-		grp := database.SelectCommunitiesByColumn("Name", communitiesName)
+		grp := database.SelectCommunitiesByColumn("Name", post.Communities)
 		if grp.Author == userAuth.Login {
 			Access = true
 		}
@@ -1437,6 +1463,9 @@ func guestHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		_, ok := database.CheckFriends(userAuth.Login, guestId)
+		if userAuth.Login == guestId {
+			ok = false
+		}
 
 		userGuest, err := database.SelectUserByColumn("Login", guestId)
 		if err != nil {
@@ -1502,7 +1531,7 @@ func guestHandler(w http.ResponseWriter, r *http.Request) {
 func messageHandler(w http.ResponseWriter, r *http.Request) {
 	c := app.ReadCookies(r)
 	if c.Value == userAuth.Login {
-		OK = true
+
 		tmpl, err := template.ParseFiles("html/message.html", "html/header.html", "html/footer.html")
 		if err != nil {
 			http.NotFound(w, r)
@@ -1510,12 +1539,19 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 
 		//createFile(check)
 		companion = database.SelectCompanionsByLogin(userAuth.Login)
-
+		OKS := true
 		r.ParseForm()
 		usrMesg = r.FormValue("user_id")
 		activeChatUser, err = database.SelectUserByColumn("Login", usrMesg)
 		if err != nil {
 			fmt.Println("Error - messageHandler() SelectUserByColumn()", err)
+		}
+		if activeChatUser.Name == "" {
+			OK = false
+			OKS = false
+		} else {
+			OK = true
+			OKS = true
 		}
 
 		if r.Method == "GET" {
@@ -1529,8 +1565,9 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 			// if err != nil {
 			// 	fmt.Println("Error - messageHandler() SelectUserByColumn()", err)
 			// }
-			OK = true
+
 			if UsersLink.MessageHistory != "" {
+
 				Link = fmt.Sprintf("C:/Users/admin/go/src/go-blog/data/files/message/%s", UsersLink.MessageHistory)
 				msg := models.Message{
 					User:    userAuth.Login,
@@ -1541,6 +1578,13 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 				Messenger, err = app.JSON(msg, Link, userAuth.Login)
 				if err != nil {
 					log.Fatal(err.Error())
+				}
+				if Messenger.Messenge == nil {
+					OK = false
+					OKS = false
+				} else {
+					OK = true
+					OKS = true
 				}
 			}
 
@@ -1584,7 +1628,7 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 		title := map[string]string{"Title": models.Cfg.MessageTitle}
 		tmpl.ExecuteTemplate(w, "header", title)
 		fmt.Println(OK)
-		data := map[string]interface{}{"User": userAuth, "Done": OK, "OK": OK, "Companions": companion, "ChatUser": activeChatUser, "Chat": Messenger.Messenge}
+		data := map[string]interface{}{"User": userAuth, "Done": OK, "OK": OKS, "Companions": companion, "ChatUser": activeChatUser, "Chat": Messenger.Messenge}
 		tmpl.ExecuteTemplate(w, "message", data)
 	} else if c.Value != "" {
 		var err error
@@ -1782,6 +1826,12 @@ func storeBuyHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				fmt.Println(err.Error())
 			}
+
+			err = app.SendSales(userAuth.Login, userAuth.Name, product)
+			if err != nil {
+				fmt.Println("Error - SendSales()", err.Error())
+			}
+
 			http.Redirect(w, r, "/store", http.StatusSeeOther)
 		} else {
 			http.NotFound(w, r)
