@@ -199,6 +199,15 @@ func GiveCode() (bytes int) {
 	// return RandomIntegerwithinRange
 }
 
+func UpLevel(purchaseAmount int) (level int) {
+	level = purchaseAmount / 5000
+	if level > 100 {
+		level = 100
+		return level
+	}
+	return level
+}
+
 func SendCode(email string, code int, name string) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", models.Cfg.Email)

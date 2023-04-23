@@ -19,20 +19,30 @@
 <header>
 <div class="brand">
     <div class="logos">
-        <img src="/data/image/brand.png" alt="">
-        <span>GOLANG</span>
+        <a href="/page"><img src="/data/image/brand.png" alt=""></a>
+        <span class="log_name">GOPHER</span>
     </div>
     <div class="find"><form action="find" method="post" autocomplete="off" >
-        <input type="text" name="find" placeholder="Найти пользователя">
+        <input type="text" name="find" placeholder="Найти">
     </form></div>
 </div>
-<div class="account">
+<form class="mus-form" action="/music" method="post">
+    <input type="text" name="user" value="{{ .User.Login }}" style="display: none;">
+    <button><i class="fa-solid fa-music"></i></button>
+</form>
+<div class="account" id="">
+
     <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
     <i class="fa-solid fa-chevron-down" onclick="Check();"></i>
 </div>
 </header>
 
+<link rel="stylesheet" href="/assets/css/blog.css">
+<link rel="stylesheet" href="/assets/css/style.css">
+
 <script src='//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js'></script>
+
+<a href="#top" class="link-top"><i class="fa-solid fa-chevron-up"></i></a>
 
 <body>
     <aside class="right">

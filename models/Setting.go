@@ -21,6 +21,8 @@ type Setting struct {
 	StoreTitle        string
 	FavTitle          string
 	HelpTitle         string
+	GalleryTitile     string
+	MusicTitle        string
 }
 
 var Cfg Setting

@@ -73,8 +73,9 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 		var err error
 		userAuth, _ = database.SelectUserByLogPass(authLog, authPass)
 		if userAuth.Login == "" && userAuth.Password == "" {
-			http.NotFound(w, r)
-			http.Redirect(w, r, "/", http.StatusBadRequest)
+			w.Write([]byte("Неверный логин или пароль"))
+			// time.Sleep(3 * time.Second)
+			// http.Redirect(w, r, "/auth", http.StatusSeeOther)
 		} else if userAuth.Access == "Banned" {
 			http.NotFound(w, r) //отправлять письмо - вы в бане и сколько осталось часов
 		} else {
@@ -199,8 +200,9 @@ func findUserHandler(w http.ResponseWriter, r *http.Request) { //FindFR
 	}
 
 	data := map[string]interface{}{"User": userAuth, "Find": users, "Done": "FindFR", "Friends": "", "Subs": "", "Online": "", "OKU": okuser, "OKC": okcom, "Communities": communities}
-	title := map[string]string{"Title": models.Cfg.FriendsTitile}
+	title := map[string]interface{}{"Title": models.Cfg.FriendsTitile, "User": userAuth}
 	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "footer", title)
 	tmpl.ExecuteTemplate(w, "friends", data)
 
 }
@@ -210,9 +212,10 @@ func settingHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.NotFound(w, r)
 	}
-	title := map[string]string{"Title": models.Cfg.SettingTitle}
+	title := map[string]interface{}{"Title": models.Cfg.SettingTitle, "User": userAuth}
 	account := map[string]interface{}{"User": userAuth}
 	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "footer", title)
 	tmpl.ExecuteTemplate(w, "setting", account)
 }
 
@@ -261,7 +264,7 @@ func refreshSettingHandler(w http.ResponseWriter, r *http.Request) {
 		newName := r.FormValue("newName")
 		date := r.FormValue("newHB")
 		oldPass = app.CreateMd5Hash(oldPass)
-		newPass = app.CreateMd5Hash(newPass)
+
 		fmt.Println(login, newPass, oldPass, newName, date)
 		if oldPass != "" {
 			_, err := database.SelectUserByLogPass(login, oldPass)
@@ -279,6 +282,7 @@ func refreshSettingHandler(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 				if newPass != "" {
+					newPass = app.CreateMd5Hash(newPass)
 					_, err = database.UpdateUserByColumn("Password", newPass, login, oldPass)
 					if err != nil {
 						fmt.Println(err.Error())
@@ -384,6 +388,7 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("page", postId)
 		var rep models.Repost
 		var DoneGopher bool
+		var GalOK bool
 		rep.Post, _ = strconv.Atoi(postId)
 		rep.User = userAuth.Login
 		frd := database.SelectAllFriendsUser(userAuth.Login)
@@ -435,10 +440,18 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 			access = true
 		}
 
-		title := map[string]string{"Title": userAuth.Name}
-		tmpl.ExecuteTemplate(w, "header", title)
+		photo := database.SelectUserGalleryLimit(userAuth.Login)
+		if photo != nil {
+			GalOK = true
+		} else {
+			GalOK = false
+		}
 
-		sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Statistics": stat, "Done": DonePost, "DoneGopher": DoneGopher, "Gopher": gopher, "Access": access}
+		title := map[string]interface{}{"Title": userAuth.Name, "User": userAuth}
+		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "footer", title)
+
+		sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Statistics": stat, "Done": DonePost, "DoneGopher": DoneGopher, "Gopher": gopher, "Access": access, "GalOK": GalOK}
 		tmpl.ExecuteTemplate(w, "page", sendUser)
 	} else if c.Value != "" {
 		var err error
@@ -611,6 +624,7 @@ func commentsHandler(w http.ResponseWriter, r *http.Request) {
 		data := map[string]interface{}{"User": userAuth, "Comments": commentPost, "CommentsTitle": post.Title}
 		title := map[string]interface{}{"Title": models.Cfg.CommentsTitle}
 		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "footer", title)
 		tmpl.ExecuteTemplate(w, "comments", data)
 	} else if c.Value != "" {
 		var err error
@@ -661,8 +675,9 @@ func friendsHandler(w http.ResponseWriter, r *http.Request) {
 		online := database.SelectOnlineFriends(userAuth.Login)
 
 		data := map[string]interface{}{"User": userAuth, "Friends": friends, "Subs": subs, "Rec": rec, "Online": online, "Done": "Friends"}
-		title := map[string]string{"Title": models.Cfg.FriendsTitile}
+		title := map[string]interface{}{"Title": models.Cfg.FriendsTitile, "User": userAuth}
 		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "footer", title)
 		tmpl.ExecuteTemplate(w, "friends", data)
 	} else if c.Value != "" {
 		var err error
@@ -756,8 +771,9 @@ func guestFriendsHandler(w http.ResponseWriter, r *http.Request) {
 		online := database.SelectOnlineFriends(guestId)
 
 		data := map[string]interface{}{"User": userAuth, "Friends": friends, "Guest": gst, "Subs": subs, "Rec": rec, "Done": "GuestFR", "Online": online}
-		title := map[string]string{"Title": models.Cfg.FriendsTitile}
+		title := map[string]interface{}{"Title": models.Cfg.FriendsTitile, "User": userAuth}
 		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "footer", title)
 		tmpl.ExecuteTemplate(w, "friends", data)
 	} else if c.Value != "" {
 		var err error
@@ -811,8 +827,9 @@ func communitiesHandler(w http.ResponseWriter, r *http.Request) {
 		communities := database.SelectAllCommunitiesUser("User", userAuth.Login)
 		recCommunities := database.SelectRecCommunities(userAuth.Login)
 		data := map[string]interface{}{"User": userAuth, "Communities": communities, "Done": done, "RecCom": recCommunities, "CommCat": catComm}
-		title := map[string]string{"Title": models.Cfg.CommunitiesTitile}
+		title := map[string]interface{}{"Title": models.Cfg.CommunitiesTitile, "User": userAuth}
 		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "footer", title)
 		tmpl.ExecuteTemplate(w, "communities", data)
 	} else if c.Value != "" {
 		var err error
@@ -905,8 +922,9 @@ func guestCommunitiesHandler(w http.ResponseWriter, r *http.Request) {
 
 		data := map[string]interface{}{"User": userAuth, "Communities": communities, "RecCommunities": comWithOutSub, "Done": done}
 		// data := map[string]interface{}{"User": userAuth, "Communities": communities, "Done": done, "RecCom": recCommunities, "CommCat": catComm}
-		title := map[string]string{"Title": models.Cfg.CommunitiesTitile}
+		title := map[string]interface{}{"Title": models.Cfg.CommunitiesTitile, "User": userAuth}
 		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "footer", title)
 		tmpl.ExecuteTemplate(w, "communities", data)
 	} else if c.Value != "" {
 		var err error
@@ -993,9 +1011,10 @@ func communityHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		title := map[string]string{"Title": Foo.Name}
+		title := map[string]interface{}{"Title": Foo.Name, "User": userAuth}
 		blog := map[string]interface{}{"Post": posts, "User": userAuth, "Users": Users, "Subs": subs, "Author": author, "Names": names, "Communities": Foo, "PostCat": category, "CommCat": catComm, "SetCom": comm, "OK": ok, "Store": store}
 		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "footer", title)
 		tmpl.ExecuteTemplate(w, "community", blog)
 	} else if c.Value != "" {
 		var err error
@@ -1195,8 +1214,9 @@ func communityMarketHandler(w http.ResponseWriter, r *http.Request) {
 		root := "/community/market"
 
 		user, _ := database.SelectUserWallet(userAuth.Login, userAuth.Password)
-		title := map[string]string{"Title": "Товары - " + communitiesName}
+		title := map[string]interface{}{"Title": "Товары - " + communitiesName, "User": userAuth}
 		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "footer", title)
 		data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Store": store, "OK": Ok, "Access": Access, "Sex": sex, "Category": cat, "Community": communitiesName, "URL": url, "Root": root}
 		tmpl.ExecuteTemplate(w, "store", data)
 	} else if c.Value != "" {
@@ -1259,8 +1279,9 @@ func communityMarketSortHandler(w http.ResponseWriter, r *http.Request) {
 		// data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Store": store, "OK": Ok, "Access": Access, "Category": ct, "URL": url}
 		// tmpl.ExecuteTemplate(w, "store", data)
 
-		title := map[string]string{"Title": models.Cfg.StoreTitle}
+		title := map[string]interface{}{"Title": models.Cfg.StoreTitle, "User": userAuth}
 		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "footer", title)
 		data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Store": store, "OK": Ok, "Access": Access, "Sex": sex, "Category": cat, "Community": communitiesName, "URL": url, "Root": root}
 		tmpl.ExecuteTemplate(w, "store", data)
 	} else if c.Value != "" {
@@ -1379,9 +1400,10 @@ func communityMarketSaleListHandler(w http.ResponseWriter, r *http.Request) {
 					http.NotFound(w, r)
 				}
 				ttl := "Список продаж " + comName
-				title := map[string]string{"Title": ttl}
+				title := map[string]interface{}{"Title": ttl, "User": userAuth}
 				data := map[string]interface{}{"Sales": sales, "Done": Done, "Community": comName, "Title": ttl}
 				tmpl.ExecuteTemplate(w, "header", title)
+				tmpl.ExecuteTemplate(w, "footer", title)
 				tmpl.ExecuteTemplate(w, "list", data)
 			} else {
 				http.Redirect(w, r, "/page", http.StatusSeeOther)
@@ -1418,9 +1440,10 @@ func communityMarketStatisticsHandler(w http.ResponseWriter, r *http.Request) {
 			r.ParseForm()
 			comName := r.FormValue("community")
 
-			title := map[string]string{"Title": fmt.Sprintf("Статистика - %s", comName)}
+			title := map[string]interface{}{"Title": fmt.Sprintf("Статистика - %s", comName), "User": userAuth}
 			data := map[string]interface{}{}
 			tmpl.ExecuteTemplate(w, "header", title)
+			tmpl.ExecuteTemplate(w, "footer", title)
 			tmpl.ExecuteTemplate(w, "stat", data)
 		} else {
 			http.Redirect(w, r, "/page", http.StatusSeeOther)
@@ -1444,12 +1467,17 @@ func guestHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			http.NotFound(w, r)
 		}
-
+		var ok bool
 		fmt.Println("guest", guestId)
 		if r.Method == "GET" {
 			r.ParseForm()
 			guestLogin = r.FormValue("guestLogin")
-			fmt.Println("guestLogin", guestLogin)
+
+			_, ok = database.CheckFriends(userAuth.Login, guestLogin)
+			if userAuth.Login == guestLogin {
+				ok = false
+			}
+			fmt.Println("guestLogin", guestLogin, ok)
 		}
 		if r.Method == "POST" {
 			GofId := r.FormValue("goLike")
@@ -1461,8 +1489,7 @@ func guestHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-
-		_, ok := database.CheckFriends(userAuth.Login, guestId)
+		_, ok = database.CheckFriends(userAuth.Login, guestId)
 		if userAuth.Login == guestId {
 			ok = false
 		}
@@ -1504,16 +1531,24 @@ func guestHandler(w http.ResponseWriter, r *http.Request) {
 		_, Friend = database.CheckFriends(userAuth.Login, userGuest.Login)
 
 		Access := false
-		if userAuth.Access != "User" {
+		if userAuth.Access != "User" && userAuth.Login != userGuest.Login {
 			Access = true
+		}
+		var GalOK bool
+		photo := database.SelectUserGalleryLimit(userGuest.Login)
+		if photo != nil {
+			GalOK = true
+		} else {
+			GalOK = false
 		}
 
 		complaint := []string{"Оскорбление личности", "Оскорбление вероисповедания", "Распространение запрещенных веществ", "Обман на деньги", "Украл аккаунт"}
 
-		title := map[string]string{"Title": userGuest.Name}
+		title := map[string]interface{}{"Title": userGuest.Name, "User": userAuth}
 		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "footer", title)
 
-		sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Guest": userGuest, "Statistics": stat, "Done": Done, "OK": ok, "Gopher": gopher, "DoneGopher": DoneGopher, "Friend": Friend, "Access": Access, "Complaint": complaint}
+		sendUser := map[string]interface{}{"User": userAuth, "Repo": data, "Guest": userGuest, "Statistics": stat, "Done": Done, "OK": ok, "Gopher": gopher, "DoneGopher": DoneGopher, "Friend": Friend, "Access": Access, "Complaint": complaint, "GalOK": GalOK}
 
 		tmpl.ExecuteTemplate(w, "guest", sendUser)
 	} else if c.Value != "" {
@@ -1625,8 +1660,9 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		title := map[string]string{"Title": models.Cfg.MessageTitle}
+		title := map[string]interface{}{"Title": models.Cfg.MessageTitle, "User": userAuth}
 		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "footer", title)
 		fmt.Println(OK)
 		data := map[string]interface{}{"User": userAuth, "Done": OK, "OK": OKS, "Companions": companion, "ChatUser": activeChatUser, "Chat": Messenger.Messenge}
 		tmpl.ExecuteTemplate(w, "message", data)
@@ -1668,8 +1704,9 @@ func storeHandler(w http.ResponseWriter, r *http.Request) {
 		url := "store/sort"
 		root := "/store"
 
-		title := map[string]string{"Title": models.Cfg.StoreTitle}
+		title := map[string]interface{}{"Title": models.Cfg.StoreTitle, "User": userAuth}
 		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "footer", title)
 		data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Store": store, "OK": Ok, "Access": Access, "Category": ct, "URL": url, "Root": root}
 		tmpl.ExecuteTemplate(w, "store", data)
 	} else if c.Value != "" {
@@ -1717,8 +1754,9 @@ func storeSortHandler(w http.ResponseWriter, r *http.Request) {
 		url := ""
 		root := "/store"
 
-		title := map[string]string{"Title": models.Cfg.StoreTitle}
+		title := map[string]interface{}{"Title": models.Cfg.StoreTitle, "User": userAuth}
 		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "footer", title)
 		data := map[string]interface{}{"User": userAuth, "Wallet": user.Wallet, "Store": store, "OK": Ok, "Access": Access, "Category": ct, "URL": url, "Root": root}
 		tmpl.ExecuteTemplate(w, "store", data)
 	} else if c.Value != "" {
@@ -1751,8 +1789,9 @@ func storeCardHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 		}
 
-		title := map[string]string{"Title": product.Name}
+		title := map[string]interface{}{"Title": product.Name, "User": userAuth}
 		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "footer", title)
 
 		var products []models.StorePlus
 		arr, _ := database.SelectFavouritesByUserCheck(userAuth.Login)
@@ -1813,7 +1852,12 @@ func storeBuyHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				fmt.Println("Error - storeBuyHandler() SelectUserByColumn", err)
 			}
-			err = database.UpdateUserWalletByLogPass(seller.Login, seller.Password, float64(product.NewPrice))
+			err = database.UpdateUserWalletByLogPass(seller.Login, seller.Password, float64(product.NewPrice)*0.95)
+			if err != nil {
+				fmt.Println(err)
+			}
+			income := float64(product.NewPrice) * 0.05
+			err = database.UpdateUserWalletByLogPass(`a.pavlikov2002@gmail.com`, `86a65acd94b33daa87c1c6a2d1408593`, income)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -1895,8 +1939,9 @@ func favouritesPageHandler(w http.ResponseWriter, r *http.Request) {
 		sales, done := database.SelectSalesByUser(userAuth.Login)
 		purchase := database.SelectTotalPurchaseByUser(userAuth.Login)
 
-		title := map[string]string{"Title": models.Cfg.FavTitle}
+		title := map[string]interface{}{"Title": models.Cfg.FavTitle, "User": userAuth}
 		tmpl.ExecuteTemplate(w, "header", title)
+		tmpl.ExecuteTemplate(w, "footer", title)
 		data := map[string]interface{}{"User": userAuth, "Done": ok, "Fav": fav, "Ok": done, "Sales": sales, "Purchase": purchase}
 		tmpl.ExecuteTemplate(w, "favourites", data)
 	} else if c.Value != "" {
@@ -1919,10 +1964,11 @@ func helpHandler(w http.ResponseWriter, r *http.Request) {
 
 	arrCategory := []string{"Баг при работе", "Предложение", "Некорректная работа приложения", "У вас что-то украли/пропало", "Другое"}
 
-	title := map[string]string{"Title": models.Cfg.HelpTitle}
+	title := map[string]interface{}{"Title": models.Cfg.HelpTitle, "User": userAuth}
 	data := map[string]interface{}{"User": userAuth, "Category": arrCategory}
 
 	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "footer", title)
 	tmpl.ExecuteTemplate(w, "help", data)
 }
 
@@ -1960,6 +2006,133 @@ func helpComplaintHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		http.Redirect(w, r, "/guest", http.StatusSeeOther)
+	}
+}
+
+func galleryHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/gallery.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+	var gallery []string
+	var ok bool
+	if r.Method == "POST" {
+		r.ParseForm()
+		user := r.FormValue("user")
+		fmt.Println(user)
+		if user != "" {
+			gallery = database.SelectUserGallery(user)
+			fmt.Println("-------------GALLERY-------------", gallery)
+			if gallery == nil {
+				ok = false
+			} else {
+				ok = true
+			}
+		} else {
+			http.Redirect(w, r, "/page", http.StatusSeeOther)
+		}
+	}
+
+	title := map[string]interface{}{"Title": models.Cfg.GalleryTitile, "User": userAuth}
+	data := map[string]interface{}{"User": userAuth, "Gallery": gallery, "OK": ok}
+
+	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "footer", title)
+	tmpl.ExecuteTemplate(w, "gallery", data)
+}
+
+func galleryAddHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+		file, fileHeader, err := r.FormFile("photo")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		defer file.Close()
+		imgPath = fmt.Sprintf("./data/image/users/%d%s", time.Now().UnixNano(), filepath.Ext(fileHeader.Filename))
+		dst, err := os.Create(imgPath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		defer dst.Close()
+
+		_, err = io.Copy(dst, file)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		err = database.UpdateUserGallery(userAuth.Login, imgPath)
+		if err != nil {
+			fmt.Println("Error - galleryAddHandler() UpdateUserGallery()", err.Error())
+		}
+
+		http.Redirect(w, r, "/gallery", http.StatusSeeOther)
+	}
+}
+
+func musicHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles("html/music.html", "html/header.html", "html/footer.html")
+	if err != nil {
+		http.NotFound(w, r)
+	}
+	var musics []models.MusicSub
+	var ok bool
+	if r.Method == "POST" {
+		r.ParseForm()
+		user := r.FormValue("user")
+		fmt.Println(user, "!!!!!!!!!!")
+		musics = database.SelectMusicByUser(user)
+		fmt.Println("-------------MUSIC-------------", musics)
+		//and select recomendation music for user
+		fmt.Println(user)
+	} else {
+		http.Error(w, "Error", http.StatusNotFound)
+	}
+
+	title := map[string]interface{}{"Title": models.Cfg.MusicTitle, "User": userAuth}
+	data := map[string]interface{}{"User": userAuth, "OK": ok, "Musics": musics}
+
+	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "footer", title)
+	tmpl.ExecuteTemplate(w, "music", data)
+}
+
+func musicSubHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+		music := r.FormValue("music")
+		user := r.FormValue("user")
+		fmt.Println(music, user)
+		id, _ := strconv.Atoi(music)
+		err := database.UpdateMusicToUser(user, id)
+		if err != nil {
+			fmt.Println("Error - musicSubHandler() UpdateMusicToUser()")
+		}
+		err = database.UpdateMusicSub(id)
+		if err != nil {
+			fmt.Println("Error - musicSubHandler() UpdateMusicSub()")
+		}
+		http.Redirect(w, r, "/music", http.StatusSeeOther)
+	}
+}
+
+func musicUnsubHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		r.ParseForm()
+		music := r.FormValue("music")
+		user := r.FormValue("user")
+		fmt.Println(music, user)
+		id, _ := strconv.Atoi(music)
+		err := database.DeleteMusicUser(user, id)
+		if err != nil {
+			fmt.Println("Error - musicSubHandler() DeleteMusicUser()")
+		}
+		http.Redirect(w, r, "/music", http.StatusSeeOther)
 	}
 }
 
@@ -2009,10 +2182,11 @@ func adminHandler(w http.ResponseWriter, r *http.Request) {
 				fmt.Println("Error - SelectUserBannedAllByAdmin()", err.Error())
 			}
 
-			title := map[string]string{"Title": "Админ панель"}
+			title := map[string]interface{}{"Title": "Админ панель", "User": userAuth}
 			data := map[string]interface{}{"User": userAuth, "AllUs": all, "DelUser": uDel, "BanUser": uBan, "Done": true}
 
 			tmpl.ExecuteTemplate(w, "header", title)
+			tmpl.ExecuteTemplate(w, "footer", title)
 			tmpl.ExecuteTemplate(w, "admin", data)
 		} else {
 			http.Redirect(w, r, "/page", http.StatusSeeOther)
@@ -2129,10 +2303,11 @@ func adminDelBanListHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(Data)
 	ttl := "Админ меню"
-	title := map[string]string{"Title": ttl}
+	title := map[string]interface{}{"Title": ttl, "User": userAuth}
 	data := map[string]interface{}{"Admins": Data, "Done": done, "Title": ttl}
 
 	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "footer", title)
 	tmpl.ExecuteTemplate(w, "list", data)
 
 }
@@ -2150,10 +2325,11 @@ func adminListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ttl := "Список администраторов"
-	title := map[string]string{"Title": ttl}
+	title := map[string]interface{}{"Title": ttl, "User": userAuth}
 	data := map[string]interface{}{"ListAdm": admin, "Done": done, "Title": ttl}
 
 	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "footer", title)
 	tmpl.ExecuteTemplate(w, "list", data)
 
 }
@@ -2173,10 +2349,11 @@ func adminComplaintListHandler(w http.ResponseWriter, r *http.Request) { ///admi
 	fmt.Println(comp)
 
 	ttl := "Список жалоб"
-	title := map[string]string{"Title": ttl}
+	title := map[string]interface{}{"Title": ttl, "User": userAuth}
 	data := map[string]interface{}{"Complaint": comp, "Done": done, "Title": ttl}
 
 	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "footer", title)
 	tmpl.ExecuteTemplate(w, "list", data)
 }
 func adminComplaintHandler(w http.ResponseWriter, r *http.Request) { ///admin/complaint
@@ -2200,11 +2377,12 @@ func adminComplaintHandler(w http.ResponseWriter, r *http.Request) { ///admin/co
 	}
 
 	ttl := "Жалоба - №" + fmt.Sprint(Id)
-	title := map[string]string{"Title": ttl}
+	title := map[string]interface{}{"Title": ttl, "User": userAuth}
 	//"User": userAuth, "AllUs": all, "DelUser": uDel, "BanUser": uBan, "Done": true}
 	data := map[string]interface{}{"User": userAuth, "Complaint": comp, "Title": ttl, "Done": false, "CompStat": complaintStatus}
 
 	tmpl.ExecuteTemplate(w, "header", title)
+	tmpl.ExecuteTemplate(w, "footer", title)
 	tmpl.ExecuteTemplate(w, "admin", data)
 }
 

@@ -268,7 +268,7 @@ func SelectUsers() []models.Users {
 	var user models.Users
 	var users []models.Users
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet, pq.Array(&user.Gallery), pq.Array(&user.Music))
 		if err != nil {
 			fmt.Println("Error - SelectUser() rows.Next()", err.Error())
 		}
@@ -290,7 +290,7 @@ func SelectUserByLogPass(log string, pass string) (user models.Users, err error)
 	}
 	defer rows.Close()
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet, pq.Array(&user.Gallery), pq.Array(&user.Music))
 		if err != nil {
 			fmt.Println("Error - SelectUserByLogPass() rows.Next()", err)
 		}
@@ -312,7 +312,7 @@ func SelectUsersByColumn(column string, value string) ([]models.Users, error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet, pq.Array(&user.Gallery), pq.Array(&user.Music))
 		if err != nil {
 			fmt.Println("Error - SelectUsersByColumn() rows.Next()", err.Error())
 			return users, err
@@ -331,7 +331,7 @@ func SelectUserByColumn(column string, value string) (models.Users, error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet, pq.Array(&user.Gallery), pq.Array(&user.Music))
 		if err != nil {
 			fmt.Println("Error - SelectUserByColumn() rows.Next()", err.Error())
 			return user, err
@@ -349,7 +349,7 @@ func SelectUserWallet(login string, password string) (models.Users, error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet, pq.Array(&user.Gallery), pq.Array(&user.Music))
 		if err != nil {
 			fmt.Println("Error - SelectUserWallet() rows.Next()", err.Error())
 			return user, err
@@ -368,7 +368,7 @@ func SelectAdmins() ([]models.Users, error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet, pq.Array(&user.Gallery), pq.Array(&user.Music))
 		if err != nil {
 			fmt.Println("Error - SelectAdmins() rows.Next()", err.Error())
 			return users, err
@@ -394,7 +394,7 @@ func FindUsers(query string, login string) ([]models.Users, error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet)
+		err = rows.Scan(&user.Login, &user.Password, &user.Name, &user.Access, &user.Photo, &user.Birthdate, &user.Wallet, pq.Array(&user.Gallery), pq.Array(&user.Music))
 		if err != nil {
 			fmt.Println("Error - FindUsers() ", err)
 			return users, err
@@ -423,7 +423,7 @@ func DeleteUserByLogin(login string) error {
 Функция добавления пользователя в таблицу Users по введенным значениям
 */
 func InsertUser(user models.Users) (models.Users, error) {
-	query := `INSERT INTO "Users"("Login", "Password", "Name", "Access", "Photo", "Birthdate", "Wallet") VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	query := `INSERT INTO "Users"("Login", "Password", "Name", "Access", "Photo", "Birthdate", "Wallet", "Gallery", "Music") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelfunc()
 	stmt, err := DB.PrepareContext(ctx, query)
@@ -432,7 +432,7 @@ func InsertUser(user models.Users) (models.Users, error) {
 		return user, err
 	}
 	defer stmt.Close()
-	res, err := stmt.ExecContext(ctx, user.Login, user.Password, user.Name, user.Access, user.Photo, user.Birthdate, user.Wallet)
+	res, err := stmt.ExecContext(ctx, user.Login, user.Password, user.Name, user.Access, user.Photo, user.Birthdate, user.Wallet, pq.Array(&user.Gallery), pq.Array(&user.Music))
 	if err != nil {
 		log.Printf("Error %s when inserting row into User table", err)
 		return user, err
@@ -1499,7 +1499,7 @@ func SelectUserSub(user string) []models.Users {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		err = rows.Scan(&sub.Login, &sub.Password, &sub.Name, &sub.Access, &sub.Photo, &sub.Birthdate, &sub.Wallet)
+		err = rows.Scan(&sub.Login, &sub.Password, &sub.Name, &sub.Access, &sub.Photo, &sub.Birthdate, &sub.Wallet, pq.Array(&sub.Gallery), pq.Array(&sub.Music))
 		if err != nil {
 			fmt.Println("Error - SelectUserSub() rows.Next()", err)
 		}
@@ -1563,7 +1563,7 @@ func SelectRecomendationFriends(user string) []models.Users {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		err = rows.Scan(&sub.Login, &sub.Password, &sub.Name, &sub.Access, &sub.Photo, &sub.Birthdate, &sub.Wallet)
+		err = rows.Scan(&sub.Login, &sub.Password, &sub.Name, &sub.Access, &sub.Photo, &sub.Birthdate, &sub.Wallet, pq.Array(&sub.Gallery), pq.Array(&sub.Music))
 		if err != nil {
 			fmt.Println("Error - SelectRecomendationFriends() rows.Next()", err)
 		}
@@ -1652,7 +1652,7 @@ func SelectOnlineFriends(user string) []models.JoinUser {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		err = rows.Scan(&friend.Login, &friend.Friend, &friend.Status, &friend.Name, &friend.Photo, &friend.Birthdate)
+		err = rows.Scan(&friend.Login, &friend.Friend, &friend.Status, &friend.Name, &friend.Photo, &friend.Birthdate, pq.Array(&friend.Gallery), pq.Array(&friend.Music))
 		if err != nil {
 			fmt.Println("Error - SelectOnlineFriends() rows.Next()")
 		}
@@ -2178,4 +2178,117 @@ func InsertComplaint(prd models.Complaints) error {
 		fmt.Println("\nRow inserted successfully!")
 		return nil
 	}
+}
+
+// music
+
+func SelectMusicByUser(login string) []models.MusicSub {
+	var music models.MusicSub
+	var musics []models.MusicSub
+	rows, err := DB.Query(fmt.Sprintf(`SELECT "Music".*, "Users"."Login" FROM "Users"
+	JOIN "Music" ON "Music"."Id" = ANY("Users"."Music")
+	WHERE "Users"."Login" = '%s'`, login))
+	if err != nil {
+		fmt.Println("Error - SelectMusicByUser()", err)
+		return musics
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&music.Id, &music.Name, &music.Author, &music.Genre, &music.Subs, &music.Link, &music.Login)
+		if err != nil {
+			fmt.Println("Error - SelectMusicByUser() rows.Next()", err.Error())
+			return musics
+		}
+		musics = append(musics, music)
+	}
+	return musics
+}
+
+func InsertMusic(music models.Music) error {
+	query := `INSERT INTO "Music"("Name", "Author", "Genre", "Subs", "Link") VALUES($1, $2, $3, $4, $5)`
+	_, err := DB.Exec(query, music.Name, music.Author, music.Genre, music.Subs, music.Link)
+	if err != nil {
+		return err
+	} else {
+		fmt.Println("\nRow inserted successfully!")
+		return nil
+	}
+}
+
+func UpdateMusicToUser(user string, music int) error {
+	query := fmt.Sprintf(`UPDATE "Users" SET "Music" = array_append("Music", %d) WHERE "Login" = '%s';`, music, user)
+	_, err = DB.Query(query)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
+}
+
+func UpdateMusicSub(music int) error {
+	query := fmt.Sprintf(`UPDATE "Music" SET "Subs" = "Subs" + 1 WHERE "Id" = %d;`, music)
+	_, err = DB.Query(query)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
+}
+
+func DeleteMusicUser(user string, music int) error {
+	res, err := DB.Exec(fmt.Sprintf(`UPDATE "Users" SET "Music" = array_remove("Music", %d) WHERE "Login" = '%s'`, music, user))
+	if err == nil {
+		count, err := res.RowsAffected()
+		if err == nil {
+			fmt.Println(count)
+		}
+		return nil
+	}
+	return err
+}
+
+// gallery LIMIT
+
+func SelectUserGallery(user string) (photos []string) {
+	rows, err := DB.Query(fmt.Sprintf(`SELECT "Gallery" FROM "Users" WHERE "Login" = '%s'`, user))
+	if err != nil {
+		fmt.Println("Error - SelectUserGallery()", err)
+		return photos
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(pq.Array(&photos))
+		if err != nil {
+			fmt.Println("Error - SelectUserGallery() rows.Next()", err.Error())
+			return photos
+		}
+	}
+	return photos
+}
+
+func SelectUserGalleryLimit(user string) (photos []string) {
+	rows, err := DB.Query(fmt.Sprintf(`SELECT "Gallery" FROM "Users" WHERE "Login" = '%s' LIMIT 5`, user))
+	if err != nil {
+		fmt.Println("Error - SelectUserGallery()", err)
+		return photos
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(pq.Array(&photos))
+		if err != nil {
+			fmt.Println("Error - SelectUserGallery() rows.Next()", err.Error())
+			return photos
+		}
+	}
+	return photos
+}
+
+func UpdateUserGallery(user string, photo string) error {
+	query := fmt.Sprintf(`UPDATE "Users" SET "Gallery" = array_append("Gallery", '%s') WHERE "Login" = '%s';`, photo, user)
+	_, err = DB.Query(query)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
 }

@@ -3,6 +3,10 @@ body {
     margin: 0;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 .hidden {
     visibility:visible;
 }
@@ -98,4 +102,53 @@ header .account i:hover {
 .center {
     text-align: center;
     color: rgba(60, 161, 255);
+}
+
+.log_name {
+    color: rgb(21, 141, 253);
+    font-weight:900;
+}
+
+.link-top {
+    padding: 20px 40px 90vh 40px;
+    top: 80px;
+    left: 50px;
+    position: fixed;
+    font-size: 40px;
+    color: rgb(21, 141, 253);
+    display: inline-block;
+}
+
+.link-top:hover {
+    background: #00000010;
+}
+
+.mus-form {
+    position: absolute;
+    z-index: 1000;
+    top: 10px;
+    right: 40%;
+    height: 40px;
+    width: 40px;
+}
+
+.mus-form button {
+    height: 40px;
+    width: 40px;
+    border: none;
+    color: rgb(21, 141, 253);
+    background-color: inherit;
+}
+
+.mus-form button:hover {
+    cursor: pointer;
+    opacity: .8;
+}
+
+.mus-form button:active {
+    opacity: .6;
+}
+
+.mus-form button i {
+    font-size: 22px;
 }

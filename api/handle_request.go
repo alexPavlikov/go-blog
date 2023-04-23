@@ -52,6 +52,11 @@ func HandleRequest() {
 	http.HandleFunc("/help", helpHandler)
 	http.HandleFunc("/help/complaint", helpComplaintHandler)
 	http.HandleFunc("/find", findUserHandler)
+	http.HandleFunc("/gallery", galleryHandler)
+	http.HandleFunc("/gallery/add", galleryAddHandler)
+	http.HandleFunc("/music", musicHandler)
+	http.HandleFunc("/music/sub", musicSubHandler)
+	http.HandleFunc("/music/unsub", musicUnsubHandler)
 	http.HandleFunc("/exit", exitHandler)
 
 	//admin

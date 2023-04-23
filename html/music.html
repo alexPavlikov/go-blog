@@ -1,0 +1,51 @@
+{{ define "music" }}
+
+<link rel="stylesheet" href="/assets/css/style.css">
+<link rel="stylesheet" href="/assets/css/friends.css">
+<link rel="stylesheet" href="/assets/css/music.css">
+<main>
+    <div class="friends">
+        <div class="tabs">
+            <input type="radio" name="tab-btn" id="tab-btn-1" value="" checked>
+            <label for="tab-btn-1">Моя музыка</label>
+            <input type="radio" name="tab-btn" id="tab-btn-2" value="" checked>
+            <label for="tab-btn-2">Рекомендации</label>
+        
+            <div id="content-1">
+                <div class="audioplay">
+                    {{ range $_, $m := .Musics }}
+                    <div class="audio">
+                        <form action="/music/unsub" method="post">
+                        <h4>{{ $m.Name }} <br><span>{{ $m.Author }}</span></h4>
+                        <input type="text" value="{{ $m.Id }}" name="music" style="display: none;">
+                        <input type="text" value="{{ $m.Author }}" name="user" style="display: none;">
+                        <audio controls src="{{ $m.Link }}">
+                        </audio>
+                        <button><i id="del" class="fa-solid fa-xmark"></i></button>
+                        </form>
+                    </div>
+                    {{ end }}
+                </div>
+                {{ if .OK }}
+                <h1 class="center">Вы еще не добавили музыку в свой плейлист</h1>
+                 {{ end }}              
+            </div>
+            <div id="content-2">
+                <div class="audioplay">
+                    <div class="audio">
+                        <form action="/music/sub" method="post">
+                        <h4>Can you feel my heart <br><span>Chester Beninghton</span></h4>
+                        <input type="text" value="hello" name="music" style="display: none;">
+                        <input type="text" value="user" name="user" style="display: none;">
+                        <audio controls src="music.mp3">
+                        </audio>
+                        <button><i class="fa-solid fa-plus"></i></button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+{{ end }}

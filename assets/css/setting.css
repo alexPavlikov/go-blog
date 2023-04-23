@@ -207,7 +207,7 @@ menu .data input {
 
 .back {
     position: absolute;
-    top: 40px;
+    top: 70px;
     right: 10px;
     font-size: 24px;
     color: red;
@@ -221,9 +221,10 @@ menu .data input {
 /*  */
 .season_tabs {
     position: relative;   
-    min-height: 95vh; /* This part sucks */
+    min-height: 90vh; /* This part sucks */
     clear: both;
-    margin: 10px 0;
+    margin: 70px 0 10px 0;
+    width: 70%;
   }
   .season_tab {
     float: left;  

@@ -1,10 +1,10 @@
 {{ define "setting" }}
 
-{{ template "header" }}
+
 
 <link rel="stylesheet" href="/assets/css/setting.css">
 <link rel="stylesheet" href="/assets/css/style.css">
-<a class="back" href="/page"><i class="fa-solid fa-delete-left"></i></a>
+<!-- <a class="back" href="/page"><i class="fa-solid fa-delete-left"></i></a> -->
 <div class="season_tabs">
     
     <div class="season_tab">
@@ -20,7 +20,7 @@
                 <div class="data">
                     <form method="get" action="setting/refresh">
                         <div>
-                                <input name="oldPass"  type="password" placeholder="Введите старый пароль">
+                                <input name="oldPass"  type="password" placeholder="Введите пароль">
                                 <input name="newName" type="text" placeholder="Введите новое имя">           
                         </div>
                         <div>
@@ -45,7 +45,8 @@
                 <form action="setting/refresh" method="post" enctype="multipart/form-data">
                    
                     <input type="file" id="files" name="files"  multiple />
-                    <ul for="files" class="pref_img" id="list"></ul>
+
+                    <ul for="files" class="avatar pref_img" id="list"></ul>
                    <br>
                     <button type="submit" class="custom-btn btn-3 btn-4 "><span>Сохранить изменения</span></button>
                 </form>

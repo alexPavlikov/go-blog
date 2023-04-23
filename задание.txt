@@ -13,3 +13,17 @@
 сделать на странице поиск сортировку для пользователей это год рождения город и тд, а для сообщетсва кол-во подписчиков
 
 сделать кнопку быстрого подъема на верх на всех станицах
+
+сделать галерею фотографий и мб видео приколы
+
+мб - выдавать лвл за покупки и активность, условно 1000 дублей = 1лвл и 100 часов = 1лвл и делать за каждый 10 лвл скидку 1 процент на товар до 15%
+
+
+СДЕЛАТЬ ТАБЛИЦУ ДЛЯ МУЗЫКИ И СТОЛБЕЦ В ТАБЛИЦЕ ПОЛЬЗОВАТЕЛЬ - ГАЛЕРЕЯ(МАССИВ ССЫЛОК НА ФОТО)
+
+ИЗ-ЗА ОБНОВЫ ВЫЛАЗИТ ОШИБКА С ЗАПРОСОМ ПРО СТОЛБЕЦ MUSIC В ТАБЛИЦЕ Users
+
+Нажитие на фото работает ультра тупо
+
+Error - SelectUserByColumn() rows.Next() sql: Scan error on column index 8, name "Music": pq: parsing array element index 0: pq: scanning to int is not implemented; only sql.Scanner
+SelectUserByColumn() sql: Scan error on column index 8, name "Music": pq: parsing array element index 0: pq: scanning to int is not implemented; only sql.Scanner

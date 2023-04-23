@@ -53,6 +53,8 @@ type Users struct { // structure of the Users table
 	Photo     string
 	Birthdate string
 	Wallet    float64
+	Gallery   []string
+	Music     []int
 }
 
 type JoinUser struct {
@@ -63,6 +65,8 @@ type JoinUser struct {
 	Photo     string
 	Birthdate string
 	Wallet    float64
+	Gallery   []string
+	Music     []int
 }
 
 type Friends struct { // structure of the Friends table
@@ -249,4 +253,23 @@ type Complaints struct {
 	Status    string
 	Comment   string
 	Admin     string
+}
+
+type MusicSub struct {
+	Id     int
+	Name   string
+	Author string
+	Genre  string
+	Subs   int
+	Link   string
+	Login  string
+}
+
+type Music struct {
+	Id     int
+	Name   string
+	Author string
+	Genre  string
+	Subs   int
+	Link   string
 }

@@ -59,3 +59,8 @@ h3 {
 .com_sub:hover {
 	cursor: pointer;
 }
+
+.list-menu {
+	display: flex;
+	flex-direction: column;
+}

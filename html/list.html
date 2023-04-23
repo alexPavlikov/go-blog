@@ -1,148 +1,153 @@
 {{ define "list" }}
 
-{{ template "header" }}
+<!-- {{ template "header" }} -->
 
-<link rel="stylesheet" href="/assets/css/list.css">   
+<link rel="stylesheet" href="/assets/css/list.css">
+<link rel="stylesheet" href="/assets/css/style.css">
+<link rel="stylesheet" href="/assets/css/admin.css">
+ 
 
 <script src='//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js'></script>
 
     
+ <div class="list-menu">
     {{ $st := "Store" }}
-   {{ if eq .Done $st }} 
+    {{ if eq .Done $st }} 
+     <h1>{{.Title}}</h1> 
+         {{ $lengthSales := len .Sales }}
+         <h3>Общее кол-во пользователей {{$lengthSales}}</h3> 
+         <table class="table">
+         <thead>
+             <tr>
+                 <th>Id</th>
+                 <th>Товар</th>
+                 <th>Клиент</th>
+                 <th>Адресс</th>
+                 <th>Цена покупки</th>
+                 <th>Категория товара</th>
+                 <th>Пол</th>
+                 <th>Дата</th>
+                 <!-- <th>Дополнительно</th> -->
+             </tr>
+         </thead> 
+         <tbody>
+             {{ range $_, $s := .Sales }}
+             <tr>
+                 <td>{{ $s.Id }}</td>
+                 <td>{{ $s.Article }} - {{ $s.Name }}</td>
+                 <td>{{ $s.User }}</td>
+                 <td>{{ $s.Address }}</td>
+                 <td>{{ $s.NewPrice }} </td>
+                 <td>{{ $s.Category }} </td>
+                 <td>{{ $s.Sex }} </td>
+                 <td>{{ $s.Date }} </td>
+                 <!-- <td><a href="/community/market/sale_list/comment{{ $s.Id }}">Отзывы</a></td> -->
+             </tr>
+             {{ end }}
+         </tbody>
+         </table>
+     {{ else if eq .Done "Admin" }}
+         {{ $lengthAdmin := len .Admins }}
+         <h3>Общее кол-во строк {{$lengthAdmin}}</h3> 
+         <table class="table">
+         <thead>
+             <tr>
+                 <th>Id</th>
+                 <th>Пользователь</th>
+                 <th>Причина</th>
+                 <th>Время(часов)</th>
+                 <th>Админ</th>
+                 <!-- <th>Дополнительно</th> -->
+             </tr>
+         </thead> 
+         <tbody>
+             {{ range $_, $ad := .Admins }}
+             <tr>
+                 <td>{{ $ad.Id }}</td>
+                 <td class="us" id="{{ $ad.User }}"><a href="/guest">{{ $ad.User }}</a></td>
+                 <td>{{ $ad.Reason }}</td>
+                 <td>{{ $ad.Time }}</td>
+                 <td>{{ $ad.Admin }} </td>
+             </tr>
+             {{ end }}
+         </tbody>
+         </table>
+     {{ else if eq .Done "ListAdmin" }}
+     <h1>{{.Title}}</h1> 
+     {{ $lengthAd := len .ListAdm }}
+     <h3>Общее кол-во строк {{$lengthAd}}</h3> 
+     <table class="table">
+     <thead>
+         <tr>
+             <th>Логин</th>
+             <th>Имя</th>
+             <th>Доступ</th>
+             <th>День рождения</th>
+             <th>Кошелек</th>
+             <!-- <th>Дополнительно</th> -->
+         </tr>
+     </thead> 
+     <tbody>
+         {{ range $_, $la := .ListAdm }}
+         <tr>
+             <td>{{ $la.Login }}</td>
+             <td>{{ $la.Name }}</td>
+             <td>{{ $la.Access }}</td>
+             <td>{{ $la.Birthdate }}</td>
+             <td>{{ $la.Wallet }} </td>
+         </tr>
+         {{ end }}
+     </tbody>
+     </table>
+     {{ else if eq .Done "Complaint" }}
+     <h1>{{.Title}}</h1> 
+     {{ $lengthCom := len .Complaint }}
+     <h3>Общее кол-во жалоб {{$lengthCom}}</h3> 
+     <table class="table">
+     <thead>
+         <tr>
+             <th>Id</th>
+             <th>Нарушитель</th>
+             <th>Жалоба</th>
+             <th>Автор</th>
+             <th>Статус</th>
+             <th>Комментарий</th>
+             <th>Админ</th>
+             <!-- <th>Дополнительно</th> -->
+         </tr>
+     </thead> 
+     <tbody>
+         {{ range $_, $lc := .Complaint }}
+         <tr>
+             <td>
+                 <form action="/admin/complaint" method="post">
+                     <input type="text" name="id" id="id" value="{{ $lc.Id }}" style="display: none;">
+                     <input class="com_sub" type="submit" value="{{ $lc.Id }}">
+                 </form>
+             </td>
+             <td class="us" id="{{ $lc.Criminal }}"><a href="/guest">{{ $lc.Criminal }}</a></td>
+             <td>{{ $lc.Complaint }}</td>
+             <td>{{ $lc.Author }}</td>
+             {{ if eq $lc.Status "не решена" }}
+             <td class="status" style="background-color: rgba(255, 0, 0, 0.750);">{{ $lc.Status }} </td>
+             {{ else if eq $lc.Status "решена" }}
+             <td class="status" style="background-color: rgba(0, 128, 0, 0.750);">{{ $lc.Status }} </td>
+             {{ else }}
+             <td class="status" style="background-color: rgba(0, 0, 255, 0.750);">{{ $lc.Status }} </td>
+             {{ end }}
+             <td>{{ $lc.Comment }}</td>
+             <td>{{ $lc.Admin }} </td>
+         </tr>
+         {{ end }}
+     </tbody>
+     </table>
+ 
+    {{ else }}
     <h1>{{.Title}}</h1> 
-        {{ $lengthSales := len .Sales }}
-        <h3>Общее кол-во пользователей {{$lengthSales}}</h3> 
-        <table class="table">
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>Товар</th>
-                <th>Клиент</th>
-                <th>Адресс</th>
-                <th>Цена покупки</th>
-                <th>Категория товара</th>
-                <th>Пол</th>
-                <th>Дата</th>
-                <!-- <th>Дополнительно</th> -->
-            </tr>
-        </thead> 
-        <tbody>
-            {{ range $_, $s := .Sales }}
-            <tr>
-                <td>{{ $s.Id }}</td>
-                <td>{{ $s.Article }} - {{ $s.Name }}</td>
-                <td>{{ $s.User }}</td>
-                <td>{{ $s.Address }}</td>
-                <td>{{ $s.NewPrice }} </td>
-                <td>{{ $s.Category }} </td>
-                <td>{{ $s.Sex }} </td>
-                <td>{{ $s.Date }} </td>
-                <!-- <td><a href="/community/market/sale_list/comment{{ $s.Id }}">Отзывы</a></td> -->
-            </tr>
-            {{ end }}
-        </tbody>
-        </table>
-    {{ else if eq .Done "Admin" }}
-        {{ $lengthAdmin := len .Admins }}
-        <h3>Общее кол-во строк {{$lengthAdmin}}</h3> 
-        <table class="table">
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>Пользователь</th>
-                <th>Причина</th>
-                <th>Время(часов)</th>
-                <th>Админ</th>
-                <!-- <th>Дополнительно</th> -->
-            </tr>
-        </thead> 
-        <tbody>
-            {{ range $_, $ad := .Admins }}
-            <tr>
-                <td>{{ $ad.Id }}</td>
-                <td class="us" id="{{ $ad.User }}"><a href="/guest">{{ $ad.User }}</a></td>
-                <td>{{ $ad.Reason }}</td>
-                <td>{{ $ad.Time }}</td>
-                <td>{{ $ad.Admin }} </td>
-            </tr>
-            {{ end }}
-        </tbody>
-        </table>
-    {{ else if eq .Done "ListAdmin" }}
-    <h1>{{.Title}}</h1> 
-    {{ $lengthAd := len .ListAdm }}
-    <h3>Общее кол-во строк {{$lengthAd}}</h3> 
-    <table class="table">
-    <thead>
-        <tr>
-            <th>Логин</th>
-            <th>Имя</th>
-            <th>Доступ</th>
-            <th>День рождения</th>
-            <th>Кошелек</th>
-            <!-- <th>Дополнительно</th> -->
-        </tr>
-    </thead> 
-    <tbody>
-        {{ range $_, $la := .ListAdm }}
-        <tr>
-            <td>{{ $la.Login }}</td>
-            <td>{{ $la.Name }}</td>
-            <td>{{ $la.Access }}</td>
-            <td>{{ $la.Birthdate }}</td>
-            <td>{{ $la.Wallet }} </td>
-        </tr>
-        {{ end }}
-    </tbody>
-    </table>
-    {{ else if eq .Done "Complaint" }}
-    <h1>{{.Title}}</h1> 
-    {{ $lengthCom := len .Complaint }}
-    <h3>Общее кол-во жалоб {{$lengthCom}}</h3> 
-    <table class="table">
-    <thead>
-        <tr>
-            <th>Id</th>
-            <th>Нарушитель</th>
-            <th>Жалоба</th>
-            <th>Автор</th>
-            <th>Статус</th>
-            <th>Комментарий</th>
-            <th>Админ</th>
-            <!-- <th>Дополнительно</th> -->
-        </tr>
-    </thead> 
-    <tbody>
-        {{ range $_, $lc := .Complaint }}
-        <tr>
-            <td>
-                <form action="/admin/complaint" method="post">
-                    <input type="text" name="id" id="id" value="{{ $lc.Id }}" style="display: none;">
-                    <input class="com_sub" type="submit" value="{{ $lc.Id }}">
-                </form>
-            </td>
-            <td class="us" id="{{ $lc.Criminal }}"><a href="/guest">{{ $lc.Criminal }}</a></td>
-            <td>{{ $lc.Complaint }}</td>
-            <td>{{ $lc.Author }}</td>
-            {{ if eq $lc.Status "не решена" }}
-            <td class="status" style="background-color: rgba(255, 0, 0, 0.750);">{{ $lc.Status }} </td>
-            {{ else if eq $lc.Status "решена" }}
-            <td class="status" style="background-color: rgba(0, 128, 0, 0.750);">{{ $lc.Status }} </td>
-            {{ else }}
-            <td class="status" style="background-color: rgba(0, 0, 255, 0.750);">{{ $lc.Status }} </td>
-            {{ end }}
-            <td>{{ $lc.Comment }}</td>
-            <td>{{ $lc.Admin }} </td>
-        </tr>
-        {{ end }}
-    </tbody>
-    </table>
-
-   {{ else }}
-   <h1>{{.Title}}</h1> 
-   <h3>У Вас еще нет ни одной продажи. Все еще впереди!</h3> 
-   {{ end }}
-
+    <h3>У Вас еще нет ни одной продажи. Все еще впереди!</h3> 
+    {{ end }}
+ 
+ </div>
    <script>
         $(document).ready(function(){
        $('.us').click(function(e) {

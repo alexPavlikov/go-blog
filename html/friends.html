@@ -1,13 +1,13 @@
 {{ define "friends" }}
 
-{{ template "header" }}
+<!-- {{ template "header" }} -->
 
 <link rel="stylesheet" href="/assets/css/friends.css">
 <link rel="stylesheet" href="/assets/css/style.css">
 <link rel="stylesheet" href="/assets/css/blog.css">
 <link rel="stylesheet" href="/assets/css/friends.css">
 
-<script src='//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js'></script>
+<!-- <script src='//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js'></script>
 
 <header>
     <div class="brand">
@@ -36,7 +36,7 @@
         <a href="#"><i class="fa-solid fa-circle-half-stroke"></i> <span> Тема</span</a>
         <a href="/help"><i class="fa-regular fa-circle-question"></i> <span> Помощь</span</a>
         <a href="/store"><i class="fa-brands fa-golang"></i><span> Go-Store</span></a>
-    </aside>
+    </aside> -->
       
     <main> 
         {{ $lengthF := len .Friends }} 
@@ -246,7 +246,8 @@
             <h1>Error 404</h1>
             {{ end }}
     </main>
-
+    {{ template "footer" }}
+<!-- 
             <aside id="left" class="left">
                 <div class="setacc">
                     <div class="avatar"><img src="{{ .User.Photo }}" alt=""></div>
@@ -265,7 +266,7 @@
             </aside>                         
 </body>
 
-<script src="/assets/js/style.js"></script>
+<script src="/assets/js/style.js"></script> -->
 
 <script>
 
@@ -412,6 +413,6 @@ $(document).ready(function(){
 </script>
 
 
-{{ template "footer" }}
+
 
 {{ end }}
